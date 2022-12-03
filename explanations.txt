@@ -61,9 +61,12 @@
 					system calls (connect, bin, accept....) which the domain of socket address
 
 - int bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen);
-	when socket is created with socket() it exists in a name space (address family) but has
+	when socket is created it exists in a name space (address family) but has
 	no address assigned to it. bind() assigns the address specified by addr to the socket
-	referred to by sockfd. --> assigning a name to the socket
+	referred to by sockfd. --> described as: assigning a name to the socket
+
+    When a process wants to receive new incoming connections, it should bin a socket to a local interface
+	address. When INADDR_ANY is specified in bind call, the socket will be bound to all local interfaces.
 
 - htons()
 	convert values between host and network byte order
@@ -74,14 +77,14 @@
 
 - struct sockaddr_in
     struct sockaddr_in {
-    short            sin_family;   // e.g. AF_INET
-    unsigned short   sin_port;     // e.g. htons(3490)
-    struct in_addr   sin_addr;     // see struct in_addr, below
-    char             sin_zero[8];  // zero this if you want to
+    short            sin_family;    // e.g. AF_INET
+    unsigned short   sin_port;      // e.g. htons(3490)
+    struct in_addr   sin_addr;      // see struct in_addr, below
+    char             sin_zero[8];   // zero this if you want to
     };
 
     struct in_addr {
-        unsigned long s_addr;  // load with inet_aton()
+        unsigned long s_addr;       // load with inet_aton()
     };
 
     Basic structures for all syscalls/functions that deal with internet addresses. In memory, struct
@@ -90,10 +93,20 @@
     only use sin_addr of struct as that is usually the only thing that is defined.
     with IPv4 s_addr is a 4-byte number that represents one digit in an IP address per byte.
 
+- in_addr_t inet_addr(const char* cp);
+    converts the Internet host address cp from IPv4 into binary data in network byte order. if invalid,
+    INADDR_NONE (-1) is returned. PROBLEMATIC: as -1 is a valid address (255.255.255.255).
 
+- char* inet_ntoa(struct in_addr in);
+    converts the Internet host address in, given in a network byte order, to a string in UPv4 notation.
+    The string is returned in a static allocated buffer.
 
-
-
+- int poll(struct pollfd* fds, nfds_t nfds, int timeout);
+    struct pollfd {
+    int   fd;         /* file descriptor */
+    short events;     /* requested events */
+    short revents;    /* returned events */
+    };
 
 
 

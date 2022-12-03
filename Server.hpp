@@ -12,6 +12,8 @@
 #include <sys/socket.h>
 #include <fcntl.h>
 
+#include <arpa/inet.h>
+
 // class User;
 // class Channel;
 // namespace irc
@@ -21,8 +23,10 @@ class Server
 {
 
 private:
-	int				port;
-	std::string 	password;
+	int						port;
+	std::string 			password;
+
+	std::vector<pollfd> 	pollfds;
 
 	// std::string 	name;
 	// std::string 	admin_name;

@@ -49,7 +49,7 @@ void Server::set_up_socket(void)
 
 
 	// ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
-	// !!!! I DONT'T GET THIS SOCKADDR_IN PART YET :( !!!!!
+	// !!!! I DONT'T GET THIS SOCKADDR_IN PART YET! WILL WORK ON IT TOMORROW :( !!!!!
 	struct sockaddr_in serv_address;
 
 	// Clear address structure, should prevent some segmentation fault and artifacts
@@ -57,14 +57,19 @@ void Server::set_up_socket(void)
 
 	// convert unsigned short int to big-endian network byte as expected from TCP protocol standards
 	serv_address.sin_family = AF_INET;
-	serv_address.sin_addr.s_addr = INADDR_ANY;				//getaddr??
+	serv_address.sin_addr.s_addr = htonl(INADDR_ANY);
 	serv_address.sin_port = htons(this->port);				//oder hier erst parsen --> atoi(config.get("port").c_str()));
 
-	//bind socket to current IP address on selected port
+	//bind socket to current IP address on selected port || binds the socket to all available interfaces
 	if (bind(sockfd, (struct sockaddr *) &serv_address, sizeof(serv_address)) < 0)
 		std::cout << "ERROR: BIND SOCKET FAILED" << std::endl; //throw Server::socket_error("some error text");
 
 	// enable socket to listen for requests
 	if ((listen(sockfd, serv_address.sin_port) < 0))
 		std::cout << "ERROR: socket unable to listen to requests" << std::endl;		// throw Server::socket_error("some error text");
+
+	pollfds.push_back(pollfd());
+	pollfds.back().fd = sockfd;
+	pollfds.back().events = POLLIN;
+
 }
