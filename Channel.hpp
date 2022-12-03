@@ -10,6 +10,8 @@
 class User;
 class Server;
 
+enum {channel_creator, channel_operator, channel_member};
+
 // namespace irc
 // {
 

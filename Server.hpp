@@ -36,6 +36,7 @@ struct pollfd
 };
 
 private:
+	bool					_running;
 	int						_port;
 	std::string 			_password;
 	int						_socket;
@@ -43,7 +44,7 @@ private:
 
 	std::vector<pollfd> 	_pollfds;			//pollfds iterator?
 
-	std::string				_hostname;			//for prefix writing
+	// std::string				_hostname;			//for prefix writing
 
 
 	// struct sockaddr_in serv_address;
@@ -65,12 +66,9 @@ public:
 	const std::string&	set_password(const std::string& pw);
 	int 				new_socket(void);
 
-	void	execute();
-	void	poll_loop(void);
+	void				execute();
 
-
-
-
+	bool getStatus() const;
 
 
 };

@@ -8,6 +8,7 @@ Server::Server(char** argv)
 	this->_port = set_port(argv[1]);
 	this->_password = set_password(argv[2]);
 	this->_socket = new_socket();
+	this->_running = true;
 	this->_timeout = 1 * 60 * 1000; 	//set to 1 minute
 }
 
@@ -15,6 +16,9 @@ Server::~Server()
 {
 	std::cout << "Disconnecting... bye bye" << std::endl;
 }
+
+bool getStatus() const { return this->_running; }
+const std::string& Server::set_password(const std::string& pw) { return pw; }
 
 int Server::set_port(const std::string& port_str)
 {
@@ -29,7 +33,6 @@ int Server::set_port(const std::string& port_str)
 	return port;
 }
 
-const std::string& Server::set_password(const std::string& pw) { return pw; }
 
 int Server::new_socket(void)
 {
@@ -60,10 +63,7 @@ int Server::new_socket(void)
 		exit(-1);
 	}
 
-	// ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
 	// bind the socket
-	// !!!! I DONT'T GET THIS SOCKADDR_IN PART YET! WILL WORK ON IT TOMORROW :( !!!!!
-	// in server class?
 	struct sockaddr_in serv_address;
 
 	// Clear address structure, should prevent some segmentation fault and artifacts
@@ -87,50 +87,31 @@ int Server::new_socket(void)
 	if ((listen(sockfd, serv_address.sin_port) < 0))
 		std::cout << "ERROR: socket unable to listen to requests" << std::endl;		// throw Server::socket_error("some error text");
 
-
-	poll_loop();
-
+	return sockfd;
+}
 
 
 	//now that connection has been established between stream sockets any data transfer call can be performed
 	// read()/write() within poll loop
-	//out of band data exchange through send()/recv()
-
-	return sockfd;
-}
-
-// void Serve::poll_loop(void)
-// {
-// 	pollfd
-
-// 	pollfd server_fd = {_sock, POLLIN, 0};
-
-// 	_pollfds.push_back(server_fd);
-
-
-// 	// struct pollfds { this->_sockfd, POLLIN, 0};
-// 	// pollfd server_fd {this->_sockfd, POLLIN, 0};
-
-// 	//initialise pollfd struct
-// 	memset(this->_pollfds, 0, sizeof(this->pollfds));
-
-// 	this->_pollfds.push_back(pollfd());			//add to vector<pollfds> an element to the end called pollfd (woher kommen die variablen?)
-// 	this->_pollfds.back().fd = this->_sockfd;	// set up initial listening socket
-// 	this->_pollfds.back().events = POLLIN;		// block until new data to read (even: new data to read)
-// 	this->_pollfds.back().revents = 0;			// == 0 means that there is no event to perform (will be updated when there are events to perform)
-
-// 	// loop
-// 	while (true)
-// 	{
-// 		std::cout << "Waiting for poll!" << std::endl;
-// 		int rc = poll(this->pollfds, this->_timeout);
-// 	}
-
-// }
+	//out of band data exchange through send()/recv(
 
 void Server::execute()
 {
-	//here poll loop
+	//initialise pollfd struct
+	memset(this->_pollfds, 0, sizeof(this->pollfds));
+
+	//pollfd struct is included in header poll.h
+	this->_pollfds.push_back(pollfd());			//add to vector<pollfds> an element to the end called pollfd (woher kommen die variablen?)
+	this->_pollfds.back().fd = this->_sockfd;	// set up initial listening socket
+	this->_pollfds.back().events = POLLIN;		// block until new data to read (even: new data to read)
+
+
+	// loop
+	while (true)
+	{
+		std::cout << "Waiting for poll!" << std::endl;
+		int rc = poll(this->pollfds, this->_timeout);
+	}
 }
 
 

@@ -13,9 +13,8 @@ private:
 	std::string	_fullname;
 
 	// std::string	_nick_user_host;	//need hostname for that
-	// std::string _hostname;	--> gethostbyname(char* name);
+	// std::string _hostname;	--> gethostbyname(char* name);	//42-Queenz.42.fr
 	// std::string _hostaddr;
-
 
 	std::vector<polldfs>::iterator	pollfds_iterator;
 
@@ -24,19 +23,17 @@ private:
 	int	_port;				//port
 	ClientState _state;		//what are the states?
 
+	enum {channel_creator, channel_operator, channel_member};
 
-	std::map<std::string, Channel*>	_channel_lst;	//list of channels
-	// Channel *channel;
+	std::map<Channel&, rights>			channelRights;		//list of rights connected to user and channel
+	std::map<std::string, Channel*>		channel_lst;		//list of channels that user is member of
 
-
-	bool chop;
 	std::string _channel_name: 		//name + @ (don't know which name)
+
 
 public:
 	User(const std::string& nick, const std::string& user, const std::string& fullname);
 	~User();
-
-
 
 	std::string getNickname() const;
 	std::string getUsername() const;
