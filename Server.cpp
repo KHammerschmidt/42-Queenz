@@ -8,6 +8,7 @@ Server::Server(char** argv)
 	this->_port = set_port(argv[1]);
 	this->_password = set_password(argv[2]);
 	this->_socket = new_socket();
+	this->_timeout = 1 * 60 * 1000; 	//set to 1 minute
 }
 
 Server::~Server()
@@ -86,9 +87,10 @@ int Server::new_socket(void)
 	if ((listen(sockfd, serv_address.sin_port) < 0))
 		std::cout << "ERROR: socket unable to listen to requests" << std::endl;		// throw Server::socket_error("some error text");
 
-	pollfds.push_back(pollfd());
-	pollfds.back().fd = sockfd;
-	pollfds.back().events = POLLIN;
+
+	poll_loop();
+
+
 
 	//now that connection has been established between stream sockets any data transfer call can be performed
 	// read()/write() within poll loop
@@ -97,7 +99,44 @@ int Server::new_socket(void)
 	return sockfd;
 }
 
+// void Serve::poll_loop(void)
+// {
+// 	pollfd
+
+// 	pollfd server_fd = {_sock, POLLIN, 0};
+
+// 	_pollfds.push_back(server_fd);
+
+
+// 	// struct pollfds { this->_sockfd, POLLIN, 0};
+// 	// pollfd server_fd {this->_sockfd, POLLIN, 0};
+
+// 	//initialise pollfd struct
+// 	memset(this->_pollfds, 0, sizeof(this->pollfds));
+
+// 	this->_pollfds.push_back(pollfd());			//add to vector<pollfds> an element to the end called pollfd (woher kommen die variablen?)
+// 	this->_pollfds.back().fd = this->_sockfd;	// set up initial listening socket
+// 	this->_pollfds.back().events = POLLIN;		// block until new data to read (even: new data to read)
+// 	this->_pollfds.back().revents = 0;			// == 0 means that there is no event to perform (will be updated when there are events to perform)
+
+// 	// loop
+// 	while (true)
+// 	{
+// 		std::cout << "Waiting for poll!" << std::endl;
+// 		int rc = poll(this->pollfds, this->_timeout);
+// 	}
+
+// }
+
 void Server::execute()
 {
 	//here poll loop
 }
+
+
+
+
+
+	// std::string hostname = gethostbyname();
+	// std::cout << hostname << std::endl;
+//open points: sethostname, gethostname in Client

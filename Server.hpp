@@ -28,12 +28,23 @@
 class Server
 {
 
+struct pollfd
+{
+	int fd;
+	short events;
+	short revents;
+};
+
 private:
 	int						_port;
 	std::string 			_password;
 	int						_socket;
+	int						_timeout;
 
-	std::vector<pollfd> 	pollfds;			//pollfds iterator?
+	std::vector<pollfd> 	_pollfds;			//pollfds iterator?
+
+	std::string				_hostname;			//for prefix writing
+
 
 	// struct sockaddr_in serv_address;
 	// std::string 	name;
@@ -55,6 +66,12 @@ public:
 	int 				new_socket(void);
 
 	void	execute();
+	void	poll_loop(void);
+
+
+
+
+
 
 };
 
