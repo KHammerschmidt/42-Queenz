@@ -13,7 +13,7 @@ namespace Log
 
 
 	void printWelcomeToServer();
-	void printString(const std::string& msg);
+	void printString(std::string& msg);
 
 
 	//print error log

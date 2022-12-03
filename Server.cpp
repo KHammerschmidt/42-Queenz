@@ -103,27 +103,23 @@ int Server::newSocket(void)
 }
 
 
-//now that connection has been established between stream sockets any data transfer call can be performed
-// read()/write() within poll loop
-//out of band data exchange through send()/recv(
-
 void Server::run()
 {
 	//initialise pollfd struct in Constructor
-	//pollfd struct is included in header poll.h
 	this->_pollfds.push_back(pollfd());			//add to vector<pollfds> an element to the end called pollfd (woher kommen die variablen?)
 	this->_pollfds.back().fd = this->_socket;	// set up initial listening socket
 	this->_pollfds.back().events = POLLIN;		// block until new data to read (even: new data to read)
 
 	Log::printString("Server is listening...");
 
-	//get User as a vector or User objects
-	std::vector<User*> user_list = getUsers();
-
+	std::vector<User*> user_list = getUsers();		//get User as a vector or User objects
 
 	while (this->_status)
 	{
 
+		//poll() function returns value of 1 if the read was succesful and I made a timeout of 100ms
+		// (just a random number, I know that the data are coming at much higher rate)
+		//With that, you will only read the data from socket whenever poll returns a value greater that 0.
 		if (poll(_pollfds.begin().base(), _pollfds.size(), -1) < 0)
 			std::cout << "Error: while polling from sockfd" << std::endl;	//throw Server::runtime_error(std)("Error while polling from fd.");
 

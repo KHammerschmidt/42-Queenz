@@ -1,4 +1,10 @@
 #include "Server.hpp"
+#include <csignal>
+#include <iostream>
+
+bool stop = false;
+
+void handler(int) { stop = true; }
 
 int main(int argc, char** argv)
 {
@@ -8,8 +14,10 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	// create server object
 	Server server(argv);
+
+	// kennst du dich mit signals aus? :D
+	signal(SIGINT, handler);
 
 	// while server status == running, run the server in an endless loop
 	while (server.getStatus())
