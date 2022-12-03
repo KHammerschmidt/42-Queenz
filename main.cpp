@@ -8,7 +8,12 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	Server server(argv[1], argv[2]);
+	Server server = Server();
+	server.init(argv);
 
-	server.init_server();
+	// while (true)
+	server.execute(); //here poll loop
+	sleep(1);
+
+	return 0;
 }

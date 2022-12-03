@@ -1,13 +1,15 @@
 #include "Server.hpp"
 
-Server::Server(const std::string& port_str, const std::string& pw)
-	: password(pw), port(set_port(port_str))
+Server::Server()
 {
-	if (this->port < 0)
-		std::cout << "ERROR PARSING: Invalid port" << std::endl; 	//throw Server::port_error("Invalid port\n");
+	//set current time and other vars
+	std::cout << "Welcome to our server 42-Queenz..." << std::endl;
 }
 
-Server::~Server() {}
+Server::~Server()
+{
+	std::cout << "Disconnecting... bye bye" << std::endl;
+}
 
 int Server::set_port(const std::string& port_str)
 {
@@ -19,13 +21,26 @@ int Server::set_port(const std::string& port_str)
 	return port;
 }
 
-void	Server::init_server()
+void Server::set_password(const std::string& pw)
 {
-	// WHAT ELSE IS NEEDED HERE??
-	set_up_socket();
+	this->password = pw;
 }
 
-void Server::set_up_socket(void)
+void	Server::init(char** argv)
+{
+	if (set_port(argv[1]) < 0)
+	{
+		std::cout << "ERROR PARSING: Invalid port" << std::endl; 	//throw Server::port_error("Invalid port\n");
+		exit(-1);
+	}
+
+	set_password(argv[2]);
+
+	if (set_up_socket() < 0)
+		exit(-1);
+}
+
+int Server::set_up_socket(void)
 {
 	// Create a stream socket to receive incoming connections on (in IPv4 domain/Internet domain with default protocol)
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -91,5 +106,11 @@ void Server::set_up_socket(void)
 	//now that connection has been established between stream sockets any data transfer call can be performed
 	// read()/write() within poll loop
 	//out of band data exchange through send()/recv()
+	return 0;
+}
 
+
+void Server::execute()
+{
+	//here poll loop
 }

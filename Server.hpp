@@ -11,6 +11,7 @@
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include <arpa/inet.h>
 
@@ -20,6 +21,7 @@
 
 // class User;
 // class Channel;
+
 // namespace irc
 // {
 
@@ -42,13 +44,14 @@ public:
 	// std::map<std::string, Channel*> channel_db;	// members, ops, name,
 
 public:
-	Server(const std::string& port, const std::string& pw);
+	Server();
 	~Server();
 
-	void	init_server();
+	void	init(char** argv);
 	int		set_port(const std::string& port_str);
 	void 	set_password(const std::string& password);
-	void 	set_up_socket(void);
+	int 	set_up_socket(void);
+	void	execute();
 
 };
 
