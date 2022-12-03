@@ -1,0 +1,194 @@
+- int fcntl(int fd, int cmd, ... arg );	manipulate a file descriptor
+	Performs an operator cmd on fd specified by arg.
+	USAGE: To change to O_NONBLOCK flag. In case read() or write() fail,
+		server doesn't get stuck but returns error EAGAIN on failed process
+
+
+- int socket(int domain, int type, int protocol);
+	also: sockfd = socket(int socket_family, int socket_type, int protocol);
+	returns an endpoint for communication (a file descriptor)
+	- domain: AF_INET: IPv4 Internet protocol (224.0.0.0/4), AF_INET6: IPv6 internet protocol (2dfc:0:0:0:0217:cbff:fe8c:00).
+	- type: communication semantics, SOCK_STREAM == sequenced, reliable, two-way, connection-based streams vs:
+	   SOCK_DGRAM: connectionless, unreliable messages of a fixed max length),
+	   modifies also behaviour: SOCK_NONBLOCK, using it saves extra calls to fcntl to achieve the same result.
+	- protocol: specifies a particular protocol to be used with the socket. Normally only one protocol exists to support a
+	    particular socket, e.g. protocol == 0 means that the default protocol number for the domain and socket type is requested
+
+
+- struct protoent* getprotobyname(const char* name);
+	how to map protocol name string to protocol numbers
+	returns a protoent structure for the entry in protocol database that matches the protocol name.
+	protoent structure; returns pointer to protoent structure or null pointer if error occurs / end of file is reaced
+	struct protoent {
+		char* name; //official protocol name
+		char** aliases; //alias list (NULL-terminated)
+		int proto;	//protocol number
+	}
+
+- int setsockopt(int sockfd, int level, int optname, const void* optval, socklen_t optlen);
+	set options for socket; return values: error == -1, success == 0
+	level: to manipulate at sockets API level: SOL_SOCKET; to interpret level by TCP protocol: set to number of TCP (getprotoent(3))
+	socklen_t == accept(2)
+
+- int getsockname(int sockfd, struct sockaddr* restrict addr, socklen_t* restrict addrlen);
+	returns current address to which socket sockfd is bound, in the buffer pointed to by addr. addrlen initialised, to indicate
+	amount of space (in bytes) pointed to by addr. on return: it contains the actual size of the socket address.
+	Return address is truncated if buffer proved is too small, then addrlen returns value greater than was supplied to the call.
+	error == -1, success == 0
+
+- struct hostent* gethostbyname(const char* name);
+	FUNCTION IS OBSOLETE: better us getaddrinfo
+
+- int getaddrinfo(const char* restrict node, const char* restrict service, const struct addrinfo* restrict hints, struct addrinfo** restrict res);
+	node and service identify an internet host and a service, getaddrinfo returns structures, which contain
+	Internet address to be specified towards bind(2) or connect(2)
+           struct addrinfo {
+               int              ai_flags;
+               int              ai_family;
+               int              ai_socktype;
+               int              ai_protocol;
+               socklen_t        ai_addrlen;
+               struct sockaddr *ai_addr;
+               char            *ai_canonname;
+               struct addrinfo *ai_next;
+           };
+			struct sockaddr_in {
+               sa_family_t    sin_family; // address family: AF_INET
+               in_port_t      sin_port;   // port in network byte order
+               struct in_addr sin_addr;   // internet address
+           };
+				socket_families: every socket domain has a domain-specific address structure, family_field indicates do
+					system calls (connect, bin, accept....) which the domain of socket address
+
+- int bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen);
+	when socket is created with socket() it exists in a name space (address family) but has
+	no address assigned to it. bind() assigns the address specified by addr to the socket
+	referred to by sockfd. --> assigning a name to the socket
+
+- htons()
+	convert values between host and network byte order
+	htons() --> converts unsigned short int hostshort from host byte to network byte order
+	htonl() --> converts unsigned int hostlong from host byte to network byte order
+	ntohs() --> converts unsigned short netshort from network byte order to host byte order
+	ntohl() --> converts unsigned int netlong from network byte order to host byte order
+
+
+
+
+
+
+
+
+
+
+
+
+MANPAGE EXPLANATIONS
+socker():
+	why SOCK_STREAM?
+		SOCK_STREAM sockets model duplex-byte streams. They provide reliable, flow-controlled connections between peer application programs.
+		Stream sockets are either active or passive. Active sockets are used by clients who start connection requests with connect(). By default, s
+		ocket() creates active sockets. Passive sockets are used by servers to accept connection requests with the connect() call. You can transform
+		an active socket into a passive socket by binding a name to the socket with the bind() call and by indicating a willingness to accept connections
+		with the listen() call. After a socket is passive, it cannot be used to start connection requests.
+
+	   Sockets of type SOCK_STREAM are full-duplex byte streams.  They do not preserve record boundaries.  A stream socket must be in a
+       connected state before any data may be sent or received on it.  A connection to another socket is created with a connect(2) call.
+       Once connected, data may be transferred using read(2) and write(2) calls or some variant of the send(2) and recv(2) calls.
+       When a session has been completed a close(2) may be performed. Out-of-band data may also be transmitted as described in send(2)
+       and received as described in recv(2).
+
+		The communications protocols which implement a SOCK_STREAM ensure that data is not lost or duplicated.  If a piece of data for
+       which the peer protocol has buffer space cannot be successfully transmitted within a reasonable length of time, then the
+       connection is considered to be dead.  When SO_KEEPALIVE is enabled on the socket the protocol checks in a protocol-specific
+       manner if the other end is still alive.  A SIGPIPE signal is raised if a process sends or receives on a broken stream; this
+       causes naive processes, which do not handle the signal, to exit. SOCK_SEQPACKET sockets employ the same system calls as
+       SOCK_STREAM sockets.  The only difference is that read(2) calls will return only the amount of data requested, and any data
+       remaining in the arriving packet will be discarded.  Also all message boundaries in incoming datagrams are preserved.
+
+       An fcntl(2) F_SETOWN operation can be used to specify a process or process group to receive a SIGURG signal when the out-of-band
+       data arrives or SIGPIPE signal when a SOCK_STREAM connection breaks unexpectedly.  This operation may also be used to set the
+       process or process group that receives the I/O and asynchronous notification of I/O events via SIGIO.  Using F_SETOWN is
+       equivalent to an ioctl(2) call with the FIOSETOWN or SIOCSPGRP argument.
+
+       When the network signals an error condition to the protocol module (e.g., using an ICMP message for IP) the pending error
+       flag is set for the socket.  The next operation on this socket will return the error code of the pending error.  For some
+       protocols it is possible to enable a per-socket error queue to retrieve detailed information about the error; see IP_RECVERR in ip(7).
+
+
+
+		SOCK OPTIONS:
+		socket_options: can be set with setsockopt and read with getsockopt by setting socket level to SOL_SOCKET for all sockets
+		optval == pointer to an int
+       		The arguments optval and optlen are used to access option values for setsockopt().  For getsockopt() they identify a buffer in
+       		which the value for the requested option(s) are to be returned. For getsockopt(), optlen is a value-result argument, initially
+       		containing the size of the buffer pointed to by optval, and modified on return to indicate the actual size of the value
+       		returned.  If no option value is to be supplied or returned, optval may be NULL.
+
+		SO_REUSEPORT: permits multiple AF_INET sockets to be bound to an identical socket address
+					For TCP sockets, this option allows accept(2) load distribution in a multi-threaded server to be improved by
+					using a distinct listener socket for each thread. This provides improved load distribution as compared to
+					traditional techniques such using a single accept(2)ing thread that distributes connections, or having multiple
+					threads that compete to accept(2) from the same socket.
+
+       SO_REUSEADDR: Indicates that the rules used in validating addresses
+              supplied in a bind(2) call should allow reuse of local addresses.  For AF_INET sockets this means that a socket
+              may bind, except when there is an active listening socket bound to the address.  When the listening socket is bound
+              to INADDR_ANY with a specific port then it is not possible to bind to this port for any local address.  Argument is
+              an integer boolean flag.
+
+
+       socket(2) creates a socket, connect(2) connects a socket to a remote socket address, the bind(2) function binds a socket to a
+       local socket address, listen(2) tells the socket that new connections shall be accepted, and accept(2) is used to get a new
+       socket with a new incoming connection.
+
+       send(2) send data over a socket, and recv(2)receive data from a socket.
+       poll(2) and select(2) wait for arriving data or a readiness to send data.  In addition, the standard I/O operations like
+       write(2) and read(2) can be used to read and write data.
+
+       getsockname(2) returns the local socket address and getpeername(2) returns the remote socket address.  getsockopt(2)
+       and setsockopt(2) are used to set or get socket layer or protocol options.  ioctl(2) can be used to set or read some other options.
+
+       close(2) is used to close a socket.  shutdown(2) closes parts of a full-duplex socket connection.
+
+       It is possible to do nonblocking I/O on sockets by setting the O_NONBLOCK flag on a socket file descriptor using fcntl(2).  Then
+       all operations that would block will (usually) return with EAGAIN operation should be retried later); connect(2) will return
+       EINPROGRESS error.  The user can then wait for various events via poll(2) or select(2).
+
+	   |						  I/O events                            │
+       ├───────────┬───────────┬────────────────────────────────────────┤
+       │Event      │ Poll flag │ Occurrence                             │
+       ├───────────┼───────────┼────────────────────────────────────────┤
+       │Read       │ POLLIN    │ New data arrived.                      │
+       ├───────────┼───────────┼────────────────────────────────────────┤
+       │Read       │ POLLIN    │ A connection setup has been completed  │
+       │           │           │ (for connection-oriented sockets)      │
+       ├───────────┼───────────┼────────────────────────────────────────┤
+       │Read       │ POLLHUP   │ A disconnection request has been       │
+       │           │           │ initiated by the other end.            │
+       ├───────────┼───────────┼────────────────────────────────────────┤
+       │Read       │ POLLHUP   │ A connection is broken (only for       │
+       │           │           │ connection-oriented protocols).  When  │
+       │           │           │ the socket is written SIGPIPE is also  │
+       │           │           │ sent.                                  │
+       ├───────────┼───────────┼────────────────────────────────────────┤
+       │Write      │ POLLOUT   │ Socket has enough send buffer space    │
+       │           │           │ for writing new data.                  │
+       ├───────────┼───────────┼────────────────────────────────────────┤
+       │Read/Write │ POLLIN |  │ An outgoing connect(2) finished.       │
+       │           │ POLLOUT   │                                        │
+       ├───────────┼───────────┼────────────────────────────────────────┤
+       │Read/Write │ POLLERR   │ An asynchronous error occurred.        │
+       ├───────────┼───────────┼────────────────────────────────────────┤
+       │Read/Write │ POLLHUP   │ The other end has shut down one        │
+       │           │           │ direction.                             │
+       ├───────────┼───────────┼────────────────────────────────────────┤
+       │Exception  │ POLLPRI   │ Urgent data arrived.  SIGURG is sent   │
+       │           │           │ then.
+       An alternative to poll(2) and select(2) is to let the kernel
+       inform the application about events via a SIGIO signal.  For that
+       the O_ASYNC flag must be set on a socket file descriptor via
+       fcntl(2) and a valid signal handler for SIGIO must be installed
+       via sigaction(2).  See the Signals discussion below.
+		source: https://man7.org/linux/man-pages/man7/socket.7.html (socket(7) or socket(2))
+	 */
