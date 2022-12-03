@@ -17,6 +17,7 @@
 
 #include "User.hpp"
 #include "Channel.hpp"
+#include "Log.hpp"
 
 #define _XOPEN_SOURCE_EXTENDED 1
 // special behaviour for C++ (use feature to test macro)
@@ -30,21 +31,22 @@
 
 class User;
 class Channel;
+class Log;
 
 class Server
 {
 
 private:
-	bool					_running;
 	int						_port;
-	std::string 			_password;
 	int						_socket;
 	int						_timeout;
+	bool					_status;
+	std::string 			_password;
 	std::string				_hostname;
 
-	std::vector<pollfd> 	_pollfds;			//pollfds iterator?
-	std::map<int, User*> 	_users;				// map<user-ID/user-fd, user object>
-	std::map<std::string, Channel*> _channels;
+	std::vector<pollfd> 			_pollfds;			//pollfds iterator?
+	std::map<int, User*> 			_users;				// map<user-ID/user-fd, user object>
+	std::map<std::string, Channel*>	_channels;
 
 
 	// struct sockaddr_in serv_address; // struct in class?
@@ -58,12 +60,12 @@ public:
 	~Server();
 
 	/* Getters of private member types*/
-	bool getStatus() const { return this->_running; }
-	int getPort() const { return this->_port; }
-	std::string& getPassword() const { return this->_password; }
-	int getSocket() const { return this->_socket; }
-	int getTimeout() const { return this->_timeout; }
-	std::string& getHostname() const { return this->_hostname; }
+	int getSocket() const;
+	int getPort() const;
+	std::string getPassword() const;
+	bool getStatus() const;
+	int getTimeout() const;
+	std::string getHostname() const;
 
 	std::vector<User*> getUsers() const;
 	std::map<std::string, Channel*> getChannels() const;
@@ -71,11 +73,12 @@ public:
 
 
 	/* Setters of private member types */
+	void setPort(const std::string& port_str);
+	void setPassword(const std::string& pw);
+	void setHostname();
 	void setStatus(bool status);
-	int set_port(const std::string& port_str);
-	const std::string& set_password(const std::string& pw);
-	int new_socket(void);
-	std::string setHostname();
+
+	int newSocket(void);
 
 	//void addUser();
 	//void acceptUser();

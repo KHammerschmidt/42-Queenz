@@ -2,15 +2,17 @@
 
 Server::Server(char** argv)
 {
-	//set current time and other vars
-	std::cout << "Welcome to our server 42-Queenz..." << std::endl;
+	//set current time and other needed vars
+	Log::printWelcomeToServer();
 
-	this->_port = set_port(argv[1]);
-	this->_password = set_password(argv[2]);
-	this->_socket = new_socket();
-	this->_running = true;
-	this->_timeout = 1 * 60 * 1000; 	//set to 1 minute
-	this->_hostname = set_hostname();
+	setPort(argv[1]);
+	setPassword(argv[2]);
+	setStatus(true);
+	setHostname();
+
+	this->_socket = newSocket();
+
+	this->_timeout = 1 * 60 * 1000; // == 1 minute
 
 	memset(&_pollfds, 0, sizeof(this->_pollfds));
 }
@@ -20,13 +22,18 @@ Server::~Server()
 	std::cout << "Disconnecting... bye bye" << std::endl;
 }
 
-bool Server::getStatus() const { return this->_running; }
-const std::string& Server::set_password(const std::string& pw) { return pw; }
-static std::string& Server::getHostname() const { return this->_hostname; }
-std::string Server::setHostname() {	return ("42-Queenz.42.fr"); }
+int Server::getSocket() const { return this->_socket; }
+int Server::getPort() const { return this->_port; }
+int Server::getSocket() const { return this->_socket; }
+int Server::getTimeout() const { return this->_timeout; }
+bool Server::getStatus() const { return this->_status; }
+std::string Server::getPassword() const { return this->_password; }
+std::string Server::getHostname() const { return this->_hostname; }
 
-
-int Server::set_port(const std::string& port_str)
+void Server::setPassword(const std::string& pw) { this->_password = pw; }
+void Server::setHostname() { this->_hostname = "42-Queenz.42.fr"; }
+void Server::setStatus(bool status) { this->_status = status; }
+void Server::setPort(const std::string& port_str)
 {
 	int port = std::atoi(port_str.c_str());
 
@@ -36,11 +43,10 @@ int Server::set_port(const std::string& port_str)
 		exit(-1); 			//throw Server::port_error("Invalid port paramter\n");
 	}
 
-	return port;
+	this->_port = port;
 }
 
-
-int Server::new_socket(void)
+int Server::newSocket(void)
 {
 	// Create a stream socket to receive incoming connections on (in IPv4 domain/Internet domain with default protocol)
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -97,9 +103,9 @@ int Server::new_socket(void)
 }
 
 
-	//now that connection has been established between stream sockets any data transfer call can be performed
-	// read()/write() within poll loop
-	//out of band data exchange through send()/recv(
+//now that connection has been established between stream sockets any data transfer call can be performed
+// read()/write() within poll loop
+//out of band data exchange through send()/recv(
 
 void Server::run()
 {
@@ -109,14 +115,13 @@ void Server::run()
 	this->_pollfds.back().fd = this->_socket;	// set up initial listening socket
 	this->_pollfds.back().events = POLLIN;		// block until new data to read (even: new data to read)
 
-	std::cout << "Server is listening..." << std::endl;
+	Log::printString("Server is listening...");
 
 	//get User as a vector or User objects
 	std::vector<User*> user_list = getUsers();
 
 
-
-	while (_running)
+	while (this->_status)
 	{
 
 		if (poll(_pollfds.begin().base(), _pollfds.size(), -1) < 0)

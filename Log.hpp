@@ -7,8 +7,14 @@
 // namespace irc
 // {
 
-class Log
+namespace Log
 {
+	// colour printing??? how???
+
+
+	void printWelcomeToServer();
+	void printString(const std::string& msg);
+
 
 	//print error log
 	// print PRIVMSG??

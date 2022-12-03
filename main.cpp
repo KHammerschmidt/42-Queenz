@@ -8,10 +8,10 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
+	// create server object
 	Server server(argv);
 
-	// server.run() //here poll loop
-	// // or:
+	// while server status == running, run the server in an endless loop
 	while (server.getStatus())
 		server.run();
 
