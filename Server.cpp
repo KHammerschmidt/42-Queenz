@@ -16,7 +16,10 @@ int Server::set_port(const std::string& port_str)
 	int port = std::atoi(port_str.c_str());
 
 	if (isdigit(port))
-		return -1;
+	{
+		std::cout << "Error: Invalid port paramter" << std::endl;
+		exit(-1); 			//throw Server::port_error("Invalid port paramter\n");
+	}
 
 	return port;
 }
@@ -26,7 +29,7 @@ void Server::set_password(const std::string& pw)
 	this->password = pw;
 }
 
-void	Server::init(char** argv)
+void	Server::server_init(char** argv)
 {
 	if (set_port(argv[1]) < 0)
 	{
@@ -36,14 +39,14 @@ void	Server::init(char** argv)
 
 	set_password(argv[2]);
 
-	if (set_up_socket() < 0)
-		exit(-1);
+	if (connection_init() < 0)
+		exit (-1);
 }
 
-int Server::set_up_socket(void)
+int Server::connection_init(void)
 {
 	// Create a stream socket to receive incoming connections on (in IPv4 domain/Internet domain with default protocol)
-	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	this->sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0)
 	{
 		std::cout << "ERROR WHEN CREATING SOCKER" << std::endl; 				// throw Server::socket_error("ERROR: SOCKET FAILED \n");

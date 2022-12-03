@@ -31,8 +31,9 @@ class Server
 private:
 	int						port;
 	std::string 			password;
+	int						sockfd;
 
-	std::vector<pollfd> 	pollfds;
+	std::vector<pollfd> 	pollfds;			//pollfds iterator?
 
 	// std::string 	name;
 	// std::string 	admin_name;
@@ -40,6 +41,7 @@ private:
 	// bool			op_rights;
 
 public:
+	typedef std::vector<pollfd>::iterator pollfds_iterator;
 	// std::map<int, User*> user_db;				//	(name, pw, nickname)
 	// std::map<std::string, Channel*> channel_db;	// members, ops, name,
 
@@ -47,10 +49,11 @@ public:
 	Server();
 	~Server();
 
-	void	init(char** argv);
+	void	server_init(char** argv);
 	int		set_port(const std::string& port_str);
 	void 	set_password(const std::string& password);
-	int 	set_up_socket(void);
+	int 	connection_init(void);
+
 	void	execute();
 
 };
