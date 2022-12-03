@@ -14,6 +14,10 @@
 
 #include <arpa/inet.h>
 
+#define _XOPEN_SOURCE_EXTENDED 1
+// special behaviour for C++ (use feature to test macro)
+// to use ip_mreq_structure use: #define _XOPEN_SOURCE 500 or #define _OPEN_SYS_SOCK_EXT3
+
 // class User;
 // class Channel;
 // namespace irc

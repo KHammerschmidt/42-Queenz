@@ -5,14 +5,27 @@
 
 
 - int socket(int domain, int type, int protocol);
+    reference: https://www.ibm.com/docs/en/zos/2.3.0?topic=functions-socket-create-socket
 	also: sockfd = socket(int socket_family, int socket_type, int protocol);
 	returns an endpoint for communication (a file descriptor)
-	- domain: AF_INET: IPv4 Internet protocol (224.0.0.0/4), AF_INET6: IPv6 internet protocol (2dfc:0:0:0:0217:cbff:fe8c:00).
+	- domain: AF_INET: IPv4 Internet protocol (224.0.0.0/4), AF_INET6: IPv6 internet protocol (2dfc:0:0:0:0217:cbff:fe8c:00)
+              specifies communication domain in which communication takes place. This param selects the address family (IPv4)
 	- type: communication semantics, SOCK_STREAM == sequenced, reliable, two-way, connection-based streams vs:
-	   SOCK_DGRAM: connectionless, unreliable messages of a fixed max length),
-	   modifies also behaviour: SOCK_NONBLOCK, using it saves extra calls to fcntl to achieve the same result.
+	        SOCK_DGRAM: connectionless, unreliable messages of a fixed max length),
+	        modifies also behaviour: SOCK_NONBLOCK, using it saves extra calls to fcntl to achieve the same result.
 	- protocol: specifies a particular protocol to be used with the socket. Normally only one protocol exists to support a
-	    particular socket, e.g. protocol == 0 means that the default protocol number for the domain and socket type is requested
+	            particular socket, e.g. protocol == 0 means that the default protocol number for the domain and socket
+                type is requested
+                getprotobyname() returns the protocol number if the protocol's name is known
+    by default socket creates active sockets, passive sockets are used by servers to accept connection requests with connect() call
+    active sockets are used by clients to start a connection request with connect()
+
+    transform active socket in passive one with bind() and indicating willingness to accept connections with listen(),
+    after socket is passive it cannot be used to start connection requests
+
+    exampls:
+    get stream socket in internet domain 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    get stream socket in local domain       int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
 
 
 - struct protoent* getprotobyname(const char* name);
@@ -25,10 +38,33 @@
 		int proto;	//protocol number
 	}
 
-- int setsockopt(int sockfd, int level, int optname, const void* optval, socklen_t optlen);
+
+- int setsockopt(int sockfd, int level, int opt name, const void* optval, socklen_t optlen);
+    level: to manipulate options at socket level, level param must be set to SOL_SOCKET
+            ??? to manipulate options at IPv4 level level must be set to IPPROTO_IP
+            to manipulate options at any other level supply appropriate protocol number for the protocol controlling the option
+            getprotobyname() is used to return the protocol number for a named protocol
+
 	set options for socket; return values: error == -1, success == 0
 	level: to manipulate at sockets API level: SOL_SOCKET; to interpret level by TCP protocol: set to number of TCP (getprotoent(3))
 	socklen_t == accept(2)
+    to set and inspect IP options use setsockopt() and getsockopt(); incoming packets are received with IP header and options intact
+    option_value & open_length params are used to pass data used by the paticular set command
+    option_value: points to a buffer containing the data needed by the set command; param is optional and can be set to NULL if
+                  data is not needed by the command;                        points to an integer
+    option_length: must be set to the size of option_value pointer;         set to size of an integer
+    when integer is nonzero, the option is enabled. with 0 option is disabled. option_value points to a linger structure
+
+    struct  linger {
+        int     l_onoff;                /* option on/off */ nonzero value enables option;
+        int     l_linger;               /* linger time */ specifies amount of time to linger on close (units are seconds)
+    };
+    l_onoff:
+
+    int opt name: OS_REUSEADDR: toggles local address reuse. allows local addressed that are already in use
+    to be bound. this alters the normal algorithm used in bind()
+    a server can then bind the port multiple times as long as ever invocation uses a different local IP address and the
+    wildcard address INADDR_ANY is used only one time per port
 
 - int getsockname(int sockfd, struct sockaddr* restrict addr, socklen_t* restrict addrlen);
 	returns current address to which socket sockfd is bound, in the buffer pointed to by addr. addrlen initialised, to indicate
@@ -36,8 +72,10 @@
 	Return address is truncated if buffer proved is too small, then addrlen returns value greater than was supplied to the call.
 	error == -1, success == 0
 
+
 - struct hostent* gethostbyname(const char* name);
 	FUNCTION IS OBSOLETE: better us getaddrinfo
+
 
 - int getaddrinfo(const char* restrict node, const char* restrict service, const struct addrinfo* restrict hints, struct addrinfo** restrict res);
 	node and service identify an internet host and a service, getaddrinfo returns structures, which contain
@@ -60,13 +98,21 @@
 				socket_families: every socket domain has a domain-specific address structure, family_field indicates do
 					system calls (connect, bin, accept....) which the domain of socket address
 
+
 - int bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen);
-	when socket is created it exists in a name space (address family) but has
-	no address assigned to it. bind() assigns the address specified by addr to the socket
-	referred to by sockfd. --> described as: assigning a name to the socket
+	when socket is created it exists in a name space (address family) but has no address assigned to it.
+    bind() assigns the address specified by addr to the socket referred to by sockfd.
+    --> described as: assigning a name to the socket
+    bind() lets the application specify the networks from which it is willing to accept connection requests
 
     When a process wants to receive new incoming connections, it should bin a socket to a local interface
 	address. When INADDR_ANY is specified in bind call, the socket will be bound to all local interfaces.
+
+    serv_address.sin_addr.s_addr = htonl(INADDR_ANY);
+    setting the Internet Address field in address structure to the constant INADDR_ANY (defined in <netinet/in.h>)
+    this means that the application wants to receive connection requests from any network
+    (instead of connecting the Internet address in the address structure to the Internet address of a network interface)
+
 
 - htons()
 	convert values between host and network byte order
@@ -74,6 +120,7 @@
 	htonl() --> converts unsigned int hostlong from host byte to network byte order
 	ntohs() --> converts unsigned short netshort from network byte order to host byte order
 	ntohl() --> converts unsigned int netlong from network byte order to host byte order
+
 
 - struct sockaddr_in
     struct sockaddr_in {
@@ -93,20 +140,61 @@
     only use sin_addr of struct as that is usually the only thing that is defined.
     with IPv4 s_addr is a 4-byte number that represents one digit in an IP address per byte.
 
+
 - in_addr_t inet_addr(const char* cp);
     converts the Internet host address cp from IPv4 into binary data in network byte order. if invalid,
     INADDR_NONE (-1) is returned. PROBLEMATIC: as -1 is a valid address (255.255.255.255).
+
 
 - char* inet_ntoa(struct in_addr in);
     converts the Internet host address in, given in a network byte order, to a string in UPv4 notation.
     The string is returned in a static allocated buffer.
 
+
 - int poll(struct pollfd* fds, nfds_t nfds, int timeout);
+    nfds: number of items to be monitored
+    timeout: < 0: infinite timeout, timeout == 0 means poll() returns immediately
+
     struct pollfd {
     int   fd;         /* file descriptor */
     short events;     /* requested events */
     short revents;    /* returned events */
     };
+
+    int fd < 0: events field is ignored and revents field returns 0 (used when ignoring a single poll, negative fd field)
+    events: input paramter (bit mask) specifying the events for the fd (== 0: then revents only POLLHUP, POLLERR and POLLNVAL)
+    revents: output parameter, filled by the kernal with the events that actually occured.
+
+    if no error occureed and no events occured on any fds, then poll blocks --> but we put it to O_NONBLOCKING
+        (block until: fd is ready to execute, call is interrupted by signal handler, timeout expires)
+
+
+    poll waits for fds to become ready to perform I/O.
+
+    return values: on success number of elemtns in the pollfds
+    whose revents fields have been to nonzero value (indicating event or error)
+    return == 0 means system call timed out; -1 means error
+
+- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -184,7 +272,7 @@ socker():
        all operations that would block will (usually) return with EAGAIN operation should be retried later); connect(2) will return
        EINPROGRESS error.  The user can then wait for various events via poll(2) or select(2).
 
-	   |						  I/O events                            │
+	   |                          I/O events                            │
        ├───────────┬───────────┬────────────────────────────────────────┤
        │Event      │ Poll flag │ Occurrence                             │
        ├───────────┼───────────┼────────────────────────────────────────┤
