@@ -8,10 +8,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	Server server = Server();
-	server.server_init(argv);
-
-	// Server server = Server(argv);
+	Server server(argv);
 
 	// while (true)
 	server.execute(); //here poll loop
