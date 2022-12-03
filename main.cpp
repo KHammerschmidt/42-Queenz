@@ -10,12 +10,10 @@ int main(int argc, char** argv)
 
 	Server server(argv);
 
-
+	// server.run() //here poll loop
+	// // or:
 	while (server.getStatus())
-	{
-		server.execute(); //here poll loop
-	}
-
+		server.run();
 
 	return 0;
 }

@@ -22,13 +22,13 @@ private:
 	std::string name;
 	std::string	topic;
 
-	std::string mode;
+	// std::string mode;
 
-	std::map<std::string, User*> current_members; 	//list of members in channel
-	std::map<std::string, User*> channel_operators; // channel operators can perform
-	std::map<std::string, User*> channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator
+	// std::map<std::string, User*> current_members; 	//list of members in channel
+	// std::map<std::string, User*> channel_operators; // channel operators can perform
+	// std::map<std::string, User*> channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator
 
-	std::map<std::string, Channel*>	channel_list;	// list of all current channels
+	// std::map<std::string, Channel*>	channel_list;	// list of all current channels
 
 public:
 	Channel();

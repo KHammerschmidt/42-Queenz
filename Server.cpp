@@ -10,6 +10,9 @@ Server::Server(char** argv)
 	this->_socket = new_socket();
 	this->_running = true;
 	this->_timeout = 1 * 60 * 1000; 	//set to 1 minute
+	this->_hostname = set_hostname();
+
+	memset(&_pollfds, 0, sizeof(this->_pollfds));
 }
 
 Server::~Server()
@@ -17,8 +20,11 @@ Server::~Server()
 	std::cout << "Disconnecting... bye bye" << std::endl;
 }
 
-bool getStatus() const { return this->_running; }
+bool Server::getStatus() const { return this->_running; }
 const std::string& Server::set_password(const std::string& pw) { return pw; }
+static std::string& Server::getHostname() const { return this->_hostname; }
+std::string Server::setHostname() {	return ("42-Queenz.42.fr"); }
+
 
 int Server::set_port(const std::string& port_str)
 {
@@ -95,22 +101,49 @@ int Server::new_socket(void)
 	// read()/write() within poll loop
 	//out of band data exchange through send()/recv(
 
-void Server::execute()
+void Server::run()
 {
-	//initialise pollfd struct
-	memset(this->_pollfds, 0, sizeof(this->pollfds));
-
+	//initialise pollfd struct in Constructor
 	//pollfd struct is included in header poll.h
 	this->_pollfds.push_back(pollfd());			//add to vector<pollfds> an element to the end called pollfd (woher kommen die variablen?)
-	this->_pollfds.back().fd = this->_sockfd;	// set up initial listening socket
+	this->_pollfds.back().fd = this->_socket;	// set up initial listening socket
 	this->_pollfds.back().events = POLLIN;		// block until new data to read (even: new data to read)
 
+	std::cout << "Server is listening..." << std::endl;
 
-	// loop
-	while (true)
+	//get User as a vector or User objects
+	std::vector<User*> user_list = getUsers();
+
+
+
+	while (_running)
 	{
-		std::cout << "Waiting for poll!" << std::endl;
-		int rc = poll(this->pollfds, this->_timeout);
+
+		if (poll(_pollfds.begin().base(), _pollfds.size(), -1) < 0)
+			std::cout << "Error: while polling from sockfd" << std::endl;	//throw Server::runtime_error(std)("Error while polling from fd.");
+
+		std::vector<pollfd>::iterator iter;
+		for (iter = this->_pollfds.begin(); iter != this->_pollfds.end(); iter++)
+		{
+			if (iter->events == 0)		//this means to revents to perform
+				continue;
+
+			if ((iter->events & POLLHUP) == POLLHUP)
+			{
+				//disconnect
+				break;
+			}
+
+			if ((iter->revents & POLLIN) == POLLIN)
+			{
+				if (iter->fd == this->_socket)
+				{
+					//connect;
+					break;
+				}
+			}
+			// clientMessage(iter->fd);
+		}
 	}
 }
 
@@ -121,3 +154,30 @@ void Server::execute()
 	// std::string hostname = gethostbyname();
 	// std::cout << hostname << std::endl;
 //open points: sethostname, gethostname in Client
+
+
+
+
+/* Function returns a vector with User objects, extracted from member type std::map<int, User*>. */
+std::vector<User*> Server::getUsers()
+{
+	std::vector<User *>users = std::vector<User*>();
+	for (std::map<int, User *>::iterator iter = this->users.begin(); iter != this->users.end(); iter++)
+		users.push_back(iter->second);
+
+	return users;
+}
+
+/* Function prints User credentials: nickname, username, fullname fd */
+void Server::printUser()
+{
+	for (std::map<int, User*>::iterator iter = users.begin(); iter != users.end(); iter++)
+	{
+		std::cout << "nickname: " << iter.getNickname() << " | username: " << iter->getUsername() << " | fullname: " << iter->getFullName();
+		std::cout << " | port: " << iter.getFD() << std::endl;
+	}
+
+}
+
+// addUser
+// deleteUser

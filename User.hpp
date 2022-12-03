@@ -18,17 +18,17 @@ private:
 
 	std::vector<polldfs>::iterator	pollfds_iterator;
 
-	int	_fd;				//every user has their own fd
-	std::string buffer;		//command Zwischenspeicher
-	int	_port;				//port
-	ClientState _state;		//what are the states?
+	// int	_fd;				//every user has their own fd
+	// std::string buffer;		//command Zwischenspeicher
+	// int	_port;				//port
+	// ClientState _state;		//what are the states?
 
-	enum {channel_creator, channel_operator, channel_member};
+	// enum {channel_creator, channel_operator, channel_member};
 
-	std::map<Channel&, rights>			channelRights;		//list of rights connected to user and channel
-	std::map<std::string, Channel*>		channel_lst;		//list of channels that user is member of
+	// std::map<Channel&, rights>			channelRights;		//list of rights connected to user and channel
+	// std::map<std::string, Channel*>		channel_lst;		//list of channels that user is member of
 
-	std::string _channel_name: 		//name + @ (don't know which name)
+	// std::string _channel_name: 		//name + @ (don't know which name)
 
 
 public:
@@ -52,7 +52,7 @@ public:
 User::User(const std::string& nick, const std::string& user, const std::string& fullname)
 	: _nickname(nick), _username(user), _fullname(fullname)
 {
-
+	this->_hostname = Server::getHostname();
 }
 
 std::string setNickUserHost()
