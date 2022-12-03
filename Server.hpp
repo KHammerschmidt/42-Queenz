@@ -29,12 +29,13 @@ class Server
 {
 
 private:
-	int						port;
-	std::string 			password;
-	int						sockfd;
+	int						_port;
+	std::string 			_password;
+	int						_socket;
 
 	std::vector<pollfd> 	pollfds;			//pollfds iterator?
 
+	// struct sockaddr_in serv_address;
 	// std::string 	name;
 	// std::string 	admin_name;
 	// std::string 	admin_pw;
@@ -46,13 +47,12 @@ public:
 	// std::map<std::string, Channel*> channel_db;	// members, ops, name,
 
 public:
-	Server();
+	Server(char** argv);
 	~Server();
 
-	void	server_init(char** argv);
-	int		set_port(const std::string& port_str);
-	void 	set_password(const std::string& password);
-	int 	connection_init(void);
+	int					set_port(const std::string& port_str);
+	const std::string&	set_password(const std::string& pw);
+	int 				new_socket(void);
 
 	void	execute();
 
