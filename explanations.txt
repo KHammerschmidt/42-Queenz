@@ -72,7 +72,23 @@
 	ntohs() --> converts unsigned short netshort from network byte order to host byte order
 	ntohl() --> converts unsigned int netlong from network byte order to host byte order
 
+- struct sockaddr_in
+    struct sockaddr_in {
+    short            sin_family;   // e.g. AF_INET
+    unsigned short   sin_port;     // e.g. htons(3490)
+    struct in_addr   sin_addr;     // see struct in_addr, below
+    char             sin_zero[8];  // zero this if you want to
+    };
 
+    struct in_addr {
+        unsigned long s_addr;  // load with inet_aton()
+    };
+
+    Basic structures for all syscalls/functions that deal with internet addresses. In memory, struct
+    sockaddr_in is the same size as struct sockaddr. Ability to cast the pointer from one type to the other.
+    sin_zero without any purpose.
+    only use sin_addr of struct as that is usually the only thing that is defined.
+    with IPv4 s_addr is a 4-byte number that represents one digit in an IP address per byte.
 
 
 

@@ -7,11 +7,15 @@
 #include <vector>
 
 #include <netinet/in.h>
+#include <poll.h>
+#include <sys/poll.h>
+#include <sys/socket.h>
+#include <fcntl.h>
 
 // class User;
 // class Channel;
-namespace irc
-{
+// namespace irc
+// {
 
 class Server
 {
@@ -30,13 +34,15 @@ public:
 	// std::map<std::string, Channel*> channel_db;	// members, ops, name,
 
 public:
-	Server(const std::string& port, const std::string& pw) {};
-	int		init_server(const std::string& port, const std::string& password);
+	Server(const std::string& port, const std::string& pw);
+	~Server();
 
+	void	init_server();
 	int		set_port(const std::string& port_str);
-	void	set_password(const std::string& password);
-	int Server::set_up_socket(void)
+	void 	set_password(const std::string& password);
+	void 	set_up_socket(void);
+
 };
 
-} // end namespace ft
+// } // end namespace ft
 #endif
