@@ -1,26 +1,21 @@
 #ifndef CHANNEL_HPP
-# define CHANNE_HPP
+# define CHANNEL_HPP
 
 #include <map>
 #include <string>
 
-#include "User.hpp"
-#include "Server.hpp"
-
 class User;
 class Server;
 
-enum {channel_creator, channel_operator, channel_member};
+// enum {channel_creator, channel_operator, channel_member};
 
-// namespace irc
-// {
 
 class Channel
 {
 
 private:
-	std::string name;
-	std::string	topic;
+	std::string _name;
+	std::string	_topic;
 
 	// std::string mode;
 
@@ -34,7 +29,7 @@ public:
 	Channel();
 	~Channel();
 
-	void setName(const std::string& name);
+	/* void setName(const std::string& name);
 	std::string& getName();
 
 	void setTopic(const std::string& topic);
@@ -81,14 +76,12 @@ public:
 	//     k - set/remove the channel key (password);
 	//     l - set/remove the user limit to channel;
 	// I deleted all the modes that are not relevant for us (e.g. channel flags and modes)
-
+ */
 
 
 
 	// BITTE UPDATE OB ICH ETWAS VON DEN CHANNELS VERGESSEN HABE :)
 };
 
-
-// }	//end namespace irc
 
 #endif

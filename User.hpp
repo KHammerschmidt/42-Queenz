@@ -1,83 +1,54 @@
 #ifndef USER_HPP
 #define USER_HPP
 
-// namespace irc
-// {
+#include "Server.hpp"
+#include "Channel.hpp"
+
+#include <sstream>
 
 class User
 {
 
 private:
-	std::string _username;
-	std::string _nickname;
-	std::string	_fullname;
+	std::string 		_username;
+	std::string 		_nickname;
+	std::string			_fullname;
+	std::string 		_hostname;
+	int	_fd;				//every user has their own fd
+	int					_port;
+	// std::string 		_hostaddr;
+	std::string			_nick_user_host;
+	bool				_state;
 
-	// std::string	_nick_user_host;	//need hostname for that
-	// std::string _hostname;	--> gethostbyname(char* name);	//42-Queenz.42.fr
-	// std::string _hostaddr;
+	std::vector<pollfd>::iterator	pollfds_iterator;
 
-	std::vector<polldfs>::iterator	pollfds_iterator;
-
-	// int	_fd;				//every user has their own fd
-	// std::string buffer;		//command Zwischenspeicher
-	// int	_port;				//port
-	// ClientState _state;		//what are the states?
+	std::string buffer;		//command Zwischenspeicher
+	std::map<int, Channel *> channels;
 
 	// enum {channel_creator, channel_operator, channel_member};
 
 	// std::map<Channel&, rights>			channelRights;		//list of rights connected to user and channel
 	// std::map<std::string, Channel*>		channel_lst;		//list of channels that user is member of
-
 	// std::string _channel_name: 		//name + @ (don't know which name)
 
 
 public:
-	User(const std::string& nick, const std::string& user, const std::string& fullname);
+	User(int fd, int port);
 	~User();
 
 	std::string getNickname() const;
-	std::string getUsername() const;
+	std::string getUsername();
 	std::string getFullname() const;
 
 	void setNickname();
 	void setUsername();
 	void setFullname();
 
-	std::string setNickUserHost()
+	std::string setNickUserHost();
 
-	// std::string getHostname() const;
-	void setHostname();
+	bool getState();
+	void receive();
+	void registerNewUser();
 };
-
-User::User(const std::string& nick, const std::string& user, const std::string& fullname)
-	: _nickname(nick), _username(user), _fullname(fullname)
-{
-	this->_hostname = Server::getHostname();
-}
-
-std::string setNickUserHost()
-{
-	std::stringstream ss;
-
-	ss << this->_nickname + "!" + this->_username + "@" + Server::hostname;
-
-	return ss.str;
-}
-
-// void User::setHostname()
-// {
-// 	this->_hostname = Server::getHostname();
-// 	this->_hostname = gethostbyname();
-// }
-
-// std::string User::getHostname()
-// {
-// 	return Server::getHostname();
-
-
-
-// }	// end namespace irc
-
-
 
 #endif

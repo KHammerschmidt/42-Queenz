@@ -4,23 +4,14 @@
 #include <iostream>
 #include <string>
 
-// namespace irc
-// {
-
-namespace Log
+class Log
 {
 	// colour printing??? how???
-
+public:
 
 	void printWelcomeToServer();
 	void printString(std::string msg);
-
-
-	//print error log
-	// print PRIVMSG??
-
+	void printStringNoNewline(std::string msg);
 };
-
-// }	// end namespace irc
 
 #endif
