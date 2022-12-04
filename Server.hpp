@@ -45,6 +45,7 @@ private:
 	std::map<int, User*> 			_users;				// map<user-ID/user-fd, user object>
 	std::map<std::string, Channel*>	_channels;
 
+	std::vector<pollfd>::iterator 	iter_poll;
 	int						_error;
 	time_t					_last_ping;
 

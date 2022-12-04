@@ -98,7 +98,7 @@ int Server::newSocket(void)
 
 void Server::run()
 {
-
+	// init_poll();
 	//initialise pollfd struct in Constructor
 	this->_pollfds.push_back(pollfd());				//add to vector<pollfds> the struct pollfd from <sys/poll.h>
 	memset(&_pollfds, 0, sizeof(this->_pollfds));
@@ -106,47 +106,36 @@ void Server::run()
 	this->_pollfds.back().events = POLLIN;			// the events I'm interested in (POLLIN) if a fd is ready to listen to then we read/recv from it
 
 	Log::printString("Server is listening...");
-
 	// std::vector<User*> user_list = getUsers();		//get User as a vector or User objects		//necessary?
 
 	while (this->_status)
 	{
-		//poll() function returns value of 1 if the read was succesful and I made a timeout of 100ms
-		// (just a random number, I know that the data are coming at much higher rate)
-		//With that, you will only read the data from socket whenever poll returns a value greater that 0.
-
-		// to test if we can read from the fd, if yes then we execute recv or send otherwise we continue to not get blocked
-		// within blocking system call
 		// timeout: nach 3 Minuten schließt sich wieder der server wenn kein request kommt
-		if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)	//timeout? with -1 it is not blocking // standard von IBM ist 3 Minuten
+		// with -1 it is not blocking // standard von IBM ist 3 Minuten
+		if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)
 		{
 			std::cout << "Error: while polling from sockfd" << std::endl;
 			//throw Server::runtime_error(std)("Error while polling from fd.");
 			close(this->_socket);
-			exit(-1);	//return ;
+			break ;
 		}
 
-		//send ping
+		//send ping		//necessary?
 
-		std::vector<pollfd>::iterator iter;
-		for (iter = this->_pollfds.begin(); iter != this->_pollfds.end(); iter++)
+		for (iter_poll = this->_pollfds.begin(); iter_poll != this->_pollfds.end(); iter_poll++)
 		{
-			if (iter->events == 0)		//this means to revents to perform
+			if (iter_poll->events == 0)				// this means the file descriptor is not yet ready to be read
 				continue;
 
-			if (iter->revents != POLLIN)		//e.g. POLLHUP (in explanations.txt)
+			if (iter_poll->revents != POLLIN)		//e.g. POLLHUP (in explanations.txt) when POLLHUP then disconnect and break
 			{
-				// if ((iter->events & POLLHUP) == POLLHUP)			//client closed his end of the connection, then disconnet and close
-				// {
-				// 	//disconnect
-					// 	break;
-				// }
 				setServerStatus(false);
 				Log::printString("Error: unexpected result. Nothing to read. Connection will be disabled.");
 				break ;
 			}
 
-			if (iter->fd == this->_socket)
+
+			if (iter_poll->fd == this->_socket)
 			{
 				Log::printString("Listening socket is readable");
 				Log::printString("Accept all incoming connections that are queued on the listening socket before calling poll again");
@@ -164,38 +153,34 @@ void Server::run()
 					break ;
 				}
 
-			int fd;
-			sockaddr_in s_address = {};
-			socklen_t s_size = sizeof(s_address);
-
-
-			struct sockaddr_in address;
-			socklen_t csin_len = sizeof(address);
-			int fd = accept(this->fd, (struct sockaddr *)&address, &csin_len);
-			if (fd == -1)
-				return;
-
-			users[fd] = new User(fd, address);
-			if (!config.get("password").length())
-				users[fd]->setStatus(REGISTER);
-
-			pfds.push_back(pollfd());
-			pfds.back().fd = fd;
-			pfds.back().events = POLLIN;
-
-
 
 				// accept returns a new fd that displays the connection
 				// add incoming connection to pollfds struct
+				struct sockaddr_in s_address;
+				socklen_t s_size = sizeof(s_address);
 
-				this->_pollfds.push_back
-				          printf("  New incoming connection - %d\n", new_sd);
-          fds[nfds].fd = new_sd;
-          fds[nfds].events = POLLIN;
-          nfds++;
-				          /* Add the new incoming connection to the            */
-          /* pollfd structure                                  */
-          /*****************************************************/
+				Log::printString("New incoming connection");
+
+				// users[fd] = new User(fd, address);
+				// if (Bedingung erfüllt)		//valid username / valid password??
+				// 	// user[fd]->register();
+
+
+
+				User* new_user = new User(fd, this->_hostname, ntohs(s_address.sin_port));
+				users.insert(std::make_pair(fd, new_user));
+				std::cout << "New User " << new_user->getUsername() << " connected on port: " << fd << std::endl; //new_user.getPort();
+
+				this->_pollfds.push_back(pollfd());
+				this->_pollfds.back().fd = fd;
+				this->_pollfds.back().events = POLLIN;
+
+				std::cout << "New User " << inet_ntoa(address.sin_addr) << ":" << ntohs(address.sin_port) << " (" << fd << ")" << std::endl;
+
+				Client *client = new Client(fd, hostname, ntohs(s_address.sin_port));
+				_clients.insert(std::make_pair(fd, client));
+
+
 
 
 			}
