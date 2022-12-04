@@ -19,8 +19,7 @@ int main(int argc, char** argv)
 	// kennst du dich mit signals aus? :D
 	signal(SIGINT, handler);
 
-	// while server status == running, run the server in an endless loop
-	while (server.getStatus())
+	while (server.getStatus() == true)
 		server.run();
 
 	return 0;

@@ -45,7 +45,7 @@ private:
 	std::map<int, User*> 			_users;				// map<user-ID/user-fd, user object>
 	std::map<std::string, Channel*>	_channels;
 
-	std::vector<pollfd>::iterator 	iter_poll;
+	std::vector<pollfd>::iterator 	pollds_iterator;
 	int						_error;
 	time_t					_last_ping;
 
@@ -66,10 +66,9 @@ public:
 	Server(char** argv);
 	~Server();
 
-	/* Setters of private member types */
-	void setPort(const std::string& port_str);
-	void setPassword(const std::string& pw);
-	void setHostname();
+	/* Set member types and helper functions for input handling */
+	int newSocket(void);
+	void checkPort(std::string port_str);
 	void setServerStatus(bool status);
 
 	/* Getters of private member types*/
@@ -79,6 +78,7 @@ public:
 	bool getStatus() const;
 	int getTimeout() const;
 	std::string getHostname() const;
+
 
 	/* Get other class members: User, Channel, Pollfds */
 	User* getUser(const std::string name) const;	//nickname or username?
@@ -97,7 +97,6 @@ public:
 	std::vector<pollfd> getPollfds() const;
 
 	void run();
-	int newSocket(void);
 	void error(int err_code);
 
 
