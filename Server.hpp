@@ -26,9 +26,6 @@
 // class User;
 // class Channel;
 
-// namespace irc
-// {
-
 class User;
 class Channel;
 class Log;
@@ -48,16 +45,28 @@ private:
 	std::map<int, User*> 			_users;				// map<user-ID/user-fd, user object>
 	std::map<std::string, Channel*>	_channels;
 
+	int						_error;
+	time_t					_last_ping;
 
-	// struct sockaddr_in serv_address; // struct in class?
-	// server operator: std::string name; std::string admin_name; std::string admin_pw; bool op_rights;
+	void acceptUser();
+	void sendPing();
+
+	void displayUsers();
+	void displayChannels();
+
 
 public:
-	typedef std::vector<pollfd>::iterator pollfds_iterator;
+	// typedef std::vector<pollfd>::iterator pollfds_iterator;
 
 public:
 	Server(char** argv);
 	~Server();
+
+	/* Setters of private member types */
+	void setPort(const std::string& port_str);
+	void setPassword(const std::string& pw);
+	void setHostname();
+	void setServerStatus(bool status);
 
 	/* Getters of private member types*/
 	int getSocket() const;
@@ -67,30 +76,48 @@ public:
 	int getTimeout() const;
 	std::string getHostname() const;
 
+	/* Get other class members: User, Channel, Pollfds */
+	User* getUser(const std::string name) const;	//nickname or username?
 	std::vector<User*> getUsers() const;
-	std::map<std::string, Channel*> getChannels() const;
-	std::vector<pollfd> getPollfds() const;
-
-
-	/* Setters of private member types */
-	void setPort(const std::string& port_str);
-	void setPassword(const std::string& pw);
-	void setHostname();
-	void setStatus(bool status);
-
-	int newSocket(void);
-
-	//void addUser();
-	//void acceptUser();
-	//void deleteUser();
+	void deleteUser();
+	// void addUser();
+	// bool acceptUser();
 	void printUser();
 
+	bool isChanel(std::string const& name);
+	Channel& getChannel(std::string name) const;
+	void deleteChannel(Channel channel);
+	Channel* createChannel(const std::string& name, const std::string& password, const User* user);
+	std::vector<Channel *> getChannels() const;
 
+	std::vector<pollfd> getPollfds() const;
 
 	void run();
+	int newSocket(void);
+	void error(int err_code);
 
 
+	// void onClientDisconnect(int fd);
+	// void onClientConnect();
+	// void onClientMessage(int fd);
+
+	// std::string readMessage(int fd);
+	// Config &getConfig();
+	// std::string getUpTime();
 };
 
-// } // end namespace ft
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+	// struct sockaddr_in serv_address; // struct in class?
+	// server operator: std::string name; std::string admin_name; std::string admin_pw; bool op_rights;

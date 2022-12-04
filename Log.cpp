@@ -6,7 +6,7 @@ void Log::printWelcomeToServer()
 }
 
 
-void Log::printString(const std::string& msg)
+void Log::printString(std::string msg)
 {
 	std::cout << msg << std::endl;
 }

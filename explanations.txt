@@ -173,6 +173,14 @@
     whose revents fields have been to nonzero value (indicating event or error)
     return == 0 means system call timed out; -1 means error
 
+
+    POLLHUP
+            Hang up (only returned in revents; ignored in events). Note that when reading from a channel such as a pipe or a
+            stream socket, this event merely indicates that the peer closed its end of the channel.  Subsequent reads from the
+            channel will return 0 (end of file) only after all outstanding data in the channel has been consumed.
+
+
+
 -
 
 
