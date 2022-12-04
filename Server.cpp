@@ -1,14 +1,13 @@
 #include "Server.hpp"
 
-int Server::getSocket() const { return this->_socket; }
+int Server::getSocket() const { return this->_sockfd; }
 int Server::getPort() const { return this->_port; }
 int Server::getTimeout() const { return this->_timeout; }
 bool Server::getStatus() const { return this->_serverRunningStatus; }
 std::string Server::getPassword() const { return this->_password; }
 std::string Server::getHostname() const { return this->_hostname; }
 
-Server::~Server() { std::cout << "Disconnecting... bye bye" << std::endl; }
-// delete channels / delete users???
+Server::~Server() { std::cout << "Disconnecting... bye bye" << std::endl; }	// delete channels / delete users // more to add???
 
 Server::Server(char** argv)
 {
@@ -16,24 +15,17 @@ Server::Server(char** argv)
 
 	setPort(argv[1]);
 	this->_password = argv[2];
-
 	this->_hostname = "42-Queenz.42.fr";
-
-	this->_socket = newSocket();
-	if (this->_socket < 0)
-		serverError(1);
-	setSocketSettings();
-
+	
+	newSocket();
 	this->_timeout = 3 * 60 * 1000;	// Standard timeout: nach 3 Minuten schließt sich wieder der server wenn kein request kommt
+	this->_error = -1;
 
 	this->_pollfds.push_back(pollfd());
 	memset(&_pollfds, 0, sizeof(this->_pollfds));
-	this->_pollfds.back().fd = this->_socket;
+	this->_pollfds.back().fd = this->_sockfd;
 	this->_pollfds.back().revents = POLLIN;
 
-	this->_error = -1;
-
-	// this->_lastPing = ;
 	// this->_online;
 	// this->_max_online;
 }
@@ -49,27 +41,21 @@ void Server::setPort(std::string port_str)
 	if (isdigit(port))
 		serverError(0);
 
-	setServerStatus(true);
 	this->_port = port;
+	setServerStatus(true);
 }
 
-int Server::newSocket(void)
+void Server::newSocket(void)
 {
-	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0)
-		return -1;
-
-	return sockfd;
-}
-
-void Server::setSocketSettings(void)
-{
-	int enable = 1;
-
-	if (setsockopt(this->_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) != 0)
+	this->_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (this->_sockfd < 0)
 		serverError(1);
 
-	if (fcntl(this->_socket, F_SETFL, O_NONBLOCK) < 0)
+	int enable = 1;
+	if (setsockopt(this->_sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) != 0)
+		serverError(1);
+
+	if (fcntl(this->_sockfd, F_SETFL, O_NONBLOCK) < 0)
 		serverError(1);
 
 	struct sockaddr_in serv_address;
@@ -78,16 +64,17 @@ void Server::setSocketSettings(void)
 	serv_address.sin_addr.s_addr = htonl(INADDR_ANY);
 	serv_address.sin_port = htons(this->_port);
 
-	if (bind(this->_socket, (struct sockaddr *) &serv_address, sizeof(serv_address)) < 0)
+	if (bind(this->_sockfd, (struct sockaddr *) &serv_address, sizeof(serv_address)) < 0)
 		serverError(1);
 
-	if ((listen(this->_socket, serv_address.sin_port) < 0))
+	if ((listen(this->_sockfd, serv_address.sin_port) < 0))
 		serverError(1);
 }
 
 void Server::serverError(int code)
 {
-	if (code == -1)
+	// implement enum { NO_ERROR = -1, INPUT_PARAM = 0; ERROR_SOCKET_CONNECTION = 2, ERROR_POLL = 3, ERROR_ACCEPT = 4, ANOTHER_ERROR = 5}
+	if (code == -1)		
 		return ;
 	else if (code == 0)
 		log.printString("Error: Invalid input paramter");
@@ -100,7 +87,7 @@ void Server::serverError(int code)
 	else
 		log.printString("Another error.");
 
-	close(this->_socket);
+	close(this->_sockfd);
 	setServerStatus(false);
 	exit(-1);
 }
@@ -115,10 +102,10 @@ void Server::run()
 		if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)
 			serverError(2);
 
-		// loop through vector pollfds that list all file descriptors on open connections
+		// loop through vector pollfds that lists all file descriptors on open connections
 		for (_pfds_iterator = this->_pollfds.begin(); _pfds_iterator != this->_pollfds.end(); _pfds_iterator++)
 		{
-			// this means the file descriptor is not yet ready to be read
+			// this means the file descriptor is not yet ready to be read, 
 			if (_pfds_iterator->events == 0)
 				continue;
 
@@ -127,18 +114,12 @@ void Server::run()
 				registerNewUser();
 			else
 			{
+				// when POLLIN on other pollfd.fd than [0] it means a command (PRIVMSG, etc..) has been send.
 				for (std::vector<pollfd>::iterator iter_poll = _pollfds.begin(); iter_poll != _pollfds.end(); iter_poll++)
 				{
 					if (iter_poll->revents == POLLIN)
-						this->_users[iter_poll->fd]->receive();		// receive(this)
+						this->_users[iter_poll->fd]->receive();		// receive(this)	// implement receive Funktion in User
 				}
-			}
-
-			if (_pfds_iterator->revents != POLLIN)		//e.g. POLLHUP (in explanations.txt) when POLLHUP then disconnect and break
-			{
-				setServerStatus(false);
-				log.printString("Error: unexpected result. Nothing to read. Connection will be disabled.");
-				break ;
 			}
 		}
 	}
@@ -151,12 +132,11 @@ void Server::registerNewUser()
 	struct sockaddr_in s_address;
 	socklen_t s_size = sizeof(s_address);
 
-	// accept the incoming connetions, accept() returns a new fd that displays the connection that has to be added to pollfds vector
-	int fd = accept(this->_socket,(sockaddr *) &s_address, &s_size);
+	// accept the incoming connetion; accept() returns a new fd that displays the connection that has to be added to pollfds vector
+	int fd = accept(this->_sockfd,(sockaddr *) &s_address, &s_size);
 	if (fd < 0)
 	{
-		// differentiation to EWOULDBLOCK????
-		// If the socket is marked nonblocking and no pending connections are present on the queue, accept() fails with the error EAGAIN or EWOULDBLOCK.
+		// differentiation to EWOULDBLOCK???? // if the socket is marked nonblocking and no pending connections are present on the queue, accept() fails with the error EAGAIN or EWOULDBLOCK.
 		log.printString("Error: accept() failed");
 		serverError(2);
 	}
@@ -166,7 +146,7 @@ void Server::registerNewUser()
 	User* new_user = new User(fd, ntohs(s_address.sin_port));
 	if (new_user->getState() == false)
 	{
-		delete new_user;
+		delete new_user; // or delete in Destructor
 		return ;
 	}
 
@@ -182,6 +162,9 @@ void Server::registerNewUser()
 	this->_pollfds.back().events = POLLIN;
 
 }
+
+
+
 
 /* Function returns a vector with User objects, extracted from member type std::map<int, User*>. */
 // std::vector<User*> Server::getUsers() const
@@ -222,7 +205,7 @@ void Server::registerNewUser()
 	//initialise pollfd struct in Constructor
 	// this->_pollfds.push_back(pollfd());				//add to vector<pollfds> the struct pollfd from <sys/poll.h>
 	// memset(&_pollfds, 0, sizeof(this->_pollfds));
-	// this->_pollfds.back().fd = this->_socket;		// we want to listen to our socket (other example: 0 for STDIN)
+	// this->_pollfds.back().fd = this->_sockfd;		// we want to listen to our socket (other example: 0 for STDIN)
 	// this->_pollfds.back().events = POLLIN;			// the events I'm interested in (POLLIN) if a fd is ready to listen to then we read/recv from it
 
 
@@ -241,3 +224,12 @@ The argument addr is a pointer to a sockaddr structure. This structure is filled
 known to the communications layer. The exact format of the address returned addr is determined by the sockets address
 family (see socket(2) and the respective protocol man pages). When addr is NULL, nothing is filled in; in this case, addrlen is
 not used, and should also be NULL. */
+
+
+
+// if (_pfds_iterator->revents != POLLIN)		//e.g. POLLHUP (in explanations.txt) when POLLHUP then disconnect and break
+// {
+// 	setServerStatus(false);
+// 	log.printString("Error: unexpected result. Nothing to read. Connection will be disabled.");
+// 	break ;
+// }

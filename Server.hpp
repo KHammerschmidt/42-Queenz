@@ -34,7 +34,7 @@ public:
 private:
 
 	int				_port;
-	int				_socket;
+	int				_sockfd;
 	int				_timeout;
 	bool			_serverRunningStatus;
 	std::string 	_password;
@@ -52,8 +52,7 @@ public:
 	~Server();
 
 	/* Set member types and helper functions for input handling */
-	int newSocket(void);
-	void setSocketSettings(void);
+	void newSocket(void);
 	void setPort(std::string port_str);
 	void setServerStatus(bool status);
 
