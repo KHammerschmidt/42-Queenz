@@ -48,6 +48,9 @@ private:
 	int						_error;
 	time_t					_last_ping;
 
+
+	// int					_maxMembers;
+
 	void acceptUser();
 	void sendPing();
 

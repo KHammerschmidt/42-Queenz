@@ -136,6 +136,11 @@ void Server::run()
 
 			if (iter->revents != POLLIN)		//e.g. POLLHUP (in explanations.txt)
 			{
+				// if ((iter->events & POLLHUP) == POLLHUP)			//client closed his end of the connection, then disconnet and close
+				// {
+				// 	//disconnect
+					// 	break;
+				// }
 				setServerStatus(false);
 				Log::printString("Error: unexpected result. Nothing to read. Connection will be disabled.");
 				break ;
@@ -146,35 +151,51 @@ void Server::run()
 				Log::printString("Listening socket is readable");
 				Log::printString("Accept all incoming connections that are queued on the listening socket before calling poll again");
 
-				// accept the incoming connections. if 
+				// accept the incoming connections. if
 				// if new_fd < 0: shows failure, we will end the server
-				int new_fd = accept(this->_socket, NULL, NULL);
+				int fd = accept(this->_socket, NULL, NULL);
 
-				if (new_fd < 0)
+				if (fd < 0)
 				{
+					// differentiation to EWOULDBLOCK????
+					// If the socket is marked nonblocking and no pending connections are present on the queue, accept() fails with the error EAGAIN or EWOULDBLOCK.
 					Log::printString("Error: accept() failed");
 					setServerStatus(false);
-					exit(-1); // return ;
+					break ;
 				}
 
+			int fd;
+			sockaddr_in s_address = {};
+			socklen_t s_size = sizeof(s_address);
 
-/*****************************************************/
-          /* Accept each incoming connection. If               */
-          /* accept fails with EWOULDBLOCK, then we            */
-          /* have accepted all of them. Any other              */
-          /* failure on accept will cause us to end the        */
-          /* server.                                           */
+
+			struct sockaddr_in address;
+			socklen_t csin_len = sizeof(address);
+			int fd = accept(this->fd, (struct sockaddr *)&address, &csin_len);
+			if (fd == -1)
+				return;
+
+			users[fd] = new User(fd, address);
+			if (!config.get("password").length())
+				users[fd]->setStatus(REGISTER);
+
+			pfds.push_back(pollfd());
+			pfds.back().fd = fd;
+			pfds.back().events = POLLIN;
+
+
+
+				// accept returns a new fd that displays the connection
+				// add incoming connection to pollfds struct
+
+				this->_pollfds.push_back
+				          printf("  New incoming connection - %d\n", new_sd);
+          fds[nfds].fd = new_sd;
+          fds[nfds].events = POLLIN;
+          nfds++;
+				          /* Add the new incoming connection to the            */
+          /* pollfd structure                                  */
           /*****************************************************/
-          new_sd = accept(listen_sd, NULL, NULL);
-          if (new_sd < 0)
-          {
-            if (errno != EWOULDBLOCK)
-            {
-              perror("  accept() failed");
-              end_server = TRUE;
-            }
-            break;
-          }
 
 
 			}
@@ -182,11 +203,6 @@ void Server::run()
 
 
 
-			if ((iter->events & POLLHUP) == POLLHUP)			//client closed his end of the connection, then disconnet and close
-			{
-				//disconnect
-				break;
-			}
 
 			if ((iter->revents & POLLIN) == POLLIN)	// the file descriptor is ready and we can read/receive from it
 			{
