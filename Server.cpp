@@ -45,6 +45,11 @@ void Server::setPort(std::string port_str)
 	setServerStatus(true);
 }
 
+/* Creates a new socket, sets options and binds it to the server. 									*/
+/* In detail: New socket is created and set to NON_BLOCKING. The sockaddr_struct is initialised 
+   (family = IPv4, open to all incoming connections and the respective port is logged). Socket is 
+   then linked to serv_address struct which enables the access to variables like address. The last 
+   point makes the created socket listen to the server port. 										*/
 void Server::newSocket(void)
 {
 	this->_sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -71,6 +76,8 @@ void Server::newSocket(void)
 		serverError(1);
 }
 
+/* Prints an error message based on error code. Closes the server socket and sets server status 
+to false, hence stops the poll loop and makes the server shut down. 							*/
 void Server::serverError(int code)
 {
 	// implement enum { NO_ERROR = -1, INPUT_PARAM = 0; ERROR_SOCKET_CONNECTION = 2, ERROR_POLL = 3, ERROR_ACCEPT = 4, ANOTHER_ERROR = 5}
@@ -92,6 +99,9 @@ void Server::serverError(int code)
 	exit(-1);
 }
 
+/* Makes the server listen to incoming requests and loops over these requests to identify a POLLIN event. 
+   If file descriptor is readable, the pollfds struct indicates if either a new user registered or another
+   command has been sent. The function then calls the respective function. */
 void Server::run()
 {
 	while (this->getServerStatus() == true)
@@ -125,6 +135,11 @@ void Server::run()
 	}
 }
 
+/* A new user sends a request via the server socket, which is the only socket client requests can come in. 
+   In order to process any further POLLIN requests, a new listening file descriptor is created via accept()
+   and its content saved in sockaddr_in struct. A new user is created a map object stored in server class
+   with file descriptor and User object. Some credentials of the user are printed and then the new pollfd 
+   struct is added to the pollfds vector in server class.													*/
 void Server::registerNewUser()
 {
 	// check for max user size
@@ -160,7 +175,6 @@ void Server::registerNewUser()
 	this->_pollfds.push_back(pollfd());
 	this->_pollfds.back().fd = fd;
 	this->_pollfds.back().events = POLLIN;
-
 }
 
 
