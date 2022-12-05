@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "../includes/Server.hpp"
 
 int Server::getSocket() const { return this->_sockfd; }
 int Server::getPort() const { return this->_port; }

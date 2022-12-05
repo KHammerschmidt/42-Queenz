@@ -1,4 +1,4 @@
-#include "Log.hpp"
+#include "../includes/Log.hpp"
 
 void Log::printWelcomeToServer()
 {
