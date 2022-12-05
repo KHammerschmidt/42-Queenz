@@ -58,7 +58,9 @@ public:
 
 	/* Get other class members: User, Channel, Pollfds */
 	// std::vector<User*> getUsers() const;
-	void registerNewUser();
+	void connectNewUser();
+	void disconnectUser(User* user);
+	void deleteUser(User* user);
 	void printUser();
 
 	/* Functions to run / stop / end the server */
