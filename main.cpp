@@ -1,10 +1,10 @@
-#include "../includes/Server.hpp"
+#include "includes/Server.hpp"
 #include <csignal>
 #include <iostream>
 
-bool stop = false;
+bool running = true;		//link running with command receive to set it right 
 
-void handler(int) { stop = true; }
+void handler(int) { running = false; }
 
 int main(int argc, char** argv)
 {
@@ -16,10 +16,12 @@ int main(int argc, char** argv)
 
 	Server server(argv);
 
+
 	// kennst du dich mit signals aus? :D
 	signal(SIGINT, handler);
 
-	server.run();
+	while (running)
+		server.run();
 
 	return 0;
 }

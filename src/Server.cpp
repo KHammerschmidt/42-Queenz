@@ -7,7 +7,19 @@ bool Server::getStatus() const { return this->_serverRunningStatus; }
 std::string Server::getPassword() const { return this->_password; }
 std::string Server::getHostname() const { return this->_hostname; }
 
-Server::~Server() { std::cout << "Disconnecting... bye bye" << std::endl; }	// delete channels / delete users // more to add???
+Server::~Server() 
+{ 
+	std::cout << "Disconnecting... bye bye" << std::endl; 
+	
+	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
+	{
+		std::cout << "DELETING / DISCONNECTING USER" << std::endl;
+		// disconnectUser(*(*iter)->second);
+		// deleteUser(*iter->first);  // implement
+		// deleteUser(*iter->second);
+	}
+
+}	// delete channels // more to add???
 
 Server::Server(char** argv)
 {
@@ -18,13 +30,12 @@ Server::Server(char** argv)
 	this->_hostname = "42-Queenz.42.fr";
 	
 	newSocket();
-	this->_timeout = 3 * 60 * 1000;	// Standard timeout: nach 3 Minuten schließt sich wieder der server wenn kein request kommt
+	this->_timeout = 3 * 60 * 1000;
 	this->_error = -1;
 
-	this->_pollfds.push_back(pollfd());
+	pollfd server_fd = { this->_sockfd, POLLIN, 0};
 	memset(&_pollfds, 0, sizeof(this->_pollfds));
-	this->_pollfds.back().fd = this->_sockfd;
-	this->_pollfds.back().revents = POLLIN;
+	this->_pollfds.push_back(server_fd);
 
 	// this->_online;
 	// this->_max_online;
@@ -91,6 +102,8 @@ void Server::serverError(int code)
 		log.printString("Error: while polling from sockfd");
 	else if (code == 3)
 		log.printString("Error: accept() failed");
+	else if (code == 4)
+		log.printString("Error: no user found by these credentials.");
 	else
 		log.printString("Another error.");
 
@@ -118,66 +131,116 @@ void Server::run()
 			// this means the file descriptor is not yet ready to be read, 
 			if (_pfds_iterator->events == 0)
 				continue;
-
+		
+			// NOT SURE ABOUT LOOP...
 			// _pollfds[0] stellt das erste pollfd struct dar in dem die server socket gespeichert ist. Nur über diese socket können sich neue User registrieren.
 			if (this->_pollfds[0].revents == POLLIN)
-				registerNewUser();
+				connectNewUser();
 			else
-			{
-				// when POLLIN on other pollfd.fd than [0] it means a command (PRIVMSG, etc..) has been send.
-				for (std::vector<pollfd>::iterator iter_poll = _pollfds.begin(); iter_poll != _pollfds.end(); iter_poll++)
-				{
-					if (iter_poll->revents == POLLIN)
-						this->_users[iter_poll->fd]->receive();		// receive(this)	// implement receive Funktion in User
-				}
-			}
+				this->_users[_pfds_iterator->fd]->receiveData(this);
 		}
 	}
 }
 
+// NOT SURE ABOUT LOOP
+// OLD VERSION:
+// if (this->_pfds_iterator->revents == POLLIN)	
+// {
+// 	// when POLLIN on other pollfd.fd than [0] it means a command (PRIVMSG, etc..) has been send.
+// 	for (std::vector<pollfd>::iterator iter_poll = _pollfds.begin(); iter_poll != _pollfds.end(); iter_poll++)
+// 	{
+// 		if (iter_poll->revents == POLLIN)
+// 			this->_users[iter_poll->fd]->receiveData();		// receive(this)	// implement receive Funktion in User
+// 	}
+// }
+
+
+
 /* A new user sends a request via the server socket, which is the only socket client requests can come in. 
    In order to process any further POLLIN requests, a new listening file descriptor is created via accept()
-   and its content saved in sockaddr_in struct. A new user is created a map object stored in server class
-   with file descriptor and User object. Some credentials of the user are printed and then the new pollfd 
-   struct is added to the pollfds vector in server class.													*/
-void Server::registerNewUser()
+   and its content saved in struct sockaddr_in. A new user is created and stored in map _users <fd, User*>.
+   User credentials are printed (for testing) and new pollfd struct is added to _pollfds vector.			*/
+void Server::connectNewUser()
 {
-	// check for max user size
-
+	// check for max user size on server/channel?
+	int fd;
 	struct sockaddr_in s_address;
 	socklen_t s_size = sizeof(s_address);
 
-	// accept the incoming connetion; accept() returns a new fd that displays the connection that has to be added to pollfds vector
-	int fd = accept(this->_sockfd,(sockaddr *) &s_address, &s_size);
+	// accept the incoming connetion; accept() returns a new fd that displays the connection
+	fd = accept(this->_sockfd,(sockaddr *) &s_address, &s_size);
 	if (fd < 0)
 	{
-		// differentiation to EWOULDBLOCK???? // if the socket is marked nonblocking and no pending connections are present on the queue, accept() fails with the error EAGAIN or EWOULDBLOCK.
 		log.printString("Error: accept() failed");
 		serverError(2);
 	}
 
 	log.printString("New incoming connection");
 
+	// adding this connection fd to the pollfds for further action (messaging / joining channel/ etc.)
+	pollfd user_pollfd = {fd, POLLIN, 0};
+	this->_pollfds.push_back(user_pollfd);
+
+	// create a new User object with fd and listening port
 	User* new_user = new User(fd, ntohs(s_address.sin_port));
 	if (new_user->getState() == false)
 	{
-		delete new_user; // or delete in Destructor
+		log.printString("DELETE USER FUNCTION HERE."); 	//deleteUser(new_user);	//check with test server what happens
 		return ;
 	}
 
-	//add new content to server::map(fd, User*)
-	_users.insert(std::make_pair(fd, new_user));
+	//add new content to server::map users<fd, User*>
+	this->_users.insert(std::make_pair(fd, new_user));
 
 	std::cout << "New User " << new_user->getUsername() << " connected on port: " << fd << std::endl; //new_user.getPort();
 	std::cout << "New User " << inet_ntoa(s_address.sin_addr) << ":" << ntohs(s_address.sin_port) << " (" << fd << ")" << std::endl;
-
-	// adding this connection fd to the pollfds for further action (messaging / joining channel/ etc.)
-	this->_pollfds.push_back(pollfd());
-	this->_pollfds.back().fd = fd;
-	this->_pollfds.back().events = POLLIN;
 }
 
+// int Server::getUserfd(User* user)
+// {
+// 	int fd;
+// 	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
+// 	{
+// 		if (*iter->second == user)
+// 			return user->getFd();
+// 	}
+// 	return -1;
+// }
 
+/* Erases file descriptor from vector _users and _pollfds. 
+   Maybe also delete user from channel? how to check internal? */
+void Server::disconnectUser(User* user)
+{
+	if (user)
+		log.printString("DISCONNECTING USER");
+	
+
+	// // maybe in try / catch in case of fd cannot be find/invalid fd?
+	// // User* user = this->_users.at(fd);
+	// int user_fd = getUserfd(user);
+	// if (user_fd < 0)
+	// {
+	// 	log.printString("Error: no user found.");
+	// 	serverError(4);
+	// }
+
+	// user->leave();		// leave channels
+	// // erase this user from std::map by its fd
+	// this->_users.erase(user_fd);
+
+	// // erase user from pollfds
+	// for (_pfds_iterator = _pollfds.begin(); _pfds_iterator != _pollfds.end(); _pfds_iterator++)
+	// {
+	// 	if (_pfds_iterator->fd == user_fd)
+	// 	{
+	// 		this->_pollfds.erase(_pfds_iterator);
+	// 		close(user_fd);
+	// 		break ;
+	// 	}
+	// }
+	// delete user;
+	// deleteUser();
+}
 
 
 /* Function returns a vector with User objects, extracted from member type std::map<int, User*>. */

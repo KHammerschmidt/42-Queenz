@@ -3,12 +3,12 @@
 
 #include "Server.hpp"
 #include "Channel.hpp"
-
+#include "Log.hpp"
 #include <sstream>
 
 class User
 {
-
+	Log					log;
 private:
 	std::string 		_username;
 	std::string 		_nickname;
@@ -47,8 +47,11 @@ public:
 	std::string setNickUserHost();
 
 	bool getState();
-	void receive();
+	void receiveData(Server* server);
 	void registerNewUser();
+	int getFd();
+
+	void leave() {};
 };
 
 #endif

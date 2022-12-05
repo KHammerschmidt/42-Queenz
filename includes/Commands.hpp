@@ -6,7 +6,7 @@
 #include "Server.hpp"
 #include "User.hpp"
 
-enum {PRIVMSG_PRIV, PRIVMSG_CHANNEL, REGISTER}
+// enum {PRIVMSG_PRIV, PRIVMSG_CHANNEL, REGISTER}
 
 // namespace irc
 // {
@@ -18,15 +18,15 @@ public:
 	Commands();
 	~Commands();
 
-	void getCommand(const std::string& cmd);
-	int getCommandID(const std::string& cmd);
+	// void getCommand(const std::string& cmd);
+	// int getCommandID(const std::string& cmd);
 
 
 
-	void send_privmsg_priv();
-	void send_privmsg_channel();
-	void registe_new_user();
-	void invalid_cmd();
+	// void send_privmsg_priv();
+	// void send_privmsg_channel();
+	// void registe_new_user();
+	// void invalid_cmd();
 
 };
 
