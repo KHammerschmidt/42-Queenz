@@ -7,10 +7,10 @@ bool Server::getStatus() const { return this->_serverRunningStatus; }
 std::string Server::getPassword() const { return this->_password; }
 std::string Server::getHostname() const { return this->_hostname; }
 
-Server::~Server() 
-{ 
-	std::cout << "Disconnecting... bye bye" << std::endl; 
-	
+Server::~Server()
+{
+	std::cout << "Disconnecting... bye bye" << std::endl;
+
 	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
 	{
 		std::cout << "DELETING / DISCONNECTING USER" << std::endl;
@@ -28,7 +28,7 @@ Server::Server(char** argv)
 	setPort(argv[1]);
 	this->_password = argv[2];
 	this->_hostname = "42-Queenz.42.fr";
-	
+
 	newSocket();
 	this->_timeout = 3 * 60 * 1000;
 	this->_error = -1;
@@ -57,9 +57,9 @@ void Server::setPort(std::string port_str)
 }
 
 /* Creates a new socket, sets options and binds it to the server. 									*/
-/* In detail: New socket is created and set to NON_BLOCKING. The sockaddr_struct is initialised 
-   (family = IPv4, open to all incoming connections and the respective port is logged). Socket is 
-   then linked to serv_address struct which enables the access to variables like address. The last 
+/* In detail: New socket is created and set to NON_BLOCKING. The sockaddr_struct is initialised
+   (family = IPv4, open to all incoming connections and the respective port is logged). Socket is
+   then linked to serv_address struct which enables the access to variables like address. The last
    point makes the created socket listen to the server port. 										*/
 void Server::newSocket(void)
 {
@@ -87,12 +87,12 @@ void Server::newSocket(void)
 		serverError(1);
 }
 
-/* Prints an error message based on error code. Closes the server socket and sets server status 
+/* Prints an error message based on error code. Closes the server socket and sets server status
 to false, hence stops the poll loop and makes the server shut down. 							*/
 void Server::serverError(int code)
 {
 	// implement enum { NO_ERROR = -1, INPUT_PARAM = 0; ERROR_SOCKET_CONNECTION = 2, ERROR_POLL = 3, ERROR_ACCEPT = 4, ANOTHER_ERROR = 5}
-	if (code == -1)		
+	if (code == -1)
 		return ;
 	else if (code == 0)
 		log.printString("Error: Invalid input paramter");
@@ -112,14 +112,14 @@ void Server::serverError(int code)
 	exit(-1);
 }
 
-/* Makes the server listen to incoming requests and loops over these requests to identify a POLLIN event. 
+/* Makes the server listen to incoming requests and loops over these requests to identify a POLLIN event.
    If file descriptor is readable, the pollfds struct indicates if either a new user registered or another
    command has been sent. The function then calls the respective function. */
 void Server::run()
 {
 	while (this->getServerStatus() == true)
 	{
-		log.printString("Server is listening...");
+		log.printString("Server is listening...");			// log class: log.print("CRITCIAL/SOMETHIGN", mesg);
 
 		// timeout: -1 infinite timeout // standard von IBM ist 3 Minuten
 		if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)
@@ -128,23 +128,28 @@ void Server::run()
 		// loop through vector pollfds that lists all file descriptors on open connections
 		for (_pfds_iterator = this->_pollfds.begin(); _pfds_iterator != this->_pollfds.end(); _pfds_iterator++)
 		{
-			// this means the file descriptor is not yet ready to be read, 
+			// this means the file descriptor is not yet ready to be read,
 			if (_pfds_iterator->events == 0)
 				continue;
-		
+
+			// wenn kein POLLIN dann error Nachricht und rausbrechen
+
 			// NOT SURE ABOUT LOOP...
 			// _pollfds[0] stellt das erste pollfd struct dar in dem die server socket gespeichert ist. Nur über diese socket können sich neue User registrieren.
-			if (this->_pollfds[0].revents == POLLIN)
+			if (this->_pollfds[0].revents == POLLIN)		// oder (this->_pollfds... & POLLIN)
 				connectNewUser();
-			else
-				this->_users[_pfds_iterator->fd]->receiveData(this);
+
+			// hier auch schon loop durhc alle user
+
+			this->_users[_pfds_iterator->fd]->receiveData(this);
+			// wenn keine Nachricht dann schickt user ping (nach einer Minute oder so) und server muss an den user poing senden ansonsten "connection lost"
 		}
 	}
 }
 
 // NOT SURE ABOUT LOOP
 // OLD VERSION:
-// if (this->_pfds_iterator->revents == POLLIN)	
+// if (this->_pfds_iterator->revents == POLLIN)
 // {
 // 	// when POLLIN on other pollfd.fd than [0] it means a command (PRIVMSG, etc..) has been send.
 // 	for (std::vector<pollfd>::iterator iter_poll = _pollfds.begin(); iter_poll != _pollfds.end(); iter_poll++)
@@ -156,7 +161,7 @@ void Server::run()
 
 
 
-/* A new user sends a request via the server socket, which is the only socket client requests can come in. 
+/* A new user sends a request via the server socket, which is the only socket client requests can come in.
    In order to process any further POLLIN requests, a new listening file descriptor is created via accept()
    and its content saved in struct sockaddr_in. A new user is created and stored in map _users <fd, User*>.
    User credentials are printed (for testing) and new pollfd struct is added to _pollfds vector.			*/
@@ -167,6 +172,8 @@ void Server::connectNewUser()
 	struct sockaddr_in s_address;
 	socklen_t s_size = sizeof(s_address);
 
+
+	// ?? while im loop bis accept -1 returned
 	// accept the incoming connetion; accept() returns a new fd that displays the connection
 	fd = accept(this->_sockfd,(sockaddr *) &s_address, &s_size);
 	if (fd < 0)
@@ -182,6 +189,9 @@ void Server::connectNewUser()
 	this->_pollfds.push_back(user_pollfd);
 
 	// create a new User object with fd and listening port
+	// client ist ein pair client <pollfd, User*> keine Map
+	// ip rausholen () --> als integer kommt der und der muss umgewandelt werden in (1. byte )
+	// int umwandeln zum string ip addresse (1. byte rechts ist die linke Zahl bei IP addresse)
 	User* new_user = new User(fd, ntohs(s_address.sin_port));
 	if (new_user->getState() == false)
 	{
@@ -207,13 +217,13 @@ void Server::connectNewUser()
 // 	return -1;
 // }
 
-/* Erases file descriptor from vector _users and _pollfds. 
+/* Erases file descriptor from vector _users and _pollfds.
    Maybe also delete user from channel? how to check internal? */
 void Server::disconnectUser(User* user)
 {
 	if (user)
 		log.printString("DISCONNECTING USER");
-	
+
 
 	// // maybe in try / catch in case of fd cannot be find/invalid fd?
 	// // User* user = this->_users.at(fd);
@@ -272,6 +282,9 @@ void Server::disconnectUser(User* user)
 
 
 
+// close() eigentlich verboten! wieso?
+
+
 
 
 
@@ -310,3 +323,23 @@ not used, and should also be NULL. */
 // 	log.printString("Error: unexpected result. Nothing to read. Connection will be disabled.");
 // 	break ;
 // }
+
+
+///jeder user hat einen msg string bei dem die neue Nachricht appended wird (
+// \r\n heisst ende der Nachricht danach
+
+
+
+// ip vom server
+
+
+link server client
+/server add irc(servername) interne ip 10.11.27/420
+
+dann terminal
+nc -l 420
+
+/connect irc -password=pw
+
+
+mit nc -C und localer ip addresse einen neuen user connecten(?)

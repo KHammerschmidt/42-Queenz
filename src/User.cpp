@@ -33,13 +33,13 @@ int User::getFd()	{ return this->_fd; }
 
 bool User::getState() { return _state; }
 
-#define BUFFER_SIZE 520
+#define BUFFER_SIZE 512
 
 void User::receiveData(Server *server)
 {
 	if (!server)
 		return;
-		
+
 	size_t size = 0;
 	char buffer[BUFFER_SIZE + 1];		//    BUFFER_SIZE = max msg length from Weechat
 
@@ -48,19 +48,25 @@ void User::receiveData(Server *server)
 	/* If no messages are available at the socket, the receive calls wait for a message to arrive, unless the socket is nonblocking
        (see fcntl(2)), in which case the value -1 is returned and errno is set to EAGAIN or EWOULDBLOCK.   */
 
-	if (size == recv(this->getFd(), &buffer, BUFFER_SIZE, 0) < 0)
+	if (size == recv(this->getFd(), &buffer, BUFFER_SIZE, 0) < 0)				// search for NICK UND USER DANN REGISTER
 	{
+
+		//wenn user mehreren channels hinzutreten will dann am comma splitten (wenn JOIN #)
+
 		log.printString("Error: No data received by user.");
 		return ;
 	}
 	// could be eof/0 bytes received
 	if (size == 0)
 	{
+
+		// aus channel rausschmeißen		//channel kick (jeder user bekommt nachricht, und ganz rechts neue liste an usern (wie bei knuddels))
 		log.printString("status == delete");		//status == Delete;	// delete user?
+		// user logt sich aus und muss disconnected werden und dann gelöscht
 	}
 
 	// terminate buffer string
-	buffer[size] = 0;	
+	buffer[size] = 0;
 
 	// add incoming data to previously stored buffer var
 	this->buffer += buffer;
@@ -68,3 +74,14 @@ void User::receiveData(Server *server)
 
 std::string User::getUsername() { return _username; }
 
+
+
+
+// Channel: Nummeridentifikationen bei irc:
+// 001 welcome
+// 353 liste an usern die im channel connected sind
+// 366 ende von der Liset
+// 401 no such nick / channel
+
+
+// message: /leave muss weg (wird angezeigt)

@@ -54,4 +54,10 @@ public:
 	void leave() {};
 };
 
+User vector<pollfd, User*>
+Channel <std::string name, User*>
+
+
+
+
 #endif
