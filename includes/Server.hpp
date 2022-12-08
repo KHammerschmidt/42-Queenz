@@ -6,6 +6,10 @@
 #include <map>
 #include <vector>
 
+#include <errno.h>				// FOR DEBUG ONLY!!
+
+
+#include <ctime>
 #include <netinet/in.h>
 #include <poll.h>
 #include <sys/poll.h>
@@ -80,6 +84,7 @@ public:
 	bool getServerStatus() const;
 
 
+	void sendPing();
 
 
 

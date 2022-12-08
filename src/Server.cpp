@@ -31,7 +31,7 @@ Server::Server(char** argv)
 
 	newSocket();
 	this->_timeout = 3 * 60 * 1000;
-	this->_error = -1;
+	// this->_error = -1;
 
 	pollfd server_fd = { this->_sockfd, POLLIN, 0};
 	memset(&_pollfds, 0, sizeof(this->_pollfds));
@@ -104,6 +104,10 @@ void Server::serverError(int code)
 		log.printStringCol(CRITICAL, "Error: accept() failed");
 	else if (code == 4)
 		log.printStringCol(CRITICAL, "Error: no user found by these credentials.");
+	else if (code == 5)
+		log.printStringCol(WARNING, "WARNING: ping timed out");
+	else if (code == 6)
+		log.printStringCol(CRITICAL, "Error: send() failed.");
 	else
 		log.printStringCol(CRITICAL, "Another error.");
 
@@ -131,62 +135,38 @@ void Server::run()
 		for (_pfds_iterator = this->_pollfds.begin(); _pfds_iterator != this->_pollfds.end(); _pfds_iterator++)
 		{
 			// this means the file descriptor is not yet ready to be read,
-			if (this->_pfds_iterator->revents == 0)
+			if (_pfds_iterator->revents == 0)
 				continue;
 
-			// _pollfds[0] stellt das erste pollfd struct dar in dem die server socket gespeichert ist. Nur über diese socket können sich neue User registrieren.
-			if ((this->_pollfds[0].revents & POLLIN) == POLLIN)		// oder (this->_pollfds... & POLLIN)
+			if ((_pfds_iterator->revents & POLLHUP) == POLLHUP)
 			{
-				log.printStringCol(LOG, "A new user is being connected to server");
-				connectNewUser();
-				log.printStringCol(LOG, "--- Done. User connected to server");
+				log.printStringCol(WARNING, "NO POLLIN, server is shutting down");
+				this->setServerStatus(false);
 				break ;
-			}	
-			else if ((this->_pfds_iterator->revents & POLLIN) == POLLIN)
-			{
-				// when POLLIN on other pollfd.fd than [0] it means a command (PRIVMSG, etc..) has been send.
-				for (std::vector<pollfd>::iterator iter_poll = _pollfds.begin(); iter_poll != _pollfds.end(); iter_poll++)
-				{
-					if (iter_poll->revents == POLLIN)
-						this->_users[iter_poll->fd]->receiveData(this);		// receive(this)	// implement receive Funktion in User
-				}
-				break ;
-				log.printStringCol(LOG, "User receive Data loop --- end");
 			}
-			// else
-			// {
-			// 	std::cout << " (this->_pfds_iterator->revents != POLLIN)" << std::endl;
-			// 	std::cout << "error msg and disconnect Server" << std::endl;
-			// 	exit (-1);
-			// 	// wenn kein POLLIN dann error Nachricht und rausbrechen
-			// }
+
+			if ((_pfds_iterator->revents & POLLIN) == POLLIN)
+			{
+				if (this->_pollfds[0].revents == POLLIN)
+				{
+					connectNewUser();
+					break ;
+				}
+
+				this->_users[_pfds_iterator->fd]->receiveData();	
+			}
 
 			// wenn keine Nachricht dann schickt user ping (nach einer Minute oder so) und server muss an den user poing senden ansonsten "connection lost"
 		}
 	}
 }
 
-// NOT SURE ABOUT LOOP
-// OLD VERSION:
-// if (this->_pfds_iterator->revents == POLLIN)
-// {
-// 	// when POLLIN on other pollfd.fd than [0] it means a command (PRIVMSG, etc..) has been send.
-// 	for (std::vector<pollfd>::iterator iter_poll = _pollfds.begin(); iter_poll != _pollfds.end(); iter_poll++)
-// 	{
-// 		if (iter_poll->revents == POLLIN)
-// 			this->_users[iter_poll->fd]->receiveData();		// receive(this)	// implement receive Funktion in User
-// 	}
-// }
-
-
-#include <errno.h>
 /* A new user sends a request via the server socket, which is the only socket client requests can come in.
    In order to process any further POLLIN requests, a new listening file descriptor is created via accept()
    and its content saved in struct sockaddr_in. A new user is created and stored in map _users <fd, User*>.
    User credentials are printed (for testing) and new pollfd struct is added to _pollfds vector.			*/
 void Server::connectNewUser()
 {
-	// check for max user size on server/channel?
 	int new_fd;
 	struct sockaddr_in s_address;
 	socklen_t s_size = sizeof(s_address);
@@ -298,8 +278,19 @@ void Server::disconnectUser(User* user)
 // }
 
 
+void Server::sendPing()
+{
+	time_t current_time = std::time(0);
+	int timeout = this->_timeout;
 
-
+	for (std::map<int, User*>::iterator iter = _users.begin(); iter != _users.end(); iter++)
+	{
+		if (current_time - ((*iter).second->getLastPing()) >= static_cast<int>(timeout))
+			serverError(5);		//disconnect user / delete user / etc.
+		else if ((*iter).second->getState() == true)		//online
+			(*iter).second->write("PING " + (*iter).second->getNickname());
+	}
+}
 
 
 // close() eigentlich verboten! wieso?
@@ -348,12 +339,74 @@ not used, and should also be NULL. */
 // Dann bekommst du angezeigt dass der neue User registriert wurde aber keine Daten eingelesen wurden.
 
 
-
-
-
 // link server client
 // /server add irc(servername) interne ip 10.11.27/420
 // dann terminal
 // nc -l 420
 // /connect irc -password=pw
 // mit nc -C und localer ip addresse einen neuen user connecten(?)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// NOT SURE ABOUT LOOP
+// OLD VERSION:
+// if (this->_pfds_iterator->revents == POLLIN)
+// {
+// 	// when POLLIN on other pollfd.fd than [0] it means a command (PRIVMSG, etc..) has been send.
+// 	for (std::vector<pollfd>::iterator iter_poll = _pollfds.begin(); iter_poll != _pollfds.end(); iter_poll++)
+// 	{
+// 		if (iter_poll->revents == POLLIN)
+// 			this->_users[iter_poll->fd]->receiveData();		// receive(this)	// implement receive Funktion in User
+// 	}
+// }
+
+			// // _pollfds[0] stellt das erste pollfd struct dar in dem die server socket gespeichert ist. Nur über diese socket können sich neue User registrieren.
+			// if ((this->_pollfds[0].revents & POLLIN) == POLLIN)		// oder (this->_pollfds... & POLLIN)
+			// {
+			// 	log.printStringCol(LOG, "A new user is being connected to server");
+			// 	connectNewUser();
+			// 	log.printStringCol(LOG, "--- Done. User connected to server");
+			// 	break ;
+			// }	
+
+			// if ((this->_pfds_iterator->revents & POLLIN) == POLLIN)
+			// {
+			// 	// // when POLLIN on other pollfd.fd than [0] it means a command (PRIVMSG, etc..) has been send.
+			// 	// for (std::vector<pollfd>::iterator iter_poll = _pollfds.begin(); iter_poll != _pollfds.end(); iter_poll++)
+			// 	// {
+			// 	// 	if (iter_poll->revents == POLLIN)
+			// 	this->_users[iter_poll->fd]->receiveData(this);		// receive(this)	// implement receive Funktion in User
+			// 	// }
+			// 	// break ;
+			// 	log.printStringCol(LOG, "User receive Data loop --- end");
+			// }
+			// else
+			// {
+			// 	// wenn kein POLLIN dann error Nachricht und rausbrechen
+			// 	std::cout << " (this->_pfds_iterator->revents != POLLIN)" << std::endl;
+			// 	std::cout << "error msg and disconnect Server" << std::endl;
+			// 	this->setServerStatus(false);
+			// 	break ;
+			// }

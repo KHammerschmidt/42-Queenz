@@ -6,25 +6,30 @@
 #include "Channel.hpp"
 #include "Log.hpp"
 #include <sstream>
+#include <ctime>
 
 # define BUFFER_SIZE 512
+# define MSG_END "\r\n"
+
+// enum USER_STATUS { CONNECTED, PASSWORD, REGISTERED, ONLINE, DELETE}
 
 class User
 {
-	Log					log;
+	Log							log;
 private:
-	int					_fd;
-	int					_port;
+	int							_fd;
+	int							_port;
+	time_t						_last_ping;
+	std::vector<std::string> 	_dataToSend;
 
-	// std::string			_msg;
-	// std::string		_buffer;
-	char				_buffer[BUFFER_SIZE + 1];
+
+	// std::string		_msg;
+	std::string		_buffer;
 
 	std::string 		_username;
 	std::string 		_nickname;
 	std::string			_fullname;
-	std::string 		_hostname;
-	// std::string 		_hostaddr;
+
 	std::string			_nick_user_host;
 	bool				_state;
 
@@ -47,21 +52,26 @@ public:
 	std::string getNickname() const;
 	std::string getUsername();
 	std::string getFullname() const;
+	time_t		getLastPing() const;
 
 	void setNickname();
 	void setUsername();
 	void setFullname();
+	void setLastPing(time_t last_ping);
 
 	std::string setNickUserHost();
 
 	bool getState();
-	void receiveData(Server* server);
+	void receiveData();
 	void registerNewUser();
 	int getFd();
 
 	void leave() {};
-};
+	void write(std::string msg);
 
+
+
+};	
 // User vector<pollfd, User*>
 // Channel <std::string name, User*>
 

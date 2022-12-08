@@ -1,16 +1,21 @@
 #include "../includes/User.hpp"
 
 User::User(int fd, uint16_t port)
-	: _fd(fd), _port(port)
+	: _fd(fd), _port(port), _last_ping(std::time(0)), _dataToSend()
 {
 	// with or without @
-
 	this->_state = true;
 }
 
 User::~User() {}
 int User::getFd()	{ return this->_fd; }
+std::string User::getNickname() const { return this->_nickname; }
+time_t User::getLastPing() const { return this->_last_ping; }
 
+void User::setLastPing(time_t last_ping)
+{
+	this->_last_ping = last_ping;
+}
 // std::string setNickUserHost()
 // {
 // 	std::stringstream ss;
@@ -33,45 +38,40 @@ int User::getFd()	{ return this->_fd; }
 
 bool User::getState() { return _state; }
 
-void User::receiveData(Server *server)
+/* User receives data with recv() and saves the read bytes within private this->_buffer string. */
+void User::receiveData()
 {
-	if (!server)
-		return;
+	char buffer[BUFFER_SIZE + 1];
+	memset(&buffer, 0, sizeof(BUFFER_SIZE + 1));
 
-	size_t size = 0;
-
-	// recv() is used to receive data from a socket. It returns the length of the message when successfully received
-	// excess bytes may be discarded depending on the type of socket the message is received from.
-	/* If no messages are available at the socket, the receive calls wait for a message to arrive, unless the socket is nonblocking
-       (see fcntl(2)), in which case the value -1 is returned and errno is set to EAGAIN or EWOULDBLOCK.   */
-
-	if (size == recv(this->_fd, &this->_buffer, BUFFER_SIZE, 0) < 0)				// search for NICK UND USER DANN REGISTER
+	size_t size = recv(this->_fd, &buffer, BUFFER_SIZE, 0);
+	if (size < 0)	// search for NICK UND USER DANN REGISTER
 	{
-		//wenn user mehreren channels hinzutreten will dann am comma splitten (wenn JOIN #)
-		log.printStringCol(CRITICAL, "Error: No data received by user.");
+		std::cout << "BUFFER: " << buffer << std::endl;
+		log.printStringCol(WARNING, "No data received by user.");
 		return ;
 	}
-	// could be eof/0 bytes received
-	std::cout << this->_buffer << std::endl;
-
-	if (size == 0)
+	else if (size == 0)
 	{
-
+		// could be eof or 0 bytes received
 		// aus channel rausschmeißen		//channel kick (jeder user bekommt nachricht, und ganz rechts neue liste an usern (wie bei knuddels))
 		log.printStringCol(CRITICAL, "status == delete");		//status == Delete;	// delete user?
 		// user logt sich aus und muss disconnected werden und dann gelöscht
 	}
+	else
+	{
+		buffer[size] = 0;
+		// previous received messaged are being appended to member variable _buffer.
+		this->_buffer.append(buffer);
 
-	// terminate buffer string
-	buffer[size] = 0;
-
-	// add incoming data to previously stored buffer var
-	// this->_buffer += this->_buffer;
+		log.printStringCol(LOG, buffer);
+		log.printStringCol(LOG, this->_buffer);
+	}
 }
 
 std::string User::getUsername() { return _username; }
 
-
+//username <= 9 characters
 
 
 // Channel: Nummeridentifikationen bei irc:
@@ -82,3 +82,29 @@ std::string User::getUsername() { return _username; }
 
 
 // message: /leave muss weg (wird angezeigt)
+
+
+
+
+// register user
+// NICK - register nickname
+// USER - register Username
+// print RPL_WELCOME after NICK and USER have been received and processed
+
+
+
+// command PING params: <server1> <server2>
+// test presence of an active client or server at the other end
+// of connection
+// server sends regular intervals a ping when no other
+// activity detected from that connection
+
+
+void User::write(std::string msg)
+{
+	this->_dataToSend.push_back(msg);
+}
+
+
+
+		//wenn user mehreren channels hinzutreten will dann am comma splitten (wenn JOIN #)
