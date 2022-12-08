@@ -23,9 +23,7 @@
 #include "Channel.hpp"
 #include "Log.hpp"
 
-# define HOSTNAME "@42-Queenz.fr.42"
-
-//weechat braucht keinen header (funktioniert auch so)
+#define HOSTNAME "@42-Queenz.fr.42"
 
 class User;
 class Channel;
@@ -33,83 +31,67 @@ class Channel;
 class Server
 {
 
-public:
-	Log		log;
-	
-private:
+	private:
+		int								_port;						//int oder std::string
+		int								_sockfd;
+		int								_timeout;
+		bool							_serverRunningStatus;
+		std::string 					_password;
 
-	int				_port;
-	int				_sockfd;
-	int				_timeout;
-	bool			_serverRunningStatus;
-	std::string 	_password;
-	// std::string		_hostname;
-	int				_error;
+		std::vector<pollfd> 			_pollfds;
+		std::map<int, User*>			_users;						// std::pair<pollfd, User*> _user;
+		std::map<std::string, Channel*> _channels;
 
-	std::vector<pollfd> 				_pollfds;
-	std::vector<pollfd>::iterator 		_pfds_iterator;
-	std::map<int, User*> 				_users;
-	// std::pair<pollfd, User*> _user;
-	std::map<std::string, Channel*>		_channels;
+	public:
+		std::vector<pollfd>::iterator 	pfds_iterator;
+		std::map<int, User*>::iterator 	user_iterator;
+		std::map<std::string, Channel*>	channel_iterator;
 
-public:
-	/* Constructor / destructor */
-	Server(char** argv);
-	~Server();
+	private:
+		void connectNewUser();
+		void sendPing();
+		void serverError(int code);
 
-	/* Set member types and helper functions for input handling */
-	void newSocket(void);
-	void setPort(std::string port_str);
-	void setServerStatus(bool status);
+		void disconnectUser(User* user);
+		void deleteUser(User* user);
+		void printUser();
 
-	/* Get other class members: User, Channel, Pollfds */
-	// std::vector<User*> getUsers() const;
-	void connectNewUser();
-	void disconnectUser(User* user);
-	void deleteUser(User* user);
-	void printUser();
 
-	/* Functions to run / stop / end the server */
-	void run();
-	void serverError(int code);
 
-	/* Getters of private variables */
-	int 		getPort() const;
-	int 		getTimeout() const;
-	bool 		getServerStatus() const;
-	std::string getPassword() const;
+	public:
+		Server(char** argv);
+		~Server();
 
-	void sendPing();
+		void run();
+
+		int 		getPort() const;
+		int 		getTimeout() const;
+		bool 		getServerStatus() const;
+		std::string getPassword() const;
+
+		void setPort(std::string port_str);
+		void setServerStatus(bool status);
+		void newSocket(void);
+};
+
+#endif
 
 
 
 
+/* NOT IMPLEMENTED YET | needed?
 
-
-
-
-/* NOT IMPLEMENTED YET
-
-private:
-	time_t				_last_ping;
-	int					_maxMembers;
-
-public:
+--> USER
 	// tba User* getUser(const std::string name) const;	//nickname or username?
 	// tba void deleteUser();
 
+--> CHANNEL
 	// tba bool isChannel(std::string const& name);
 	// tba Channel& getChannel(std::string name) const;
 	// tba void deleteChannel(Channel channel);
 	// tba Channel* createChannel(const std::string& name, const std::string& password, const User* user);
 	// tba std::vector<Channel *> getChannels() const;
-
-	// tba std::vector<pollfd> getPollfds() const;
  */
-
-};
-
-#endif
 
 
 

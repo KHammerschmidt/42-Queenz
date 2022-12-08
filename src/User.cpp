@@ -1,42 +1,22 @@
 #include "../includes/User.hpp"
 
+User::~User() {}
 User::User(int fd, uint16_t port)
 	: _fd(fd), _port(port), _last_ping(std::time(0)), _dataToSend()
 {
 	// with or without @
-	this->_state = true;
+	this->_state = CONNECTED;
 }
 
-User::~User() {}
-int User::getFd()	{ return this->_fd; }
-std::string User::getNickname() const { return this->_nickname; }
-time_t User::getLastPing() const { return this->_last_ping; }
+bool User::isRegistered() const { return this->_state >= REGISTERED; }
 
-void User::setLastPing(time_t last_ping)
-{
-	this->_last_ping = last_ping;
-}
-// std::string setNickUserHost()
-// {
-// 	std::stringstream ss;
-
-// 	ss << this->_nickname + "!" + this->_username + "@" + Server::hostname;
-
-// 	return ss.str;
-// }
-
-// void User::setHostname()
-// {
-// 	this->_hostname = Server::getHostname();
-// 	this->_hostname = gethostbyname();
-// }
-
-// std::string User::getHostname()
-// {
-// 	return Server::getHostname();
-
-
-bool User::getState() { return _state; }
+std::string	User::getUsername() { return this->_username; }
+std::string User::getNickname() { return this->_nickname; }
+bool 		User::getState() { return _state; }
+int 		User::getFd() { return this->_fd; }
+time_t 		User::getLastPing() const { return this->_last_ping; }
+void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
+void 		User::setNickUserHost() { this->_nick_user_host =  this->getNickname() + "!" + this->getUsername() + HOSTNAME; }
 
 /* User receives data with recv() and saves the read bytes within private this->_buffer string. */
 void User::receiveData()
@@ -68,8 +48,6 @@ void User::receiveData()
 		Log::printStringCol(LOG, this->_buffer);
 	}
 }
-
-std::string User::getUsername() { return _username; }
 
 //username <= 9 characters
 
@@ -107,4 +85,22 @@ void User::write(std::string msg)
 
 
 
-		//wenn user mehreren channels hinzutreten will dann am comma splitten (wenn JOIN #)
+//wenn user mehreren channels hinzutreten will dann am comma splitten (wenn JOIN #)
+
+
+void User::sendPong()
+{
+
+}
+
+void reply(std::string& reply)
+{
+	if (reply.length() != 0)
+		std::cout << "Reply function here";
+}
+
+void join(Channel* channel)
+{
+	if (channel)
+		std::cout << "join channel function here";
+}

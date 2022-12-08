@@ -11,7 +11,7 @@
 # define BUFFER_SIZE 512
 # define MSG_END "\r\n"
 
-enum USER_STATE { CONNECTED, NICK, PASSWORD, REGISTERED, ONLINE, DELETE};
+// enum USER_STATE { CONNECTED, NICK, PASSWORD, REGISTERED, ONLINE, DELETE}
 // enum USER_ROLE {CREATOR, OPERATOR, USER}
 
 class User
@@ -21,7 +21,7 @@ private:
 	int						_fd;
 	int						_port;
 	time_t					_last_ping;
-	int						_state;
+	bool					_state;			// spaeter enum
 
 	std::string 			_username;
 	std::string 			_nickname;
@@ -37,8 +37,8 @@ public:
 	User(int fd, uint16_t port);
 	~User();
 
-	std::string getNickname();
-	std::string getUsername();
+	std::string getNickname() const;
+	std::string getUsername()const ;
 	std::string getFullname() const;
 	time_t		getLastPing() const;
 	// std::string getPrefix() const;
@@ -53,18 +53,17 @@ public:
 	void setLastPing(time_t last_ping);
 
 	bool getState();
+	int getFd();
+	
 	void receiveData();
 	void registerNewUser();
-	int getFd();
 
 	void write(std::string msg);
-	void reply(std::string& reply);
+	void reply(std::string& reply) {};
 
 	void welcome() {};
-	void join(Channel* channel);
+	void join(Channel* channel) {};
 	void leave() {};
-
-	void sendPong();
 	
 };	
 
