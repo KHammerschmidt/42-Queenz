@@ -7,15 +7,13 @@
 class User;
 class Server;
 
-// enum {channel_creator, channel_operator, channel_member};
-
-
 class Channel
 {
 
 private:
-	std::string _name;
+	std::string 	_name;
 	std::string	_topic;
+	int			_maxUsers;
 	std::vector<Channel *> _channels;
 	std::vector<User *> _users;
 
@@ -26,10 +24,6 @@ private:
 
 
 	// std::string mode;
-
-	// std::map<std::string, User*> current_members; 	//list of members in channel
-	// std::map<std::string, User*> channel_operators; // channel operators can perform
-	// std::map<std::string, User*> channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator
 
 public:
 	Channel();
@@ -48,11 +42,12 @@ public:
 	void static createChannel();
 	void		deleteChannel();
 
-	void setMode(const std::string mode);
-	std::string getMode() const;
+
+
+
+	void setMode(const std::string mode, const User &user);
 	//void changeMode(const std::string mode);
 	//lists all available modes and returns the valid one or an error
-	//void selectNewMode();
 
 
 
@@ -60,7 +55,7 @@ public:
 
 };
 
-
+	//-> They are commands, not modes
 
 	// INVITE  - Invite a client to an invite-only channel (mode +i)
 	void invite();
@@ -71,12 +66,8 @@ public:
 	// PRIVMSG - Sending messages to the channel (mode +n, +m, +v)
 	void privmsg();
 	// TOPIC   - Change the channel topic in a mode +t channel
-	void topic();
 
 
-	void giveOpPrivileges(const User& name);
-	void giveCreatPrivileges(const User& name);
-	//channel creator becomes channel operator (except for +channels)
 
 
 	// mode function: take nickname as param and affect privileges given to user;
