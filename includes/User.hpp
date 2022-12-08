@@ -1,21 +1,29 @@
 #ifndef USER_HPP
 #define USER_HPP
 
+#include <arpa/inet.h>
 #include "Server.hpp"
 #include "Channel.hpp"
 #include "Log.hpp"
 #include <sstream>
 
+# define BUFFER_SIZE 512
+
 class User
 {
 	Log					log;
 private:
+	int					_fd;
+	int					_port;
+
+	// std::string			_msg;
+	// std::string		_buffer;
+	char			_buffer[BUFFER_SIZE + 1];
+
 	std::string 		_username;
 	std::string 		_nickname;
 	std::string			_fullname;
 	std::string 		_hostname;
-	int	_fd;				//every user has their own fd
-	int					_port;
 	// std::string 		_hostaddr;
 	std::string			_nick_user_host;
 	bool				_state;
@@ -33,7 +41,7 @@ private:
 
 
 public:
-	User(int fd, int port);
+	User(int fd, uint16_t port);
 	~User();
 
 	std::string getNickname() const;
@@ -54,8 +62,8 @@ public:
 	void leave() {};
 };
 
-User vector<pollfd, User*>
-Channel <std::string name, User*>
+// User vector<pollfd, User*>
+// Channel <std::string name, User*>
 
 
 

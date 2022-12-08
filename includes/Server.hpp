@@ -19,6 +19,8 @@
 #include "Channel.hpp"
 #include "Log.hpp"
 
+# define HOSTNAME "@42-Queenz.fr.42"
+
 //weechat braucht keinen header (funktioniert auch so)
 
 class User;
@@ -38,12 +40,13 @@ private:
 	int				_timeout;
 	bool			_serverRunningStatus;
 	std::string 	_password;
-	std::string		_hostname;
+	// std::string		_hostname;
 	int				_error;
 
 	std::vector<pollfd> 				_pollfds;
 	std::vector<pollfd>::iterator 		_pfds_iterator;
 	std::map<int, User*> 				_users;
+	// std::pair<pollfd, User*> _user;
 	std::map<std::string, Channel*>		_channels;
 
 public:
@@ -73,7 +76,7 @@ public:
 	std::string getPassword() const;
 	bool getStatus() const;
 	int getTimeout() const;
-	std::string getHostname() const;
+	// std::string getHostname() const;
 	bool getServerStatus() const;
 
 

@@ -6,6 +6,8 @@
 
 class Log
 {
+
+	// log class: log.print("CRITCIAL/SOMETHIGN", mesg);
 	// colour printing??? how???
 public:
 
