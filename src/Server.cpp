@@ -9,11 +9,11 @@ std::string Server::getPassword() const { return this->_password; }
 
 Server::~Server()
 {
-	std::cout << "Disconnecting... bye bye" << std::endl;
+	log.printStringCol(REGULAR, "Disconnecting... bye bye");
 
 	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
 	{
-		std::cout << "DELETING / DISCONNECTING USER" << std::endl;
+		log.printStringCol(LOG, "DELETING / DISCONNECTING USER");
 		// disconnectUser(*(*iter)->second);
 		// deleteUser(*iter->first);  // implement
 		// deleteUser(*iter->second);
@@ -23,7 +23,7 @@ Server::~Server()
 
 Server::Server(char** argv)
 {
-	log.printWelcomeToServer();
+	log.printStringCol(REGULAR, "Welcome to our server 42-Queenz...");
 
 	setPort(argv[1]);
 	this->_password = argv[2];
@@ -65,10 +65,7 @@ void Server::newSocket(void)
 {
 	this->_sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->_sockfd < 0)
-	{
-		std::cout << "this is the error" << std::endl;
 		serverError(1);
-	}
 
 	int enable = 1;
 	if (setsockopt(this->_sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) != 0)
@@ -98,17 +95,17 @@ void Server::serverError(int code)
 	if (code == -1)
 		return ;
 	else if (code == 0)
-		log.printString(RED, "Error: Invalid input paramter");
+		log.printStringCol(CRITICAL, "Error: Invalid input paramter");
 	else if (code == 1)
-		log.printString(RED, "Error: The socket connection of server 42-Queenz.fr could not be established.");
+		log.printStringCol(CRITICAL, "Error: The socket connection of server 42-Queenz.fr could not be established.");
 	else if (code == 2)
-		log.printString(RED, "Error: while polling from sockfd");
+		log.printStringCol(CRITICAL, "Error: while polling from sockfd");
 	else if (code == 3)
-		log.printString(RED, "Error: accept() failed");
+		log.printStringCol(CRITICAL, "Error: accept() failed");
 	else if (code == 4)
-		log.printString(RED, "Error: no user found by these credentials.");
+		log.printStringCol(CRITICAL, "Error: no user found by these credentials.");
 	else
-		log.printString(RED, "Another error.");
+		log.printStringCol(CRITICAL, "Another error.");
 
 	close(this->_sockfd);
 	setServerStatus(false);
@@ -122,7 +119,7 @@ void Server::run()
 {
 	while (this->getServerStatus() == true)
 	{
-		log.printString(RED, "Server is listening...");
+		log.printStringCol(REGULAR, "Server is listening...");
 		// einen User registrieren geht, wenn dann nochmal connect error
 
 		// timeout: -1 infinite timeout // standard von IBM ist 3 Minuten
@@ -140,9 +137,9 @@ void Server::run()
 			// _pollfds[0] stellt das erste pollfd struct dar in dem die server socket gespeichert ist. Nur über diese socket können sich neue User registrieren.
 			if ((this->_pollfds[0].revents & POLLIN) == POLLIN)		// oder (this->_pollfds... & POLLIN)
 			{
-				log.printString(RED, "A new user is being connected to server");
+				log.printStringCol(LOG, "A new user is being connected to server");
 				connectNewUser();
-				log.printString(RED, "--- Done. User connected to server");
+				log.printStringCol(LOG, "--- Done. User connected to server");
 				break ;
 			}	
 			else if ((this->_pfds_iterator->revents & POLLIN) == POLLIN)
@@ -154,7 +151,7 @@ void Server::run()
 						this->_users[iter_poll->fd]->receiveData(this);		// receive(this)	// implement receive Funktion in User
 				}
 				break ;
-				std::cout << "User receive Data loop --- end" << std::endl;
+				log.printStringCol(LOG, "User receive Data loop --- end");
 			}
 			// else
 			// {
@@ -200,13 +197,11 @@ void Server::connectNewUser()
 	if (new_fd < 0)
 	{
 		std::cout << "this is the errno number: " << errno << std::endl;
-		log.printString(RED, "Error: accept() failed");
-		serverError(2);
+		serverError(3);
 	}
 	else
-		log.printString(RED, "New incoming connection");
+		log.printStringCol(LOG, "New incoming connection");
 
-	std::cout << "we are in connectNewUser()" << std::endl;
 	// adding this connection fd to the pollfds for further action (messaging / joining channel/ etc.)
 	pollfd user_pollfd = {new_fd, POLLIN, 0};
 	this->_pollfds.push_back(user_pollfd);
@@ -221,7 +216,7 @@ void Server::connectNewUser()
 	// User* new_user = new User(fd, ntohs(s_address.sin_port));	//bitshifting necessary? I think ntohs macht das schon
 	if (new_user->getState() == false)
 	{
-		log.printString(RED, "DELETE USER FUNCTION HERE."); 	
+		log.printStringCol(REGULAR, "DELETE USER FUNCTION HERE."); 	
 		//deleteUser(new_user);	//check with test server what happens
 		return ;
 	}
@@ -249,7 +244,7 @@ void Server::connectNewUser()
 void Server::disconnectUser(User* user)
 {
 	if (user)
-		log.printString(RED, "DISCONNECTING USER");
+		log.printStringCol(LOG, "DISCONNECTING USER");
 
 
 	// // maybe in try / catch in case of fd cannot be find/invalid fd?
@@ -257,7 +252,7 @@ void Server::disconnectUser(User* user)
 	// int user_fd = getUserfd(user);
 	// if (user_fd < 0)
 	// {
-	// 	log.printString(RED, "Error: no user found.");
+	// 	log.printStringCol(RED, "Error: no user found.");
 	// 	serverError(4);
 	// }
 
@@ -330,7 +325,7 @@ not used, and should also be NULL. */
 // if (_pfds_iterator->revents != POLLIN)		//e.g. POLLHUP (in explanations.txt) when POLLHUP then disconnect and break
 // {
 // 	setServerStatus(false);
-// 	log.printString(RED, "Error: unexpected result. Nothing to read. Connection will be disabled.");
+// 	log.printStringCol(RED, "Error: unexpected result. Nothing to read. Connection will be disabled.");
 // 	break ;
 // }
 

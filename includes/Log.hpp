@@ -10,17 +10,16 @@
 #define YELLOW  "\033[33m"
 #define BLUE    "\033[34m"
 
+enum MSG_STATE { REGULAR, LOG, CRITICAL, WARNING };
+
 class Log
 {
-
-	// log class: log.print("CRITCIAL/SOMETHIGN", mesg);
-	// colour printing??? how???
+	
 public:
+	Log();
+	~Log();
 
-
-	void printString(std::string color, std::string msg);
-	void printWelcomeToServer();
-	// void printString(std::string msg);
+	void printStringCol(int state, std::string msg);
 	void printStringNoNewline(std::string msg);
 };
 

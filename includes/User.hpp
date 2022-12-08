@@ -18,7 +18,7 @@ private:
 
 	// std::string			_msg;
 	// std::string		_buffer;
-	char			_buffer[BUFFER_SIZE + 1];
+	char				_buffer[BUFFER_SIZE + 1];
 
 	std::string 		_username;
 	std::string 		_nickname;
