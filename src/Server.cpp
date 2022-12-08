@@ -98,17 +98,17 @@ void Server::serverError(int code)
 	if (code == -1)
 		return ;
 	else if (code == 0)
-		log.printString("Error: Invalid input paramter");
+		log.printString(RED, "Error: Invalid input paramter");
 	else if (code == 1)
-		log.printString("Error: The socket connection of server 42-Queenz.fr could not be established.");
+		log.printString(RED, "Error: The socket connection of server 42-Queenz.fr could not be established.");
 	else if (code == 2)
-		log.printString("Error: while polling from sockfd");
+		log.printString(RED, "Error: while polling from sockfd");
 	else if (code == 3)
-		log.printString("Error: accept() failed");
+		log.printString(RED, "Error: accept() failed");
 	else if (code == 4)
-		log.printString("Error: no user found by these credentials.");
+		log.printString(RED, "Error: no user found by these credentials.");
 	else
-		log.printString("Another error.");
+		log.printString(RED, "Another error.");
 
 	close(this->_sockfd);
 	setServerStatus(false);
@@ -122,7 +122,7 @@ void Server::run()
 {
 	while (this->getServerStatus() == true)
 	{
-		log.printString("Server is listening...");
+		log.printString(RED, "Server is listening...");
 		// einen User registrieren geht, wenn dann nochmal connect error
 
 		// timeout: -1 infinite timeout // standard von IBM ist 3 Minuten
@@ -140,9 +140,9 @@ void Server::run()
 			// _pollfds[0] stellt das erste pollfd struct dar in dem die server socket gespeichert ist. Nur über diese socket können sich neue User registrieren.
 			if ((this->_pollfds[0].revents & POLLIN) == POLLIN)		// oder (this->_pollfds... & POLLIN)
 			{
-				log.printString("A new user is being connected to server");
+				log.printString(RED, "A new user is being connected to server");
 				connectNewUser();
-				log.printString("--- Done. User connected to server");
+				log.printString(RED, "--- Done. User connected to server");
 				break ;
 			}	
 			else if ((this->_pfds_iterator->revents & POLLIN) == POLLIN)
@@ -200,11 +200,11 @@ void Server::connectNewUser()
 	if (new_fd < 0)
 	{
 		std::cout << "this is the errno number: " << errno << std::endl;
-		log.printString("Error: accept() failed");
+		log.printString(RED, "Error: accept() failed");
 		serverError(2);
 	}
 	else
-		log.printString("New incoming connection");
+		log.printString(RED, "New incoming connection");
 
 	std::cout << "we are in connectNewUser()" << std::endl;
 	// adding this connection fd to the pollfds for further action (messaging / joining channel/ etc.)
@@ -221,7 +221,7 @@ void Server::connectNewUser()
 	// User* new_user = new User(fd, ntohs(s_address.sin_port));	//bitshifting necessary? I think ntohs macht das schon
 	if (new_user->getState() == false)
 	{
-		log.printString("DELETE USER FUNCTION HERE."); 	
+		log.printString(RED, "DELETE USER FUNCTION HERE."); 	
 		//deleteUser(new_user);	//check with test server what happens
 		return ;
 	}
@@ -249,7 +249,7 @@ void Server::connectNewUser()
 void Server::disconnectUser(User* user)
 {
 	if (user)
-		log.printString("DISCONNECTING USER");
+		log.printString(RED, "DISCONNECTING USER");
 
 
 	// // maybe in try / catch in case of fd cannot be find/invalid fd?
@@ -257,7 +257,7 @@ void Server::disconnectUser(User* user)
 	// int user_fd = getUserfd(user);
 	// if (user_fd < 0)
 	// {
-	// 	log.printString("Error: no user found.");
+	// 	log.printString(RED, "Error: no user found.");
 	// 	serverError(4);
 	// }
 
@@ -330,7 +330,7 @@ not used, and should also be NULL. */
 // if (_pfds_iterator->revents != POLLIN)		//e.g. POLLHUP (in explanations.txt) when POLLHUP then disconnect and break
 // {
 // 	setServerStatus(false);
-// 	log.printString("Error: unexpected result. Nothing to read. Connection will be disabled.");
+// 	log.printString(RED, "Error: unexpected result. Nothing to read. Connection will be disabled.");
 // 	break ;
 // }
 

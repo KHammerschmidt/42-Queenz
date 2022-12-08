@@ -48,7 +48,7 @@ void User::receiveData(Server *server)
 	if (size == recv(this->_fd, &this->_buffer, BUFFER_SIZE, 0) < 0)				// search for NICK UND USER DANN REGISTER
 	{
 		//wenn user mehreren channels hinzutreten will dann am comma splitten (wenn JOIN #)
-		log.printString("Error: No data received by user.");
+		log.printString(RED, "Error: No data received by user.");
 		return ;
 	}
 	// could be eof/0 bytes received
@@ -58,7 +58,7 @@ void User::receiveData(Server *server)
 	{
 
 		// aus channel rausschmeißen		//channel kick (jeder user bekommt nachricht, und ganz rechts neue liste an usern (wie bei knuddels))
-		log.printString("status == delete");		//status == Delete;	// delete user?
+		log.printString(RED, "status == delete");		//status == Delete;	// delete user?
 		// user logt sich aus und muss disconnected werden und dann gelöscht
 	}
 
