@@ -2,7 +2,7 @@
 
 /* Default constructor which takes the server, the user which entered a command and the received message. */
 Command::Command(Server *server, User* user, const std::string& msg) 
-	: _server(server) { void execute(user, msg, command); }
+	: _server(server) { execute(user, msg); }
 
 /* Command destructor destroys all Command classes it invoked. */
 Command::~Command() {}
@@ -11,18 +11,18 @@ Command::~Command() {}
 /* Extracts the portion of the string that specifies the command to be performed. */
 int Command::extractCommand(const std::string& msg)
 {
-	if (!msg)
+	if (msg.length() == 0)
 		return -1;
 	
 	std::cout << "Calling sendPrivMsgUser" << std::endl;
-
+	this->_server->getStatus();
 	return 1;
 }
 
 /* Executes the user's command. */
 void Command::execute(User* user, const std::string& msg)
 {
-	switch(extractCommand())
+	switch(extractCommand(msg))
 	{
 		case PRIVMSGCH:
 			sendPrivMsgChannel(user, msg);
@@ -42,18 +42,24 @@ void Command::execute(User* user, const std::string& msg)
 /* Sends a private message to all channel members. */
 void Command::sendPrivMsgChannel(User* user, const std::string& msg)
 {
+	if (!user || msg.length() == 0)
+		return ;
 	std::cout << "Send here private message to channel members" << std::endl;
 }
 
 /* Sends a private message to a user. */
 void Command::sendPrivMsgUser(User* user, const std::string& msg)
 {
+	if (!user || msg.length() == 0)
+		return ;
 	std::cout << "Send here private message to a user" << std::endl;
 }
 
 /* Sends a ping to the server. */
 void Command::sendPing(User* user, const std::string& msg)
 {
+	if (!user || msg.length() == 0)
+		return ;
 	std::cout << "Send a ping to server" << std::endl;
 }
 

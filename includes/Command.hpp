@@ -8,7 +8,7 @@
 #include "User.hpp"
 #include "Channel.hpp"
 
-enum CommandState{ PRIVMSGCH, PRIVMSGU, PING}
+enum CommandState{ PRIVMSGCH, PRIVMSGU, PING};
 
 class Command
 {
@@ -16,7 +16,7 @@ class Command
 		Server* _server;
 
 	public:
-		Command();
+		Command(Server* server, User* user, const std::string& msg);
 		virtual ~Command();
 
 		void execute(User* user, const std::string& msg);
