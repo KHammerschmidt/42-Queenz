@@ -15,7 +15,7 @@
 
 class User
 {
-	Log							log;
+
 private:
 	int							_fd;
 	int							_port;

@@ -48,14 +48,14 @@ void User::receiveData()
 	if (size < 0)	// search for NICK UND USER DANN REGISTER
 	{
 		std::cout << "BUFFER: " << buffer << std::endl;
-		log.printStringCol(WARNING, "No data received by user.");
+		Log::printStringCol(WARNING, "No data received by user.");
 		return ;
 	}
 	else if (size == 0)
 	{
 		// could be eof or 0 bytes received
 		// aus channel rausschmeißen		//channel kick (jeder user bekommt nachricht, und ganz rechts neue liste an usern (wie bei knuddels))
-		log.printStringCol(CRITICAL, "status == delete");		//status == Delete;	// delete user?
+		Log::printStringCol(CRITICAL, "status == delete");		//status == Delete;	// delete user?
 		// user logt sich aus und muss disconnected werden und dann gelöscht
 	}
 	else
@@ -64,8 +64,8 @@ void User::receiveData()
 		// previous received messaged are being appended to member variable _buffer.
 		this->_buffer.append(buffer);
 
-		log.printStringCol(LOG, buffer);
-		log.printStringCol(LOG, this->_buffer);
+		Log::printStringCol(LOG, buffer);
+		Log::printStringCol(LOG, this->_buffer);
 	}
 }
 

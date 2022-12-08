@@ -29,7 +29,6 @@
 
 class User;
 class Channel;
-class Log;
 
 class Server
 {
@@ -74,15 +73,11 @@ public:
 	void run();
 	void serverError(int code);
 
-	/* Getters of private member types*/		// --> which ones are needed
-	int getSocket() const;
-	int getPort() const;
+	/* Getters of private variables */
+	int 		getPort() const;
+	int 		getTimeout() const;
+	bool 		getServerStatus() const;
 	std::string getPassword() const;
-	bool getStatus() const;
-	int getTimeout() const;
-	// std::string getHostname() const;
-	bool getServerStatus() const;
-
 
 	void sendPing();
 

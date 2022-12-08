@@ -10,17 +10,19 @@
 #define YELLOW  "\033[33m"
 #define BLUE    "\033[34m"
 
+# define INVALID_PARAMS "Error: Invalid parameters.\nUsage: ./ircserv <valid port> <password>"
+
 enum MSG_STATE { REGULAR, LOG, CRITICAL, WARNING };
 
-class Log
+struct Log
 {
 	
 public:
 	Log();
 	~Log();
 
-	void printStringCol(int state, std::string msg);
-	void printStringNoNewline(std::string msg);
+	static void printStringCol(int state, std::string msg);
+	static void printStringNoNewline(std::string msg);
 };
 
 #endif

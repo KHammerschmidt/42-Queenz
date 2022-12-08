@@ -15,7 +15,7 @@ int Command::extractCommand(const std::string& msg)
 		return -1;
 	
 	std::cout << "Calling sendPrivMsgUser" << std::endl;
-	this->_server->getStatus();
+	this->_server->getServerStatus();
 	return 1;
 }
 

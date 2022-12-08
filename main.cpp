@@ -1,27 +1,32 @@
-#include "includes/Server.hpp"
 #include <csignal>
 #include <iostream>
+#include "includes/Server.hpp"
 
-bool running = true;		//link running with command receive to set it right 
-
+bool running = true;
 void handler(int) { running = false; }
+
+int parse(int argc, char** argv)
+{
+	if (argc != 3 || std::atoi(argv[1]) <= 0 || std::atoi(argv[1]) > 65535)
+		return -1;
+	
+	return 0;
+}
 
 int main(int argc, char** argv)
 {
-	if (argc != 3)
+	if (parse(argc, argv) < 0)
 	{
-		std::cout << "Error: Invalid paramters. Usage: ./ircserv <port> <password>" << std::endl;
+		Log::printStringCol(CRITICAL, INVALID_PARAMS);
 		return -1;
 	}
 
-	Server server(argv);
+	Server* server = new Server(argv);
 
-
-	// kennst du dich mit signals aus? :D
 	signal(SIGINT, handler);
 
 	while (running)
-		server.run();
+		server->run();
 
 	return 0;
 }
