@@ -21,13 +21,13 @@ void 		User::setNickUserHost() { this->_nick_user_host =  this->getNickname() + 
 /* User receives data with recv() and saves the read bytes within private this->_buffer string. */
 void User::receiveData()
 {
-	char buffer[BUFFER_SIZE + 1];
-	memset(&buffer, 0, sizeof(BUFFER_SIZE + 1));
+	char recv_buffer[BUFFER_SIZE + 1];
+	memset(&recv_buffer, 0, sizeof(BUFFER_SIZE + 1));
 
-	size_t size = recv(this->_fd, &buffer, BUFFER_SIZE, 0);
+	size_t size = recv(this->_fd, &recv_buffer, BUFFER_SIZE, 0);
 	if (size < 0)	// search for NICK UND USER DANN REGISTER
 	{
-		std::cout << "BUFFER: " << buffer << std::endl;
+		std::cout << "BUFFER: " << recv_buffer << std::endl;
 		Log::printStringCol(WARNING, "No data received by user.");
 		return ;
 	}
@@ -42,9 +42,9 @@ void User::receiveData()
 	{
 		buffer[size] = 0;
 		// previous received messaged are being appended to member variable _buffer.
-		this->_buffer.append(buffer);
+		this->_buffer.append(recv_buffer);
 
-		Log::printStringCol(LOG, buffer);
+		Log::printStringCol(LOG, recv_buffer);
 		Log::printStringCol(LOG, this->_buffer);
 	}
 }
