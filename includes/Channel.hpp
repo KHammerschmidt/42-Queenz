@@ -16,6 +16,14 @@ class Channel
 private:
 	std::string _name;
 	std::string	_topic;
+	std::vector<Channel *> _channels;
+	std::vector<User *> _users;
+
+
+	std::string _mode;
+	std::map<int, std::string> user_mode;
+	std::vector<User *> invited;
+
 
 	// std::string mode;
 
@@ -23,25 +31,36 @@ private:
 	// std::map<std::string, User*> channel_operators; // channel operators can perform
 	// std::map<std::string, User*> channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator
 
-	// std::map<std::string, Channel*>	channel_list;	// list of all current channels
-
 public:
 	Channel();
 	~Channel();
 
-	/* void setName(const std::string& name);
-	std::string& getName();
+	void 		setName(const std::string name);
+	std::string getName() const;
 
-	void setTopic(const std::string& topic);
-	std::string& getTopic();
-	void ChangeTopic(const std::string& newTopic);
+	void 		setTopic(const std::string topic);
+	std::string getTopic() const;
+	void 		changeTopic(const std::string newTopic);
 
-	void setMode(const std::string& mode);
-	std::string& getMode();
-	void changeMode(const std::string& mode);
+	void		addUser(User *user);
+	void		deleteUser(User *user);
 
+	void static createChannel();
+	void		deleteChannel();
+
+	void setMode(const std::string mode);
+	std::string getMode() const;
+	//void changeMode(const std::string mode);
 	//lists all available modes and returns the valid one or an error
-	void selectNewMode();
+	//void selectNewMode();
+
+
+
+
+
+};
+
+
 
 	// INVITE  - Invite a client to an invite-only channel (mode +i)
 	void invite();
@@ -54,14 +73,6 @@ public:
 	// TOPIC   - Change the channel topic in a mode +t channel
 	void topic();
 
-
-	// channels are created when the first user joins it
-	void createChannel(const std::string& name, const User& creator);
-	// channels are deleted when the last user leaves it
-	void deleteChannel();
-
-	// function to reference channel?
-	// any client can reference the channel using the name of the channel
 
 	void giveOpPrivileges(const User& name);
 	void giveCreatPrivileges(const User& name);
@@ -81,7 +92,6 @@ public:
 
 
 	// BITTE UPDATE OB ICH ETWAS VON DEN CHANNELS VERGESSEN HABE :)
-};
 
 
 #endif
