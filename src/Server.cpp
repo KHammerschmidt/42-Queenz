@@ -343,14 +343,14 @@ not used, and should also be NULL. */
 // ip vom server
 
 
-HOW TO CONNECT SO WEECHAT, du brauchst 2 Terminals (cd 42-Queenz)
-Terminal 1: $ weechat 
-			$ /server add irc local-ip/port
-Terminal 2: $ make re
-			$ ./ircserv port pw (ich habs immer auf port 8080 gemacht)
-Terminal 1: $ /connect irc -password=pw
-			$ /connect irc (um User zu registrieren)
-Dann bekommst du angezeigt dass der neue User registriert wurde aber keine Daten eingelesen wurden.
+// HOW TO CONNECT SO WEECHAT, du brauchst 2 Terminals (cd 42-Queenz)
+// Terminal 1: $ weechat 
+// 			$ /server add irc local-ip/port
+// Terminal 2: $ make re
+// 			$ ./ircserv port pw (ich habs immer auf port 8080 gemacht)
+// Terminal 1: $ /connect irc -password=pw
+// 			$ /connect irc (um User zu registrieren)
+// Dann bekommst du angezeigt dass der neue User registriert wurde aber keine Daten eingelesen wurden.
 
 
 
