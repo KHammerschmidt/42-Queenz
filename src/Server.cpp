@@ -96,15 +96,10 @@ void Server::run()
 {
 	while (this->getServerStatus() == true)
 	{
-	
 		Log::printStringCol(REGULAR, SERV_LISTENING);
 
-		// if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)
-		if (poll(_pollfds.begin().base(), _pollfds.size(), -1) < 0)
+		if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)
 			serverError(2);
-
-		if (std::time(0) - this->_last_ping >= this->_timeout)
-			sendPing();
 
 		for (pfds_iterator = this->_pollfds.begin(); pfds_iterator != this->_pollfds.end(); pfds_iterator++)
 		{
@@ -115,7 +110,7 @@ void Server::run()
 
 			if ((pfds_iterator->revents & POLLHUP) == POLLHUP)
 				serverError(7);
-		
+
 			if ((pfds_iterator->revents & POLLIN) == POLLIN)
 			{
 				if (this->_pollfds[0].revents == POLLIN)
@@ -123,10 +118,8 @@ void Server::run()
 					connectNewUser();
 					break ;
 				}
-				this->_users[pfds_iterator->fd]->receiveData();	
+				this->_users[pfds_iterator->fd]->readMessage();
 			}
-
-			// wenn keine Nachricht dann schickt user ping (nach einer Minute oder so) und server muss an den user poing senden ansonsten "connection lost"
 		}
 	}
 }
@@ -160,7 +153,7 @@ void Server::connectNewUser()
 	User* new_user = new User(new_fd, ntohs(s_address.sin_port));
 	if (new_user->getState() != 0)
 	{
-		Log::printStringCol(REGULAR, ERR_USER_REGISTRY); 	
+		Log::printStringCol(REGULAR, ERR_USER_REGISTRY);
 		//deleteUser(new_user);	//check with test server what happens
 		return ;
 	}
@@ -279,7 +272,7 @@ not used, and should also be NULL. */
 
 
 // HOW TO CONNECT SO WEECHAT, du brauchst 2 Terminals (cd 42-Queenz)
-// Terminal 1: $ weechat 
+// Terminal 1: $ weechat
 // 			$ /server add irc local-ip/port
 // Terminal 2: $ make re
 // 			$ ./ircserv port pw (ich habs immer auf port 8080 gemacht)
@@ -320,7 +313,7 @@ not used, and should also be NULL. */
 	// client ist ein pair client <pollfd, User*> keine Map
 	// ip rausholen () --> als integer kommt der und der muss umgewandelt werden in (1. byte )
 	// int umwandeln zum string ip addresse (1. byte rechts ist die linke Zahl bei IP addresse)
-	// create a new User with 
+	// create a new User with
 
 
 // NOT SURE ABOUT LOOP
@@ -342,7 +335,7 @@ not used, and should also be NULL. */
 // 	connectNewUser();
 // 	Log::printStringCol(LOG, "--- Done. User connected to server");
 // 	break ;
-// }	
+// }
 
 // if ((this->pfds_iterator->revents & POLLIN) == POLLIN)
 // {

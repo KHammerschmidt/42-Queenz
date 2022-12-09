@@ -24,6 +24,7 @@
 #include "Log.hpp"
 
 #define HOSTNAME "@42-Queenz.fr.42"
+#define BUFFER_SIZE 520
 
 class User;
 class Channel;
@@ -36,7 +37,7 @@ class Server
 		int								_sockfd;
 		int								_timeout;
 		bool							_serverRunningStatus;
-		time_t							_last_ping;
+		// time_t							_last_ping;
 		std::string 					_password;
 
 		std::vector<pollfd> 			_pollfds;
@@ -49,15 +50,15 @@ class Server
 		std::map<std::string, Channel*>	channel_iterator;
 
 	private:
+		void newSocket(void);
+		void sendPing();			//who sends the ping? client? automatic?
+
 		void connectNewUser();
-		void sendPing();
 		void serverError(int code);
 
 		void disconnectUser(User* user);
 		void deleteUser(User* user);
 		void printUser();
-
-
 
 	public:
 		Server(char** argv);
@@ -69,11 +70,10 @@ class Server
 		int 		getTimeout() const;
 		bool 		getServerStatus() const;
 		std::string getPassword() const;
-		User* 		getUser(int fd);	
+		User* 		getUser(int fd);
 
 		void setPort(std::string port_str);
 		void setServerStatus(bool status);
-		void newSocket(void);
 };
 
 #endif

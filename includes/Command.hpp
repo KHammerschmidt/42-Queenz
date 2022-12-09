@@ -8,6 +8,8 @@
 #include "User.hpp"
 #include "Channel.hpp"
 
+
+
 enum CommandState{ PRIVMSGCH, PRIVMSGU, PING};
 
 class Command
@@ -18,6 +20,8 @@ class Command
 	public:
 		Command(Server* server, User* user, const std::string& msg);
 		virtual ~Command();
+
+		static void invokeMessage(User* user);
 
 		void execute(User* user, const std::string& msg);
 		int extractCommand(const std::string& msg);
@@ -31,8 +35,11 @@ class Command
 #endif
 
 
+// invokeMessage()
+// 1.
+
 // maybe a vector with command args  ????
-// vector[0] == command schlagwort 
+// vector[0] == command schlagwort
 // vector[1] == user
 // vector[2] == user to receive
 // vector[3] = channel name

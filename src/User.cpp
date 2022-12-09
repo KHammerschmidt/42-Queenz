@@ -8,8 +8,7 @@ User::User(int fd, uint16_t port)
 	this->_state = CONNECTED;
 }
 
-bool User::isRegistered() const { return this->_state >= REGISTERED; }
-
+bool User::isRegistered() const { return (this->_state >= REGISTERED); }
 std::string	User::getUsername() { return this->_username; }
 std::string User::getNickname() { return this->_nickname; }
 bool 		User::getState() { return _state; }
@@ -18,8 +17,8 @@ time_t 		User::getLastPing() const { return this->_last_ping; }
 void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
 void 		User::setNickUserHost() { this->_nick_user_host =  this->getNickname() + "!" + this->getUsername() + HOSTNAME; }
 
-/* User receives data with recv() and saves the read bytes within private this->_buffer string. */
-void User::receiveData()
+/* User receives data with recv() and saves the read bytes within private this->buffer string. */
+void User::readMessage()
 {
 	char recv_buffer[BUFFER_SIZE + 1];
 	memset(&recv_buffer, 0, sizeof(BUFFER_SIZE + 1));
@@ -41,11 +40,10 @@ void User::receiveData()
 	else
 	{
 		recv_buffer[size] = 0;
-		// previous received messaged are being appended to member variable _buffer.
-		this->_buffer.append(recv_buffer);
+		// previous received messaged are being appended to member variable buffer.
+		this->buffer.append(recv_buffer);
 
-		Log::printStringCol(LOG, recv_buffer);
-		Log::printStringCol(LOG, this->_buffer);
+		Command::invokeMessage(this);
 	}
 }
 
@@ -90,6 +88,7 @@ void User::write(std::string msg)
 void User::sendPong()
 {
 	// this->write()
+	// wenn keine Nachricht dann schickt user ping (nach einer Minute oder so) und server muss an den user poing senden ansonsten "connection lost"
 }
 
 void reply(std::string& reply)
