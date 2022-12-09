@@ -166,7 +166,7 @@ void Server::connectNewUser()
 	}
 
 	this->_users.insert(std::make_pair(new_fd, new_user));
-	std::cout << "New User on port: " << new_fd << " | " << inet_ntoa(s_address.sin_addr) << ":" << ntohs(s_address.sin_port) << " (" << new_fd << ")" << std::endl;
+	std::cout << "New User on port: new_fd: " << new_fd << " | inet_ntoa: " << inet_ntoa(s_address.sin_addr) << ":" << ntohs(s_address.sin_port) << " (" << new_fd << ")" << std::endl;
 }
 
 /* Server sends Ping to users to see if connection is still intact. */
