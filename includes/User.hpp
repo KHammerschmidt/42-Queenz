@@ -2,17 +2,20 @@
 #define USER_HPP
 
 #include <arpa/inet.h>
-#include "Server.hpp"
-#include "Channel.hpp"
 #include "Log.hpp"
 #include <sstream>
 #include <ctime>
+#include "Server.hpp"
+#include "Channel.hpp"
+#include "Command.hpp"
 
-# define BUFFER_SIZE 512
+# define BUFFER_SIZE 520
 # define MSG_END "\r\n"
 
 enum USER_STATE { CONNECTED, NICK, PASSWORD, REGISTERED, ONLINE, DELETE};
 // enum USER_ROLE {CREATOR, OPERATOR, USER}
+
+class Command;
 
 class User
 {
@@ -28,12 +31,15 @@ private:
 	std::string				_fullname;
 	std::string				_nick_user_host;
 
-	std::string							_buffer;
 	std::vector<std::string> 			_dataToSend;
 	std::map<std::string, Channel *> 	channels;
 	// Channel* channel;
 
+	std::map<std::string, void(*)(Command *)> command_function;
+
 public:
+	std::string							buffer;
+
 	User(int fd, uint16_t port);
 	~User();
 
@@ -57,6 +63,7 @@ public:
 	void registerNewUser();
 	int getFd();
 
+	void readMessage();
 	void write(std::string msg);
 	void reply(std::string& reply);
 
@@ -65,7 +72,7 @@ public:
 	void leave() {};
 
 	void sendPong();
-	
-};	
+
+};
 
 #endif
