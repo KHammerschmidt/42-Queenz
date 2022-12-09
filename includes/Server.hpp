@@ -40,7 +40,7 @@ class Server
 		std::string 					_password;
 
 		std::vector<pollfd> 			_pollfds;
-		std::map<int, User*>			_users;						// std::pair<pollfd, User*> _user;
+		std::map<int, User*>			_users;						
 		std::map<std::string, Channel*> _channels;
 
 	public:
