@@ -40,7 +40,7 @@ void User::receiveData()
 	}
 	else
 	{
-		buffer[size] = 0;
+		recv_buffer[size] = 0;
 		// previous received messaged are being appended to member variable _buffer.
 		this->_buffer.append(recv_buffer);
 
@@ -84,13 +84,12 @@ void User::write(std::string msg)
 }
 
 
-
 //wenn user mehreren channels hinzutreten will dann am comma splitten (wenn JOIN #)
 
 
 void User::sendPong()
 {
-
+	// this->write()
 }
 
 void reply(std::string& reply)

@@ -16,7 +16,7 @@
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <unistd.h>
-
+#include <ctime>
 #include <arpa/inet.h>
 
 #include "User.hpp"
@@ -36,6 +36,7 @@ class Server
 		int								_sockfd;
 		int								_timeout;
 		bool							_serverRunningStatus;
+		time_t							_last_ping;
 		std::string 					_password;
 
 		std::vector<pollfd> 			_pollfds;
@@ -68,6 +69,7 @@ class Server
 		int 		getTimeout() const;
 		bool 		getServerStatus() const;
 		std::string getPassword() const;
+		User* 		getUser(int fd);	
 
 		void setPort(std::string port_str);
 		void setServerStatus(bool status);

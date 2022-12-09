@@ -1,12 +1,10 @@
 #include "../includes/Server.hpp"
 
-/* Getters for private variables. */
 int 		Server::getPort() const { return this->_port; }
 int 		Server::getTimeout() const { return this->_timeout; }
 bool 		Server::getServerStatus() const { return this->_serverRunningStatus; }
 std::string Server::getPassword() const { return this->_password; }
 
-/* Destructor */
 Server::~Server()
 {
 	// delete channels // more to add??? ????
@@ -44,10 +42,7 @@ void Server::setPort(std::string port_str)
 	setServerStatus(true);
 }
 
-/* Creates a new socket, sets options and binds it to the server. 									*/
-/* In detail: New socket is created and set to NON_BLOCKING. The sockaddr_struct is initialised
-   (family = IPv4, open to all incoming connections, port saved). Socket is linked to serv_address 
-   struct (enables access to variables like internet address). Make socket listen to server port. 	*/
+/* Creates a new socket, sets options and binds it to the server and listens on socket. */
 void Server::newSocket(void)
 {
 	this->_sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -74,8 +69,7 @@ void Server::newSocket(void)
 		serverError(1);
 }
 
-/* Prints an error message based on error code. Closes the server socket and sets server status
-to false, hence stops the poll loop and makes the server shut down. 							*/
+/* Prints error messages, closes server fd and sets server status to false which shuts down the server. */
 void Server::serverError(int code)
 {
 	switch(code)
@@ -102,19 +96,26 @@ void Server::run()
 {
 	while (this->getServerStatus() == true)
 	{
+	
 		Log::printStringCol(REGULAR, SERV_LISTENING);
 
-		if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)
+		// if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)
+		if (poll(_pollfds.begin().base(), _pollfds.size(), -1) < 0)
 			serverError(2);
+
+		if (std::time(0) - this->_last_ping >= this->_timeout)
+			sendPing();
 
 		for (pfds_iterator = this->_pollfds.begin(); pfds_iterator != this->_pollfds.end(); pfds_iterator++)
 		{
 			if (pfds_iterator->revents == 0)
 				continue;
 
+			//who sends ping? to where? and the same than revents == 0?
+
 			if ((pfds_iterator->revents & POLLHUP) == POLLHUP)
 				serverError(7);
-
+		
 			if ((pfds_iterator->revents & POLLIN) == POLLIN)
 			{
 				if (this->_pollfds[0].revents == POLLIN)
@@ -128,6 +129,16 @@ void Server::run()
 			// wenn keine Nachricht dann schickt user ping (nach einer Minute oder so) und server muss an den user poing senden ansonsten "connection lost"
 		}
 	}
+}
+
+User* Server::getUser(int fd)
+{
+	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
+	{
+		if ((*iter).first == fd)
+			return ((*iter).second);
+	}
+	return NULL;
 }
 
 /* To register, user sends request via server socket, the only outer connection. A new fd for user is created with accept(). */
@@ -147,7 +158,6 @@ void Server::connectNewUser()
 	this->_pollfds.push_back(user_pollfd);
 
 	User* new_user = new User(new_fd, ntohs(s_address.sin_port));
-	std::cout << new_user->getState() << std::endl;
 	if (new_user->getState() != 0)
 	{
 		Log::printStringCol(REGULAR, ERR_USER_REGISTRY); 	
@@ -159,24 +169,26 @@ void Server::connectNewUser()
 	std::cout << "New User on port: " << new_fd << " | " << inet_ntoa(s_address.sin_addr) << ":" << ntohs(s_address.sin_port) << " (" << new_fd << ")" << std::endl;
 }
 
-// int Server::getUserfd(User* user)
-// {
-// 	int fd;
-// 	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
-// 	{
-// 		if (*iter->second == user)
-// 			return user->getFd();
-// 	}
-// 	return -1;
-// }
+/* Server sends Ping to users to see if connection is still intact. */
+void Server::sendPing()
+{
+	time_t current_time = std::time(0);
+
+	for (std::map<int, User*>::iterator iter = _users.begin(); iter != _users.end(); iter++)
+	{
+		if (current_time - ((*iter).second->getLastPing()) >= static_cast<int>(this->_timeout))
+			serverError(5);																//disconnect user / delete user / etc.
+		else if ((*iter).second->getState() == true)									//online
+			(*iter).second->write("PING " + (*iter).second->getNickname());				//user has then to answer with pong to server
+	}
+}
 
 /* Erases file descriptor from vector _users and _pollfds.
-   Maybe also delete user from channel? how to check internal? */
+	Maybe also delete user from channel? how to check internal? */
 void Server::disconnectUser(User* user)
 {
 	if (user)
 		Log::printStringCol(LOG, "DISCONNECTING USER");
-
 
 	// // maybe in try / catch in case of fd cannot be find/invalid fd?
 	// // User* user = this->_users.at(fd);
@@ -217,6 +229,17 @@ void Server::disconnectUser(User* user)
 // 	return users;
 // }
 
+// int Server::getUserfd(User* user)
+// {
+// 	int fd;
+// 	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
+// 	{
+// 		if (*iter->second == user)
+// 			return user->getFd();
+// 	}
+// 	return -1;
+// }
+
 /* Function prints User credentials: nickname, username, fullname fd */
 // void Server::printUser()
 // {
@@ -226,22 +249,6 @@ void Server::disconnectUser(User* user)
 // 		std::cout << " | port: " << iter.getFD() << std::endl;
 // 	}
 // }
-
-
-void Server::sendPing()
-{
-	time_t current_time = std::time(0);
-	int timeout = this->_timeout;
-
-	for (std::map<int, User*>::iterator iter = _users.begin(); iter != _users.end(); iter++)
-	{
-		if (current_time - ((*iter).second->getLastPing()) >= static_cast<int>(timeout))
-			serverError(5);									//disconnect user / delete user / etc.
-		else if ((*iter).second->getState() == true)		//online
-			(*iter).second->write("PING " + (*iter).second->getNickname());
-	}
-}
-
 
 
 
@@ -356,3 +363,18 @@ not used, and should also be NULL. */
 // 	this->setServerStatus(false);
 // 	break ;
 // }
+
+
+
+
+
+
+
+
+// PING
+// if (std::time(0) - last_ping >= ping)
+
+// if (getUser(pfds_iterator->fd).getLastPing() + >= this->_timeout)
+// 	this->sendPing();
+// 	this->_users[pfds_iterator->fd]->send
+// 	command->getUser().sendTo(command->getUser(), "PONG :" + command->getParameters()[0]);
