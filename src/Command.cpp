@@ -121,9 +121,47 @@ void Command::sendPrivMsgChannel(User* user, std::string message)
 	Log::printStringCol(CRITICAL, message);
 };
 
-void Command::sendPrivMsgUser(User* user, std::string message)
+void Command::sendPrivMsgUser(User* user, std::string msg)
 {
-	if (!user || message.length() == 0)
+
+
+	
+	int index_of_first_space;
+
+	index_of_first_space = msg.find_first_of(" ");
+	std::string command = msg.substr(1, index_of_first_space - 1);
+	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+	if (command.compare("PRIVMSG") != 0)
+		std::cout << "error";
+
+
+
+	//find  first space to have lenght of nick
+	index_of_first_space = msg.find_first_of(" ");
+	if (!index_of_first_space)	
 		return ;
-	Log::printStringCol(CRITICAL, message);
+	std::string nick_receiver = msg.substr(0, index_of_first_space - 1);
+	//check that nick is valid, vector with all nicks?
+	/*-> implement ...*/
+
+	//text to print
+	std::string text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+
+	//? how do I check thatprinted by dest KATHY
+	std::cout << user->getNickname() << " | " << text << std::endl;
+
+
+
+
+
+	Log::printStringCol(CRITICAL, msg);
 };
+
+// void 	Command::nick(User* user, const std::string& msg)
+// {
+// 		if (msg.length() == 0)
+// 			return ;
+
+// 		user->setNickname(msg);
+
+// }
