@@ -14,7 +14,6 @@ void Command::invokeMessage(User *user)
 	// while (pos_end_command != std::string::npos)
 	// {
 	std::string tmp = user->buffer.substr(0, pos_end_command);						//create a substring until delimiter ("\r\n")
-	std::cout << " This is the substring of the command: " << tmp << std::endl;		//test printing
 	cmds_to_exec.push_back(tmp);													// push at end of vector
 	user->buffer.erase(0, user->buffer.length());
 

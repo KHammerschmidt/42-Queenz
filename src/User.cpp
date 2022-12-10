@@ -45,7 +45,6 @@ void User::readMessage(Server* server)
 		// previous received messaged are being appended to member variable buffer.
 		this->buffer.append(recv_buffer);
 		command_handler.invokeMessage(this);
-		Log::printStringCol(LOG, "LOG: INVOKING COMMAND DONE!");
 	}
 }
 
