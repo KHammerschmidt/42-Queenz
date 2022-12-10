@@ -71,21 +71,20 @@ void Command::execute_command(User* user, std::vector<std::string> cmds_to_exec)
 int Command::extract_command(const std::string& message)
 {
 	if (message.find("/NICK") != std::string::npos)
-		return 1;												//REGISTER NICKNAME
+		return 0;												//REGISTER NICKNAME
 	else if (message.find("/USER") != std::string::npos)
-		return 2;												//REGISTER USERNAME
+		return 1;												//REGISTER USERNAME
 	else if (message.find("/PING") != std::string::npos)
-		return 3;												//SEND PONG
+		return 2;												//SEND PONG
 	else if (message.find("/JOIN") != std::string::npos)
-		return 4;												//JOIN CHANNEL
+		return 3;												//JOIN CHANNEL
 	else if (message.find("/PRIVMSG #") != std::string::npos)
-		return 5;												//PRIVMSG CHANNEL
+		return 4;
 	else if (message.find("/PRIVMSG") != std::string::npos || message.find("/NOTICE") != std::string::npos)
-		return 6;												//PRIVMSG
+		return 5;
 	else
 		return -1;
 }
-
 
 void Command::sendNickname(User* user, std::string message)
 {
