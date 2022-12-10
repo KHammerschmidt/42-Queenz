@@ -1,15 +1,29 @@
 NAME = ircserv
 CFLAGS = -Wall -Werror -Wextra -std=c++98
+LDFLAGS =
 CC = c++
-SRC = 	main.cpp	\
-		./src/*.cpp
+VPATH = src/
+SRC = 	main.cpp \
+		Channel.cpp \
+		Command.cpp \
+		Log.cpp \
+		Server.cpp \
+		User.cpp
 
-OBJ = $(SRC.cpp=.o)
+OBJDIR = obj/
+
+OBJ = $(addprefix $(OBJDIR), $(patsubst %.cpp, %.o, $(SRC)))
 
 all: $(NAME)
 
-$(NAME): $(OBJ)
-	$(CC) $(CFLAGS) $(SRC) -o $@
+$(OBJDIR)%.o: %.cpp
+	$(CC) $(CFLAGS) -c  $< -o $@
+
+$(OBJDIR):
+	mkdir $(OBJDIR)
+
+$(NAME): $(OBJDIR) $(OBJ)
+	$(CC) $(LDFLAGS) $(OBJ) -o $@
 
 clean:
 	rm -rf $(OBJ)

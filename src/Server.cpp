@@ -20,7 +20,7 @@ Server::~Server()
 	delete this;
 }
 
-Server::Server(char** argv)
+Server::Server(char** argv)	//wenn static instance dann constructor ohne parameter
 {
 	Log::printStringCol(REGULAR, WELCOME_BEFORE);
 
@@ -118,7 +118,7 @@ void Server::run()
 					connectNewUser();
 					break ;
 				}
-				this->_users[pfds_iterator->fd]->readMessage();
+				this->_users[pfds_iterator->fd]->readMessage(this);
 			}
 		}
 	}
