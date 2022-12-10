@@ -1,4 +1,5 @@
 #include "../includes/User.hpp"
+#include "../includes/Command.hpp"
 
 User::~User() {}
 User::User(int fd, uint16_t port)
@@ -18,15 +19,16 @@ void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
 void 		User::setNickUserHost() { this->_nick_user_host =  this->getNickname() + "!" + this->getUsername() + HOSTNAME; }
 
 /* User receives data with recv() and saves the read bytes within private this->buffer string. */
-void User::readMessage()
+void User::readMessage(Server* server)
 {
+	Command command_handler(server);
+
 	char recv_buffer[BUFFER_SIZE + 1];
 	memset(&recv_buffer, 0, sizeof(BUFFER_SIZE + 1));
 
 	size_t size = recv(this->_fd, &recv_buffer, BUFFER_SIZE, 0);
-	if (size < 0)	// search for NICK UND USER DANN REGISTER
+	if (size < 0)					// search for NICK UND USER DANN REGISTER otherwise delete user
 	{
-		std::cout << "BUFFER: " << recv_buffer << std::endl;
 		Log::printStringCol(WARNING, "No data received by user.");
 		return ;
 	}
@@ -42,8 +44,8 @@ void User::readMessage()
 		recv_buffer[size] = 0;
 		// previous received messaged are being appended to member variable buffer.
 		this->buffer.append(recv_buffer);
-
-		Command::invokeMessage(this);
+		command_handler.invokeMessage(this);
+		Log::printStringCol(LOG, "LOG: INVOKING COMMAND DONE!");
 	}
 }
 
@@ -78,6 +80,8 @@ void User::readMessage()
 
 void User::write(std::string msg)
 {
+
+
 	this->_dataToSend.push_back(msg);
 }
 

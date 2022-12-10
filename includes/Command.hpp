@@ -7,10 +7,11 @@
 #include "Server.hpp"
 #include "User.hpp"
 #include "Channel.hpp"
+#include "Log.hpp"
 
+enum CommandState{ NICK, USER, PING, JOIN, PRIVMSG_CH, PRIVMSG_U };
 
-
-enum CommandState{ PRIVMSGCH, PRIVMSGU, PING};
+// class User;
 
 class Command
 {
@@ -18,17 +19,27 @@ class Command
 		Server* _server;
 
 	public:
-		Command(Server* server, User* user, const std::string& msg);
-		virtual ~Command();
+		Command(Server* server);
+		~Command();
 
-		static void invokeMessage(User* user);
+		void invokeMessage(User* user);
 
 		void execute(User* user, const std::string& msg);
-		int extractCommand(const std::string& msg);
+		void execute_command(User* user, std::vector<std::string> cmds_to_exec);
+		int extract_command(const std::string& msg);
 
-		void sendPrivMsgChannel(User *user, const std::string& msg);
-		void sendPrivMsgUser(User* user, const std::string& msg);
-		void sendPing(User* user, const std::string& msg);
+		void print_cmds_to_exec(std::vector<std::string> cmds_to_exec);
+
+		// void sendPrivMsgChannel(User *user, const std::string& msg);
+		// void sendPrivMsgUser(User* user, const std::string& msg);
+		// void sendPing(User* user, const std::string& msg);
+
+		void sendNickname(User* user, std::string message);
+		void sendUsername(User* user, std::string message);
+		void sendPong(User* user, std::string message);
+		void sendJoin(User* user, std::string message);
+		void sendPrivMsgChannel(User* user, std::string message);
+		void sendPrivMsgUser(User* user, std::string message);
 
 };
 

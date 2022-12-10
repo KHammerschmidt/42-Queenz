@@ -8,7 +8,6 @@
 
 #include <errno.h>				// FOR DEBUG ONLY!!
 
-
 #include <ctime>
 #include <netinet/in.h>
 #include <poll.h>
@@ -29,9 +28,11 @@
 class User;
 class Channel;
 
+//static Server pointer
+// gucken ob server initialisiert ist, ansonsten neue Instanz vom Constructor
+
 class Server
 {
-
 	private:
 		int								_port;						//int oder std::string
 		int								_sockfd;

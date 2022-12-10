@@ -10,17 +10,20 @@
 #include "Command.hpp"
 
 # define BUFFER_SIZE 520
-# define MSG_END "\r\n"
+# define MSG_END "\n"				// "\r\n"
 
-enum USER_STATE { CONNECTED, NICK, PASSWORD, REGISTERED, ONLINE, DELETE};
+enum USER_STATE { CONNECTED, NICKNAME, PASSWORD, REGISTERED, ONLINE, DELETE};
 // enum USER_ROLE {CREATOR, OPERATOR, USER}
 
 class Command;
 
 class User
 {
+	Command					command_handler();
 
 private:
+	Server*					_server;
+
 	int						_fd;
 	int						_port;
 	time_t					_last_ping;
@@ -35,10 +38,11 @@ private:
 	std::map<std::string, Channel *> 	channels;
 	// Channel* channel;
 
-	std::map<std::string, void(*)(Command *)> command_function;
+
+	// std::map<std::string, void(*)(Command *)> command_function;
 
 public:
-	std::string							buffer;
+	std::string						buffer;
 
 	User(int fd, uint16_t port);
 	~User();
@@ -63,7 +67,7 @@ public:
 	void registerNewUser();
 	int getFd();
 
-	void readMessage();
+	void readMessage(Server* server);
 	void write(std::string msg);
 	void reply(std::string& reply);
 
