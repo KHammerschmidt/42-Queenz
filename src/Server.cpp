@@ -12,13 +12,20 @@ Server::~Server()
 
 	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
 	{
-		Log::printStringCol(LOG, "DELETING / DISCONNECTING USER");
-		// disconnectUser(*(*iter)->second);
-		// deleteUser(*iter->first);  // implement
-		// deleteUser(*iter->second);
+		close(*iter->first);		//disconnect_user();
+		delete_user(*iter);
 	}
+	this->_users.erase(this->_users.begin(), this->_users.end());
+
+	// for (std::map<std::string, Channel*>::iterator iter = this->_channels.begin(); iter != _channels.end(); iter++)
+	// 	delete *iter;
+	
+	// this->_channels.erase(this->_channels.begin(), this->_channels.end());
+
 	delete this;
 }
+
+void Server::delete_User(std::map<int, User*>)
 
 Server::Server(char** argv)	//wenn static instance dann constructor ohne parameter
 {

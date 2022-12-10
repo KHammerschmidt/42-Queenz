@@ -5,7 +5,6 @@ User::~User() {}
 User::User(int fd, uint16_t port)
 	: _fd(fd), _port(port), _last_ping(std::time(0)), _dataToSend()
 {
-	// with or without @
 	this->_state = CONNECTED;
 }
 

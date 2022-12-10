@@ -13,7 +13,6 @@
 # define MSG_END "\n"				// "\r\n"
 
 enum USER_STATE { CONNECTED, NICKNAME, PASSWORD, REGISTERED, ONLINE, DELETE};
-// enum USER_ROLE {CREATOR, OPERATOR, USER}
 
 class Command;
 
@@ -36,10 +35,6 @@ private:
 
 	std::vector<std::string> 			_dataToSend;
 	std::map<std::string, Channel *> 	channels;
-	// Channel* channel;
-
-
-	// std::map<std::string, void(*)(Command *)> command_function;
 
 public:
 	std::string						buffer;
