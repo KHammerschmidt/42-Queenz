@@ -5,29 +5,8 @@ int 		Server::getTimeout() const { return this->_timeout; }
 bool 		Server::getServerStatus() const { return this->_serverRunningStatus; }
 std::string Server::getPassword() const { return this->_password; }
 
-Server::~Server()
-{
-	// delete channels // more to add??? ????
-	Log::printStringCol(REGULAR, "Disconnecting...bye bye...");
-
-	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
-	{
-		close(*iter->first);		//disconnect_user();
-		delete_user(*iter);
-	}
-	this->_users.erase(this->_users.begin(), this->_users.end());
-
-	// for (std::map<std::string, Channel*>::iterator iter = this->_channels.begin(); iter != _channels.end(); iter++)
-	// 	delete *iter;
-	
-	// this->_channels.erase(this->_channels.begin(), this->_channels.end());
-
-	delete this;
-}
-
-void Server::delete_User(std::map<int, User*>)
-
-Server::Server(char** argv)	//wenn static instance dann constructor ohne parameter
+Server::Server(char** argv)
+	: _serv_address(), _users(), _channels()
 {
 	Log::printStringCol(REGULAR, WELCOME_BEFORE);
 
@@ -40,6 +19,22 @@ Server::Server(char** argv)	//wenn static instance dann constructor ohne paramet
 	pollfd server_fd = { this->_sockfd, POLLIN, 0};
 	memset(&_pollfds, 0, sizeof(this->_pollfds));
 	this->_pollfds.push_back(server_fd);
+}
+
+Server::~Server()
+{
+	Log::printStringCol(LOG, "SHUTTING DOWN SERVER");
+
+	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
+		deleteUser((*iter).second);
+
+	for (std::map<std::string, Channel*>::iterator iter = this->_channels.begin(); iter != _channels.end(); iter++)
+		deleteChannel((*iter).second);
+
+	this->_users.clear();
+	this->_channels.clear();
+
+	delete this;
 }
 
 void Server::setServerStatus(bool new_status) { this->_serverRunningStatus = new_status; }
@@ -63,16 +58,15 @@ void Server::newSocket(void)
 	if (fcntl(this->_sockfd, F_SETFL, O_NONBLOCK) < 0)
 		serverError(1);
 
-	struct sockaddr_in serv_address;
-	memset(&serv_address, 0, sizeof(serv_address));
-	serv_address.sin_family = AF_INET;
-	serv_address.sin_addr.s_addr = htonl(INADDR_ANY);
-	serv_address.sin_port = htons(this->_port);
+	memset(&(this->_serv_address), 0, sizeof(this->_serv_address));
+	this->_serv_address.sin_family = AF_INET;
+	this->_serv_address.sin_addr.s_addr = htonl(INADDR_ANY);
+	this->_serv_address.sin_port = htons(this->_port);
 
-	if (bind(this->_sockfd, (struct sockaddr *) &serv_address, sizeof(serv_address)) < 0)
+	if (bind(this->_sockfd, (struct sockaddr *) &(this->_serv_address), sizeof(this->_serv_address)) < 0)
 		serverError(1);
 
-	if ((listen(this->_sockfd, serv_address.sin_port) < 0))
+	if ((listen(this->_sockfd, this->_serv_address.sin_port) < 0))
 		serverError(1);
 }
 
@@ -125,7 +119,7 @@ void Server::run()
 					connectNewUser();
 					break ;
 				}
-				this->_users[pfds_iterator->fd]->readMessage(this);
+				this->_users[pfds_iterator->fd]->onUser();
 			}
 		}
 	}
@@ -148,7 +142,7 @@ void Server::connectNewUser()
 	struct sockaddr_in s_address;
 	socklen_t s_size = sizeof(s_address);
 
-	new_fd = accept(this->_sockfd,(sockaddr *) &s_address, &s_size);
+	new_fd = accept(this->_sockfd,(sockaddr *) &s_address, &(s_size));
 	if (new_fd < 0)
 		serverError(3);
 	else
@@ -157,16 +151,19 @@ void Server::connectNewUser()
 	pollfd user_pollfd = {new_fd, POLLIN, 0};
 	this->_pollfds.push_back(user_pollfd);
 
-	User* new_user = new User(new_fd, ntohs(s_address.sin_port));
-	if (new_user->getState() != 0)
+	// User* new_user = new User(new_fd, ntohs(s_address.sin_port));
+	User* new_user = new User(new_fd, s_address, this); //this->_serv_address);
+	if (new_user->getState() != 0)		//this means != CONNECTED
 	{
 		Log::printStringCol(REGULAR, ERR_USER_REGISTRY);
-		//deleteUser(new_user);	//check with test server what happens
+		deleteUser(new_user);
 		return ;
 	}
 
 	this->_users.insert(std::make_pair(new_fd, new_user));
-	std::cout << "New User on port: new_fd: " << new_fd << " | inet_ntoa: " << inet_ntoa(s_address.sin_addr) << ":" << ntohs(s_address.sin_port) << " (" << new_fd << ")" << std::endl;
+
+	std::cout << "New User on port: new_fd: " << new_fd << " | inet_ntoa: " << inet_ntoa(s_address.sin_addr);
+	std::cout << ":" << ntohs(s_address.sin_port) << " (" << new_fd << ")" << std::endl;
 }
 
 /* Server sends Ping to users to see if connection is still intact. */
@@ -216,6 +213,21 @@ void Server::disconnectUser(User* user)
 	// delete user;
 	// deleteUser();
 }
+
+//delete and disconnect
+void Server::deleteUser(User* user)
+{
+	std::cout << "HERE DELETE USER " << std::endl;
+	delete user;
+}
+
+//delete in channel class as well & user
+void Server::deleteChannel(Channel* channel)
+{
+	std::cout << "HERE DELETE CHANNEL" << std::endl;
+	delete channel;
+}
+
 
 
 /* Function returns a vector with User objects, extracted from member type std::map<int, User*>. */

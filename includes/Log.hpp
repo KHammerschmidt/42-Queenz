@@ -33,13 +33,15 @@
 #define ERR_UNKNOWNCOMMAND(source, command)	"421 " + source + " " + command + " :Unknown command"
 
 
-
 enum MSG_STATE { REGULAR, LOG, CRITICAL, WARNING };
 
 struct Log
 {
 	static void printStringCol(int state, std::string msg);
 	static void printStringNoNewline(std::string msg);
+
+	template <typename T>
+	static void print_vector(std::vector<T> vctr);
 };
 
 #endif
