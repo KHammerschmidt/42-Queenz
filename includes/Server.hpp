@@ -23,7 +23,7 @@
 #include "Log.hpp"
 
 #define HOSTNAME "@42-Queenz.fr.42"
-#define BUFFER_SIZE 520
+#define BUFFER_SIZE 510
 
 class User;
 class Channel;
@@ -34,16 +34,19 @@ class Channel;
 class Server
 {
 	private:
-		int								_port;						//int oder std::string
+		uint16_t						_port;
 		int								_sockfd;
 		int								_timeout;
 		bool							_serverRunningStatus;
-		// time_t							_last_ping;
 		std::string 					_password;
+		struct sockaddr_in				_serv_address;
 
 		std::vector<pollfd> 			_pollfds;
 		std::map<int, User*>			_users;						
 		std::map<std::string, Channel*> _channels;
+		
+		
+		// time_t							_last_ping;
 
 	public:
 		std::vector<pollfd>::iterator 	pfds_iterator;
@@ -59,6 +62,7 @@ class Server
 
 		void disconnectUser(User* user);
 		void deleteUser(User* user);
+		void deleteChannel(Channel* channel);
 		void printUser();
 
 	public:
@@ -67,6 +71,7 @@ class Server
 
 		void run();
 
+		sockaddr_in	getAddr() const { return this->_serv_address; }
 		int 		getPort() const;
 		int 		getTimeout() const;
 		bool 		getServerStatus() const;
