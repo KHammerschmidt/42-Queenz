@@ -122,16 +122,32 @@ class Command
 private:
 		User* _user;
 		Server* _server;
-		
+
 		std::string user_receiver; //by msg and notice needed to check if user receiver exist
-		std::string text;		
+		std::string text;
 		std::string prefix;
 		std::string _query;
 		std::vector<std::string> _parameters;
 
+
+		bool _state;		//ready to send data or not
 		bool stop;
 		std::string getReplies(int code, std::string arg1);
+
 public:
+		int receiver_fd;
+		bool	_command_state;
+		bool	_reply_state;
+		std::string _command_message;
+		std::string _reply_message;
+
+
+		bool getCommandState() { return this->_command_state; }
+		bool getReplyState() { return this->_reply_state; }
+
+		std::string getCommandMessage() { return this->_command_message; }
+		std::string getReply() { return this->_reply_message; }
+
 		Command(User* user, Server* server, std::string message);
 		std::vector<std::string> split(std::string str, std::string delimiter);
 
@@ -139,20 +155,20 @@ public:
 		std::vector<std::string> getParameters();
 		std::string getQuery();
 
-		void setStop(bool new_stop);
-		bool getStop();
+		// void setStop(bool new_stop);
+		// bool getStop();
 
 		// void reply(User& user, int code, std::string arg1 = "");
 		// void reply(int code, std::string arg1 = "");
-
+		bool getCommandState() const;
 		void execute();
 
 		int find_user_in_server(const std::string nickname_receiver);
 
-
+		void setNickname(const std::string& nickname);
 
 		void sendPrivMsgUser(User* user, std::string msg);
-		void	nick(User* user, const std::string& msg);
+		void nick(User* user, const std::string& msg);
 		void sendPrivNoticeUser(User* user, std::string msg);
 		void sendJoin(User* user, std::string message);
 		//void sendQuit(User* user, const std::string message);
