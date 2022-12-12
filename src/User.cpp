@@ -117,11 +117,11 @@ void User::write(void)
 			if (send((*iter)->receiver_fd, (*iter)->getCommandMessage().c_str(), (*iter)->getCommandMessage().length(), 0) < 0)
 				Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE FROM USER FAILED.");
 
-			if ((*iter)->getReplyState() == true)
-			{
-				if (send(this->_fd, (*iter)->getReply().c_str(), (*iter)->getReply().length(), 0) < 0)
-					Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAIELD.");
-			}
+		}
+		if ((*iter)->getReplyState() == true)
+		{
+			if (send(this->_fd, (*iter)->getReply().c_str(), (*iter)->getReply().length(), 0) < 0)
+				Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAIELD.");
 		}
 	}
 }

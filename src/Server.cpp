@@ -6,7 +6,7 @@ bool 		Server::getServerStatus() const { return this->_serverRunningStatus; }
 std::string Server::getPassword() const { return this->_password; }
 
 Server::Server(char** argv)
-	: _serv_address(),  _channels(), _users()
+	: _serv_address(), _users(), _channels()
 {
 	Log::printStringCol(REGULAR, WELCOME_BEFORE);
 
@@ -230,17 +230,16 @@ void Server::deleteChannel(Channel* channel)
 }
 
 
-
 /* Function returns a vector with User objects, extracted from member type std::map<int, User*>. */
-// std::vector<User*> Server::getUsers() const
-// {
-// 	std::vector<User *> users = std::vector<User*>();
+std::vector<User*> Server::getUsers() const
+{
+	std::vector<User *> users_temp = std::vector<User*>();
 
-// 	for (std::map<int, User *>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
-// 		users.push_back(iter->second);
+	for (std::map<int, User *>::const_iterator iter = _users.begin(); iter != _users.end(); iter++)
+		users_temp.push_back(iter->second);
 
-// 	return users;
-// }
+	return users_temp;
+}
 
 // int Server::getUserfd(User* user)
 // {
