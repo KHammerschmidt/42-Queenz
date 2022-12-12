@@ -175,8 +175,9 @@ void Server::sendPing()
 	{
 		if (current_time - ((*iter).second->getLastPing()) >= static_cast<int>(this->_timeout))
 			serverError(5);																//disconnect user / delete user / etc.
-		else if ((*iter).second->getState() == true)									//online
-			(*iter).second->write("PING " + (*iter).second->getNickname());				//user has then to answer with pong to server
+		// else if ((*iter).second->getState() == true)									//online
+		// 	(*iter).second->write("PING " + (*iter).second->getNickname());				//user has then to answer with pong to server
+		std::cout << " SERVER SENDS PING TO USER!" << std::endl;
 	}
 }
 

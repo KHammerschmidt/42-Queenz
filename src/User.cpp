@@ -2,76 +2,61 @@
 #include "../includes/Command.hpp"
 
 User::~User() {}
-
-// void NICK(Command* command)
-// {
-// 	if (!command)
-// 		return ;
-
-// 	std::string nickname = command->getParameters()[0];
-// 	std::cout << nickname << std::endl;
-// };
-
-// void USER(Command* command);
-// void PING(Command* command);
-// void JOIN(Command* command);
-// void PRIVMSG(Command* command);
-
-User::User(int fd, sockaddr_in u_address, Server* server)
-												:	_server(server), _hostname(HOSTNAME), 
-													_hostaddr(inet_ntoa(server->getAddr().sin_addr)),
-													_port(ntohs(server->getAddr().sin_port)), 
-													_user_address(u_address), 
-													_fd(fd),
-													_last_ping(std::time(0)),
-													_state(CONNECTED),
-													_username(), _nickname(), _fullname(), 
-													_nick_user_host(),
-													_buffer(), _dataToSend(), 
-													command_function()
-{
-	// command_function["NICK"] = NICK;
-	// command_function["USER"] = USER;
-	// command_function["PING"] = PING;
-	// command_function["JOIN"] = JOIN;
-	// command_function["PRIVMSG"] = PRIVMSG;
-	// command_function["NOTICE"] = NOTICE;
-}
+User::User(int fd, sockaddr_in u_address, Server* server)			//not sure if needed?
+	:	_server(server), _hostname(HOSTNAME), 						//_hostaddr(inet_ntoa(server->getAddr().sin_addr)),
+		_port(ntohs(server->getAddr().sin_port)),
+		_user_address(u_address),
+		_fd(fd), _last_ping(std::time(0)), _state(CONNECTED),
+		_username(), _nickname(), _fullname(), _nick_user_host(),
+		_buffer(), _dataToSend(),
+		command_function() {}
 
 int 		User::getFd() { return this->_fd; }
 void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
-void 		User::setNickUserHost() { this->_nick_user_host =  this->getNickname() + "!" + this->getUsername() + HOSTNAME; }
+void 		User::setNickname(const std::string& nickname) { this->_nickname = nickname; }
+void 		User::setNickUserHost() { this->_nick_user_host =  this->getNickname() + "!" + this->getUsername() + "@" + HOSTNAME; }
 void 		User::setState(int new_state) { this->_state = new_state; }
-bool 		User::isRegistered() const { return (this->_state >= REGISTERED); }
 int 		User::getState() { return this->_state; }
 time_t 		User::getLastPing() const { return this->_last_ping; }
 std::string	User::getUsername() { return this->_username; }
 std::string User::getNickname() { return this->_nickname; }
 
+bool 		User::isRegistered() const
+{
+	if (!this->_nickname.length() || !this->_username.length() || !this->_nick_user_host.length()) // || !this->_password.length())
+		return false;
+
+	return true;
+}
+
 /* Function gets called when there is data to receive for the user. */
 void User::onUser(void)
 {
-	receiveMessage();
-	splitMessage();
-	invokeMessage();
+	receive();
+	split();
+	invoke();
+	write();
+	clearCommandFunction();
 }
 
 /* User receives data with recv() and saves the read bytes within buffer string. */
-void User::receiveMessage(void)
+void User::receive(void)
 {
 	char recv_buffer[BUFFER_SIZE + 3];
 	memset(&recv_buffer, 0, sizeof(BUFFER_SIZE + 1));
 
 	size_t size = recv(this->_fd, &recv_buffer, BUFFER_SIZE, 0);
-	if (size < 0)					// search for NICK UND USER DANN REGISTER otherwise delete user
+	if (size < 0)
 	{
+		// search for NICK UND USER DANN REGISTER otherwise delete user
 		Log::printStringCol(WARNING, "No data received by user.");
 		return ;
 	}
 	else if (size == 0)
 	{
 		// could be eof or 0 bytes received
-		// aus channel rausschmeißen		//channel kick (jeder user bekommt nachricht, und ganz rechts neue liste an usern (wie bei knuddels))
+		// aus channel rausschmeißen
+		//channel kick (jeder user bekommt nachricht, und ganz rechts neue liste an usern (wie bei knuddels))
 		Log::printStringCol(CRITICAL, "status == delete");		//status == Delete;	// delete user?
 		this->_state = DELETE; 									// user logt sich aus und muss disconnected werden und dann gelöscht
 	}
@@ -85,13 +70,18 @@ void User::receiveMessage(void)
 		// 	recv_buffer[513] = 0;
 		// }
 		// else
-		recv_buffer[size] = 0;			
+		recv_buffer[size] = 0;
 		this->_buffer.append(recv_buffer);
+	}
+
+	if (this->_state == DELETE)
+	{
+		std::cout << "WARNING: DELETING USER" << std::endl;
 	}
 }
 
 /* Splits messages when separated by END_MSG ("\r\n"). */
-void User::splitMessage(void)
+void User::split(void)
 {
 	size_t pos;
 	std::string delimiter(MSG_END);
@@ -104,56 +94,106 @@ void User::splitMessage(void)
 	}
 }
 
-void User::authNickname(void)
+/* Create a Command object for every input string and push it into the vector. */
+void User::invoke(void)
 {
-	std::cout << "Authentification Nickname" << std::endl;
-	setState(NICKNAME);
-}
-
-void User::authUsername(void)
-{
-	std::cout << "Authentification Username" << std::endl;
-	setState(USERNAME);
-}
-void User::authPassword(void)
-{
-	std::cout << "Authentification Password" << std::endl;
-	setState(PASSWORD);
-
-}
-
-//missing deleting from dataToSend vector when dealt with
-void User::invokeMessage(void)
-{
-	// std::vector<std::string> erase = std::vector<std::string>();
+	for (std::vector<std::string>::iterator iter = _dataToSend.begin(); iter != _dataToSend.end(); iter++)
+		this->command_function.push_back(new Command(this, this->_server, *iter));
 
 	for (std::vector<std::string>::iterator iter = _dataToSend.begin(); iter != _dataToSend.end(); iter++)
+		this->_dataToSend.erase(iter);
+
+	// this->_dataToSend.erase(); //(this->_dataToSend().begin(), this->_dataToSend().end());
+}
+
+/* Loop over vector and execute commands that are ready to send. */
+void User::write(void)
+{
+
+	for (std::vector<Command*>::iterator iter = command_function.begin(); iter != command_function.end(); iter++)
 	{
-		if (!isRegistered())
+		(*iter)->_command_state = true;
+		if ((*iter)->getCommandState() == true)
 		{
-			Log::printStringCol(CRITICAL, *iter);
-			if ((*iter).find("/NICK") != std::string::npos)
-				this->authNickname();
-			else if ((*iter).find("/USER") != std::string::npos)
-				this->authUsername();
-			else if ((*iter).find("/PASS") != std::string::npos)
-				this->authPassword();
-			// _dataToSend.erase(*iter);
-		}
-		else if (this->getState() >= REGISTERED)
-		{
-			std::cout << "DEBUG: dataToSend " << *iter << std::endl;
-			//Command* new_command = new Command(this, this->_server, *iter);
-			//new_command->execute();
-			this->command_function.push_back(new Command(this, this->_server, *iter));
-		}
-		else
-		{
-			std::cout << "DELTE USER" << std::endl;
+			 (*iter)->getCommandMessage() + static_cast<std::string>(MSG_END);	//do we have to append "\r\n"???
+
+			if (send((*iter)->receiver_fd, (*iter)->getCommandMessage().c_str(), (*iter)->getCommandMessage().length(), 0) < 0)
+				Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE FROM USER FAILED.");
+			(*iter)->_reply_state = true;
+			if ((*iter)->getReplyState() == true)
+			{
+				if (send(this->_fd, (*iter)->getReply().c_str(), (*iter)->getReply().length(), 0) < 0)
+					Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAIELD.");
+			}
 		}
 	}
-
 }
+
+void User::clearCommandFunction(void)
+{
+	for (std::vector<Command *>::iterator iter = command_function.begin(); iter != command_function.end(); iter++)
+	{
+		delete *iter;
+	}
+	command_function.clear();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+// if (!isRegistered())
+// {
+// 	Log::printStringCol(CRITICAL, *iter);
+// 	if ((*iter).find("/NICK") != std::string::npos)
+// 		this->authNickname();
+// 	else if ((*iter).find("/USER") != std::string::npos)
+// 		this->authUsername();
+// 	else if ((*iter).find("/PASS") != std::string::npos)
+// 		this->authPassword();
+// 	// _dataToSend.erase(*iter);
+// }g
+// else if (this->getState() >= REGISTERED)
+// {
+// 	std::cout << "DEBUG: dataToSend " << *iter << std::endl;
+// 	//Command* new_command = new Command(this, this->_server, *iter);
+// 	//new_command->execute();
+
+// }
+// else
+// {
+// 	std::cout << "DELTE USER" << std::endl;
+// }
+
+
+
+// void User::authNickname(void)
+// {
+// 	std::cout << "Authentification Nickname" << std::endl;
+// 	setState(NICKNAME);
+// }
+
+// void User::authUsername(void)
+// {
+// 	std::cout << "Authentification Username" << std::endl;
+// 	setState(USERNAME);
+// }
+// void User::authPassword(void)
+// {
+// 	std::cout << "Authentification Password" << std::endl;
+// 	setState(PASSWORD);
+
+// }
+
+
 // 	for (std::vector<std::string>::iterator iter = command_function.begin(); iter != command_function.end(); iter++)
 // 	{
 // 		iter->execute();
@@ -185,36 +225,13 @@ void User::invokeMessage(void)
 		// 		// user->_buffer.erase(0, user->_buffer.length());
 		// 		return ;
 		// 	break ;
-		// // }	
+		// // }
 		// this->_command_function.push_back(new Command(this, this->_server, tmp));
 	// }
 // }
 
 
-// int User::extract_command(const std::string& message)
-// {
-// 	if (message.find("/NICK") != std::string::npos)
-// 		return 0;
-// 	else if (message.find("/USER") != std::string::npos)
-// 		return 1;
-// 	else if (message.find("/PING") != std::string::npos)
-// 		return 2;
-// 	else if (message.find("/JOIN") != std::string::npos)
-// 		return 3;
-// 	else if (message.find("/PRIVMSG #") != std::string::npos)
-// 		return 4;
-// 	else if (message.find("/PRIVMSG") != std::string::npos || message.find("/NOTICE") != std::string::npos)
-// 		return 5;
-// 	else
-// 		return -1;
-// }
 
-void User::write(const std::string& message) const
-{
-	std::string str = message + static_cast<std::string>(MSG_END);
-	if (send(this->_fd, str.c_str(), str.length(), 0) < 0)
-		Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE FROM USER FAILED.");
-}
 
 
 
@@ -253,23 +270,23 @@ void User::write(const std::string& message) const
 //wenn user mehreren channels hinzutreten will dann am comma splitten (wenn JOIN #)
 
 
-void User::sendPong()
-{
-	// this->write()
-	// wenn keine Nachricht dann schickt user ping (nach einer Minute oder so) und server muss an den user poing senden ansonsten "connection lost"
-}
+// void User::sendPong()
+// {
+// 	// this->write()
+// 	// wenn keine Nachricht dann schickt user ping (nach einer Minute oder so) und server muss an den user poing senden ansonsten "connection lost"
+// }
 
-void reply(std::string& reply)
-{
-	if (reply.length() != 0)
-		std::cout << "Reply function here";
-}
+// void reply(std::string& reply)
+// {
+// 	if (reply.length() != 0)
+// 		std::cout << "Reply function here";
+// }
 
-void join(Channel* channel)
-{
-	if (channel)
-		std::cout << "join channel function here";
-}
+// void join(Channel* channel)
+// {
+// 	if (channel)
+// 		std::cout << "join channel function here";
+// }
 
 
 

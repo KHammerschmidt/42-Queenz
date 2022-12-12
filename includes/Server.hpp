@@ -22,7 +22,7 @@
 #include "Channel.hpp"
 #include "Log.hpp"
 
-#define HOSTNAME "@42-Queenz.fr.42"
+#define HOSTNAME "42-Queenz.fr.42"
 #define BUFFER_SIZE 510
 
 class User;
@@ -42,10 +42,10 @@ class Server
 		struct sockaddr_in				_serv_address;
 
 		std::vector<pollfd> 			_pollfds;
-		std::map<int, User*>			_users;						
+		std::map<int, User*>			_users;
 		std::map<std::string, Channel*> _channels;
-		
-		
+
+
 		// time_t							_last_ping;
 
 	public:

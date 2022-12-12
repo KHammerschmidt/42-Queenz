@@ -2,101 +2,96 @@
 #define USER_HPP
 
 #include <arpa/inet.h>
-#include "Log.hpp"
+#include <sys/socket.h>
 #include <sstream>
 #include <ctime>
+
+#include "Log.hpp"
 #include "Server.hpp"
 #include "Channel.hpp"
 #include "Command.hpp"
-#include <sys/socket.h>
 
 # define BUFFER_SIZE 510
-# define MSG_END "\n"	// "\r\n"
+# define MSG_END "\n"			// "\r\n"
 
+// enum USER_STATE { CONNTECTED = 0, REGISTERD = 3, ONLINE = 4, DELETE = 5 };
 enum USER_STATE { CONNECTED, NICKNAME, USERNAME, PASSWORD, REGISTERED, ONLINE, DELETE};
-// enum CommandState{ NICK, USER, PING, JOIN, PRIVMSG_CH, PRIVMSG_U };
-
 
 class Command;
 
 class User
 {
 
-private:
-	/* server related vars */
-	Server*					_server;
-	std::string				_hostname;
-	std::string				_hostaddr;
-	int						_port;
+	private:
+		/* server related vars */
+		Server*					_server;
+		std::string				_hostname;
+		std::string				_hostaddr;
+		int						_port;
 
-	/* user connection related vars */
-	struct sockaddr_in		_user_address;
-	int						_fd;
-	time_t					_last_ping;
-	int						_state;
+		/* user connection related vars */
+		struct sockaddr_in		_user_address;
+		int						_fd;
+		time_t					_last_ping;
+		int						_state;
 
-	/* user identifier vars */
-	std::string 			_username;
-	std::string 			_nickname;
-	std::string				_fullname;
-	std::string				_nick_user_host;
+		/* user identifier vars */
+		std::string 			_username;
+		std::string 			_nickname;
+		std::string				_fullname;
+		std::string				_nick_user_host;
 
-	/* command related vars */
-	std::string							_buffer;
-	std::vector<std::string> 			_dataToSend;
-	std::map<std::string, Channel *> 	channels;
+		/* command related vars */
+		std::string							_buffer;
+		std::vector<std::string> 			_dataToSend;
+		// std::map<std::string, Channel *> 	channels;
+		std::vector<Command *> 				command_function;
 
-	//map with string and command function that takes command object as parameter
-	// std::map<std::string, void (*)(Command *)> command_function;
-	std::vector<Command *> command_function;
+	public:
+		User(int fd, sockaddr_in u_address, Server* server);
+		~User();
 
-public:
-	User(int fd, sockaddr_in u_address, Server* server);
-	// User(int fd, uint16_t port);
-	~User();
+		void onUser();
+		void receive();
+		void split(void);
+		void invoke();
+		void write();
+		void reply();
 
-	void onUser();
-	void receiveMessage();
-	void splitMessage(void);
+		int	 extract_command(const std::string& message);
+		void clearCommandFunction(void);
 
-	void handleMessage();
-	void invokeMessage();
-	int	 extract_command(const std::string& message);
+		void write(const std::string& message) const;
 
-	void write(const std::string& message) const;
-	void reply(std::string& reply);
+		void authNickname(void);
+		void authUsername(void);
+		void authPassword(void);
 
-	void authNickname(void);
-	void authUsername(void);
-	void authPassword(void);
+		std::string getNickname();
+		std::string getUsername();
+		std::string getFullname() const;
+		time_t		getLastPing() const;
+		// std::string getPrefix() const;
+		// int			getFd() const;
+		void setState(int new_state);
+		bool isRegistered() const;
 
-	std::string getNickname();
-	std::string getUsername();
-	std::string getFullname() const;
-	time_t		getLastPing() const;
-	// std::string getPrefix() const;
-	// int			getFd() const;
-	void setState(int new_state);
+		void setNickname(const std::string& nickname);
+		void setUsername();
+		void setFullname();
+		void setNickUserHost();
+		void setLastPing(time_t last_ping);
 
-
-	bool isRegistered() const;
-
-	void setNickname(std::string);
-	void setUsername();
-	void setFullname();
-	void setNickUserHost();
-	void setLastPing(time_t last_ping);
-
-	int getState();
-	void registerNewUser();
-	int getFd();
+		int getState();
+		void registerNewUser();
+		int getFd();
 
 
-	void welcome() {};
-	void join(Channel* channel);
-	void leave() {};
+		void welcome() {};
+		void join(Channel* channel);
+		void leave() {};
 
-	void sendPong();
+		void sendPong();
 
 };
 
