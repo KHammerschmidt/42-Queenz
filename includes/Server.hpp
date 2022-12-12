@@ -44,7 +44,7 @@ class Server
 		std::vector<pollfd> 			_pollfds;
 
 
-		std::map<int, User*>			_users;
+		//std::map<int, User*>			_users;
 		std::map<std::string, Channel*> _channels;
 
 

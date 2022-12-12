@@ -31,7 +31,7 @@ bool 		User::isRegistered() const
 		return false;
 
 	return true;
-
+}
 /* Function gets called when there is data to receive for the user. */
 void User::onUser(void)
 {

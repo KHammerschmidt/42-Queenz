@@ -6,7 +6,7 @@ bool 		Server::getServerStatus() const { return this->_serverRunningStatus; }
 std::string Server::getPassword() const { return this->_password; }
 
 Server::Server(char** argv)
-	: _serv_address(), _users(), _channels()
+	: _serv_address(),  _channels(), _users()
 {
 	Log::printStringCol(REGULAR, WELCOME_BEFORE);
 

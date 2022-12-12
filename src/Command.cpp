@@ -4,13 +4,6 @@
 bool Command::getCommandState(void) const { return this->_state; }			//command var _state (ready to send/or not)
 
 
-void Command::sendPrivMsgUser(User* user, std::string msg)
-{
-	if (!user || !msg.length())
-		return ;
-	std::cout << " nick function " << std::endl;
-}
-
 Command::Command(User* user, Server* server, std::string message)
 	: _user(user), _server(server), _query(message), _command_state(false), _reply_state(false)
 {
@@ -225,28 +218,35 @@ int	Command::find_user_in_server(const std::string nickname_receiver){
 
 
 
+void Command::sendPrivMsgUser(User* user, std::string msg)		//13:57:27 ruslan1 | hi
+{																//4:01:04   libera  -- | MSG(ruslan1): hello
+	int index_of_first_space;
+
+	index_of_first_space = msg.find_first_of(" ");
+	std::string command = msg.substr(1, index_of_first_space - 1);
+	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+	if (command.compare("PRIVMSG") != 0)
+		std::cout << "error";
 
 	//find  first space to have lenght of nick
 	index_of_first_space = msg.find_first_of(" ");
-	if (!index_of_first_space)	
+	if (!index_of_first_space)
 		return ;
 	std::string nick_receiver = msg.substr(0, index_of_first_space - 1);
 
-
-									
-//check that nick is valid, vector with all nicks? and that exists.
-	/*-> implement ...*/
+	//
 	if (find_user_in_server(nick_receiver) == 0)
 		return ;
-	
+
+
+//check that nick is valid, vector with all nicks? and that exists.
+	/*-> implement ...*/
 
 
 
+	//text to print
+	text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
 
-
-
-	//herstellen hostname + message and return to client (will be sended to receiver client -> see chicago docs format)
-	//:nick!nick@ip_adresse msg
 	std::string ouput_to_client;
 	ouput_to_client.append(":");
 	ouput_to_client.append(user->getNickname());
@@ -266,96 +266,6 @@ int	Command::find_user_in_server(const std::string nickname_receiver){
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// /*make compile*/
-// int	Command::find_user_in_server(const std::string nickname_receiver){
-// 	for (std::map<int, User*>::iterator iter = this->_server._users.begin(); iter != this->_server._users.end(); iter++)
-// 	{
-// 		if (iter->second->getNickname() == nickname_receiver)
-// 		{
-// 			this->user_receiver = nickname_receiver;			//in Command classe variable: User* user_receiver;
-// 			return (1);
-// 		}
-// 		else if (iter == this->_server._users.end())
-// 		{
-// 			std::cout << "INVALID USER REQUEST. USER DOES NOT EXIST" << std::end;
-// 			return (0);
-// 		}
-// 	}
-// 	return (1);
-// }
-
-
-// void Command::sendPrivMsgUser(User* user, std::string msg)		//13:57:27 ruslan1 | hi
-// {																//4:01:04   libera  -- | MSG(ruslan1): hello
-// 	int index_of_first_space;
-
-// 	index_of_first_space = msg.find_first_of(" ");
-// 	std::string command = msg.substr(1, index_of_first_space - 1);
-// 	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
-// 	if (command.compare("PRIVMSG") != 0)
-// 		std::cout << "error";
-
-// 	//find  first space to have lenght of nick
-// 	index_of_first_space = msg.find_first_of(" ");
-// 	if (!index_of_first_space)
-// 		return ;
-// 	std::string nick_receiver = msg.substr(0, index_of_first_space - 1);
-
-// 	//
-// 	if (find_user_in_server(nick_receiver) == 0)
-// 		return ;
-
-
-// //check that nick is valid, vector with all nicks? and that exists.
-// 	/*-> implement ...*/
-
-
-
-// 	//text to print
-// 	text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
-
-// 	//? how do I check thatprinted by dest KATHY
-// 	//std::cout << user->getNickname() << " | " << text << std::endl;
-// 	//	//-> implement anstatt oben: ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
-// 	Log::printStringCol(CRITICAL, msg);
-// };
-
-
 void 	Command::nick(User* user, const std::string& msg)
 {
 		if (msg.length() == 0)
@@ -364,27 +274,27 @@ void 	Command::nick(User* user, const std::string& msg)
 		user->setNickname(msg);
 }
 
-// void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private message, but doesnt open a query, direct in channel
-// {																//receiver see: 23:33:09   ircserv  -- | ruslan (~ruslan@ip_addr): hi
-// 																//sender: │14:00:34   libera  -- | Notice -> ruslan1: hi
-// 	int index_of_first_space;
+void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private message, but doesnt open a query, direct in channel
+{																//receiver see: 23:33:09   ircserv  -- | ruslan (~ruslan@ip_addr): hi
+																//sender: │14:00:34   libera  -- | Notice -> ruslan1: hi
+	int index_of_first_space;
 
-// 	index_of_first_space = msg.find_first_of(" ");
-// 	std::string command = msg.substr(1, index_of_first_space - 1);
-// 	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
-// 	if (command.compare("PRIVMSG") != 0)
-// 		std::cout << "error";
+	index_of_first_space = msg.find_first_of(" ");
+	std::string command = msg.substr(1, index_of_first_space - 1);
+	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+	if (command.compare("PRIVMSG") != 0)
+		std::cout << "error";
 
-// 	//find  first space to have lenght of nick
-// 	index_of_first_space = msg.find_first_of(" ");
-// 	if (!index_of_first_space)
-// 		return ;
-// 	std::string nick_receiver = msg.substr(0, index_of_first_space - 1);
-// 	//check that nick is valid, vector with all nicks?
-// 	/*-> implement ...*/
+	//find  first space to have lenght of nick
+	index_of_first_space = msg.find_first_of(" ");
+	if (!index_of_first_space)
+		return ;
+	std::string nick_receiver = msg.substr(0, index_of_first_space - 1);
+	//check that nick is valid, vector with all nicks?
+	/*-> implement ...*/
 
-// 	//text to print
-// 	std::string text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+	//text to print
+	std::string text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
 
 
 	
