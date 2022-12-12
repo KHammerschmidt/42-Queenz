@@ -42,9 +42,8 @@ class Server
 		struct sockaddr_in				_serv_address;
 
 		std::vector<pollfd> 			_pollfds;
-		std::map<int, User*>			_users;						
 		std::map<std::string, Channel*> _channels;
-		
+
 		
 		// time_t							_last_ping;
 
@@ -52,6 +51,10 @@ class Server
 		std::vector<pollfd>::iterator 	pfds_iterator;
 		std::map<int, User*>::iterator 	user_iterator;
 		std::map<std::string, Channel*>	channel_iterator;
+
+		//need to set private after test phase, otherwise is inacessible in command::fin_user_in_server
+		std::map<int, User*>			_users;						
+
 
 	private:
 		void newSocket(void);

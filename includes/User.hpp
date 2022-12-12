@@ -41,6 +41,7 @@ private:
 	std::string				_fullname;
 	std::string				_nick_user_host;
 
+
 	/* command related vars */
 	std::string							_buffer;
 	std::vector<std::string> 			_dataToSend;
@@ -81,11 +82,13 @@ public:
 
 	bool isRegistered() const;
 
-	void setNickname(std::string);
+	void setNickname(const std::string& nick);
 	void setUsername();
 	void setFullname();
 	void setNickUserHost();
 	void setLastPing(time_t last_ping);
+	void setNickUserHost2(std::string);
+
 
 	int getState();
 	void registerNewUser();

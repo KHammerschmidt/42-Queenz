@@ -41,12 +41,15 @@ User::User(int fd, sockaddr_in u_address, Server* server)
 int 		User::getFd() { return this->_fd; }
 void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
 void 		User::setNickUserHost() { this->_nick_user_host =  this->getNickname() + "!" + this->getUsername() + HOSTNAME; }
+void 		User::setNickUserHost2(std::string output_to_client){this->_nick_user_host = output_to_client;};
 void 		User::setState(int new_state) { this->_state = new_state; }
+void 		User::setNickname(const std::string& nick){this->_nickname = nick; }
 bool 		User::isRegistered() const { return (this->_state >= REGISTERED); }
 int 		User::getState() { return this->_state; }
 time_t 		User::getLastPing() const { return this->_last_ping; }
 std::string	User::getUsername() { return this->_username; }
 std::string User::getNickname() { return this->_nickname; }
+
 
 /* Function gets called when there is data to receive for the user. */
 void User::onUser(void)

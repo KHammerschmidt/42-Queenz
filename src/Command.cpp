@@ -183,16 +183,16 @@ bool Command::getStop() { return this->stop; }
 
 /*make compile*/
 int	Command::find_user_in_server(const std::string nickname_receiver){
-	for (std::map<int, User*>::iterator iter = this->_server._users.begin(); iter != this->_server._users.end(); iter++)
+	for (std::map<int, User*>::iterator iter = this->_server->_users.begin(); iter != this->_server->_users.end(); iter++)
 	{
 		if (iter->second->getNickname() == nickname_receiver)
 		{
 			this->user_receiver = nickname_receiver;			//in Command classe variable: User* user_receiver;
 			return (1);
 		}
-		else if (iter == this->_server._users.end())
+		else if (iter == this->_server->_users.end())
 		{
-			std::cout << "INVALID USER REQUEST. USER DOES NOT EXIST" << std::end;
+			std::cout << "INVALID USER REQUEST. USER DOES NOT EXIST" << std::endl;
 			return (0);
 		}
 	}
@@ -215,19 +215,33 @@ void Command::sendPrivMsgUser(User* user, std::string msg)		//13:57:27 ruslan1 |
 	if (!index_of_first_space)	
 		return ;
 	std::string nick_receiver = msg.substr(0, index_of_first_space - 1);
-	
-	//
-	if (find_user_in_server(nick_receiver) == 0)
-		return ;
-							
-		
+
+
+									
 //check that nick is valid, vector with all nicks? and that exists.
 	/*-> implement ...*/
-
+	if (find_user_in_server(nick_receiver) == 0)
+		return ;
 	
 
 	//text to print
 	text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+
+
+
+	//herstellen hostname + message and return to client (will be sended to receiver client -> see chicago docs format)
+	//:nick!nick@ip_adresse msg
+	std::string ouput_to_client;
+	ouput_to_client.append(":");
+	ouput_to_client.append(user->getNickname());
+	ouput_to_client.append("!");
+	ouput_to_client.append(user->getNickname());
+	ouput_to_client.append(HOSTNAME);
+	ouput_to_client.append(" ");
+	ouput_to_client.append(msg);
+	user->setNickUserHost2(ouput_to_client);
+
+
 
 	//? how do I check thatprinted by dest KATHY
 	//std::cout << user->getNickname() << " | " << text << std::endl;
@@ -265,9 +279,23 @@ void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private 
 	//text to print
 	std::string text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
 
-
+	
 	//std::cout << user->getNickname() << " : " << text << std::endl;
 	//-> implement anstatt oben: ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+	
+	/*von privatemessage kopiert -> verarbeiten*/
+	std::string ouput_to_client;
+	ouput_to_client.append(":");
+	ouput_to_client.append(user->getNickname());
+	ouput_to_client.append("!");
+	ouput_to_client.append(user->getNickname());
+	ouput_to_client.append(HOSTNAME);
+	ouput_to_client.append(" ");
+	ouput_to_client.append(msg);
+	user->setNickUserHost2(ouput_to_client);
+	
+	
+	
 	Log::printStringCol(CRITICAL, msg);
 };
 
@@ -282,10 +310,10 @@ void Command::sendJoin(User* user, const std::string message)
 	Log::printStringCol(CRITICAL, message);
 };
 
-void Command::sendQuit(User* user, const std::string message)
-{
-	//close the socket but let the fd still on listening modus
-	//https://stackoverflow.com/questions/27798419/closing-client-socket-and-keeping-server-socket-active
-	//https://linux.die.net/man/2/sendto
-	Log::printStringCol(CRITICAL, message);
-};
+// void Command::sendQuit(User* user, const std::string message)
+// {
+// 	//close the socket but let the fd still on listening modus
+// 	//https://stackoverflow.com/questions/27798419/closing-client-socket-and-keeping-server-socket-active
+// 	//https://linux.die.net/man/2/sendto
+// 	Log::printStringCol(CRITICAL, message);
+// };
