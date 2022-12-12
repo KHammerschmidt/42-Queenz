@@ -12,7 +12,10 @@ Command::Command(User* user, Server* server, std::string message)
 	else if (message.find("/PRIVMSG") != std::string::npos || message.find("/NOTICE") != std::string::npos)
 		sendPrivMsgUser(user, message);
 	else
+	{
 		Log::printStringCol(WARNING, "WARNING: NO VALID COMMAND FOUND.");
+		this->_valid_command = false;
+	}
 
 	// else if (message.find("/USER") != std::string::npos)
 	// 	user(user, message);
@@ -301,10 +304,10 @@ void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private 
 
 	this->_command_state = true;
 	this->_reply_state = true;
-	
+
 	//std::cout << user->getNickname() << " : " << text << std::endl;
 	//-> implement anstatt oben: ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
-	
+
 	/*von privatemessage kopiert -> verarbeiten*/
 	std::string ouput_to_client;
 	ouput_to_client.append(":");
@@ -315,9 +318,9 @@ void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private 
 	ouput_to_client.append(" ");
 	ouput_to_client.append(msg);
 	user->setNickUserHost2(ouput_to_client);
-	
-	
-	
+
+
+
 	Log::printStringCol(CRITICAL, msg);
 };
 
