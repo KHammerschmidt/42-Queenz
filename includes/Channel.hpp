@@ -33,6 +33,7 @@ private:
 
 public:
 	Channel();
+	//Channel(const std::string name);
 	~Channel();
 
 	// void 		setName(const std::string name);
@@ -45,7 +46,7 @@ public:
 	// void		addUser(User *user);
 	// void		deleteUser(User *user);
 
-	// void static createChannel();
+	// void static createChannel(std::string channel_name);
 	// void		deleteChannel();
 
 	// void setMode(const std::string mode);

@@ -143,9 +143,9 @@ void User::invokeMessage(void)
 		else if (this->getState() >= REGISTERED)
 		{
 			std::cout << "DEBUG: dataToSend " << *iter << std::endl;
-			Command* new_command = new Command(this, this->_server, *iter);
-			new_command->execute();
-			// this->command_function.push_back(new Command(this, this->_server, *iter));
+			//Command* new_command = new Command(this, this->_server, *iter);
+			//new_command->execute();
+			this->command_function.push_back(new Command(this, this->_server, *iter));
 		}
 		else
 		{

@@ -181,47 +181,111 @@ bool Command::getStop() { return this->stop; }
 // 	Log::printStringCol(CRITICAL, message);
 // };
 
-// void Command::sendPrivMsgUser(User* user, std::string msg)
-// {
+/*make compile*/
+int	Command::find_user_in_server(const std::string nickname_receiver){
+	for (std::map<int, User*>::iterator iter = this->_server._users.begin(); iter != this->_server._users.end(); iter++)
+	{
+		if (iter->second->getNickname() == nickname_receiver)
+		{
+			this->user_receiver = nickname_receiver;			//in Command classe variable: User* user_receiver;
+			return (1);
+		}
+		else if (iter == this->_server._users.end())
+		{
+			std::cout << "INVALID USER REQUEST. USER DOES NOT EXIST" << std::end;
+			return (0);
+		}
+	}
+	return (1);
+}
 
+
+void Command::sendPrivMsgUser(User* user, std::string msg)		//13:57:27 ruslan1 | hi
+{																//4:01:04   libera  -- | MSG(ruslan1): hello
+	int index_of_first_space;
+
+	index_of_first_space = msg.find_first_of(" ");
+	std::string command = msg.substr(1, index_of_first_space - 1);
+	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+	if (command.compare("PRIVMSG") != 0)
+		std::cout << "error";
+
+	//find  first space to have lenght of nick
+	index_of_first_space = msg.find_first_of(" ");
+	if (!index_of_first_space)	
+		return ;
+	std::string nick_receiver = msg.substr(0, index_of_first_space - 1);
+	
+	//
+	if (find_user_in_server(nick_receiver) == 0)
+		return ;
+							
+		
+//check that nick is valid, vector with all nicks? and that exists.
+	/*-> implement ...*/
 
 	
-// 	int index_of_first_space;
 
-// 	index_of_first_space = msg.find_first_of(" ");
-// 	std::string command = msg.substr(1, index_of_first_space - 1);
-// 	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
-// 	if (command.compare("PRIVMSG") != 0)
-// 		std::cout << "error";
+	//text to print
+	text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+
+	//? how do I check thatprinted by dest KATHY
+	//std::cout << user->getNickname() << " | " << text << std::endl;
+	//	//-> implement anstatt oben: ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+	Log::printStringCol(CRITICAL, msg);
+};
+
+void 	Command::nick(User* user, const std::string& msg)
+{
+		if (msg.length() == 0)
+			return ;
+
+		user->setNickname(msg);
+}
+
+void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private message, but doesnt open a query, direct in channel
+{																//receiver see: 23:33:09   ircserv  -- | ruslan (~ruslan@ip_addr): hi
+																//sender: │14:00:34   libera  -- | Notice -> ruslan1: hi
+	int index_of_first_space;
+
+	index_of_first_space = msg.find_first_of(" ");
+	std::string command = msg.substr(1, index_of_first_space - 1);
+	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+	if (command.compare("PRIVMSG") != 0)
+		std::cout << "error";
+
+	//find  first space to have lenght of nick
+	index_of_first_space = msg.find_first_of(" ");
+	if (!index_of_first_space)	
+		return ;
+	std::string nick_receiver = msg.substr(0, index_of_first_space - 1);
+	//check that nick is valid, vector with all nicks?
+	/*-> implement ...*/
+
+	//text to print
+	std::string text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
 
 
+	//std::cout << user->getNickname() << " : " << text << std::endl;
+	//-> implement anstatt oben: ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+	Log::printStringCol(CRITICAL, msg);
+};
 
-// 	//find  first space to have lenght of nick
-// 	index_of_first_space = msg.find_first_of(" ");
-// 	if (!index_of_first_space)	
-// 		return ;
-// 	std::string nick_receiver = msg.substr(0, index_of_first_space - 1);
-// 	//check that nick is valid, vector with all nicks?
-// 	/*-> implement ...*/
+//in server add a vector with all channels names or in user all the joined channels; so I can test here if need to create a new one or not, without creating a temp channel to check it(line 29 channel)
+void Command::sendJoin(User* user, const std::string message)
+{
+	if (!user || message.length() == 0)
+		return ;
 
-// 	//text to print
-// 	std::string text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+	//Channel::createChannel(message);
 
-// 	//? how do I check thatprinted by dest KATHY
-// 	std::cout << user->getNickname() << " | " << text << std::endl;
+	Log::printStringCol(CRITICAL, message);
+};
 
-
-
-
-
-// 	Log::printStringCol(CRITICAL, msg);
-// };
-
-// // void 	Command::nick(User* user, const std::string& msg)
-// // {
-// // 		if (msg.length() == 0)
-// // 			return ;
-
-// // 		user->setNickname(msg);
-
-// // }
+void Command::sendQuit(User* user, const std::string message)
+{
+	//close the socket but let the fd still on listening modus
+	//https://stackoverflow.com/questions/27798419/closing-client-socket-and-keeping-server-socket-active
+	//https://linux.die.net/man/2/sendto
+	Log::printStringCol(CRITICAL, message);
+};

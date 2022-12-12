@@ -3,7 +3,7 @@
 // to create a channel -> in USER: if (user parse tipes #join) -> Channel:createChannel (with static method); if doesnt work, delete createChannel and in User do new Channel()
 
 Channel::Channel() {};
-// Channel::Channel() {setName(const std::string name);}
+// Channel::Channel(std::string channel_name) {setName(const std::string name);}
 Channel::~Channel() {}
 
 // void        Channel::setName(const std::string name){
@@ -26,6 +26,15 @@ Channel::~Channel() {}
 //     else
 //         this->_name = name;
 
+//     for (std::vector<Channel *>::iterator it = _channels.begin(); it != _channel.end(); ++it)
+//     {
+//         if (it->_name == this->_name)   
+//         { 
+//             std::cout << "Channel already exists!" << std::endl;
+//              delete this
+//              return ;
+//         }
+//     }
 //     i = 0;
 //     while (i < name.size())
 //     {
@@ -35,23 +44,14 @@ Channel::~Channel() {}
 //             return ;
 //         }
 //     }
-
-//     for (std::vector<Channel *>::iterator it = _channels.begin(); it != _channel.end(); ++it)
-//     {
-//         if (it->_name == this->_name)   
-//         { 
-//             std::cout << "Channel already exists!" << std::endl;
-//             return ;
-//         }
-//     }
 //     _channels.push_back(*this);
 //     /*implement function error handling instead of all this. Maybe use some boolean, return true or false.*/
 // }
 // std::string Channel::getName() const{return this->_name;}
 
-// void static Channel::&createChannel()
+// void static Channel::&createChannelconst std::string channel_name)
 // {
-//         new Channel();
+//         new Channel(const std::string channel_name);
 // }
 
 // void        Channel::deleteChannel()

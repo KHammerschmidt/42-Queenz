@@ -122,7 +122,9 @@ class Command
 private:
 		User* _user;
 		Server* _server;
-
+		
+		std::string user_receiver; //by msg and notice needed to check if user receiver exist
+		std::string text;		
 		std::string prefix;
 		std::string _query;
 		std::vector<std::string> _parameters;
@@ -144,6 +146,20 @@ public:
 		// void reply(int code, std::string arg1 = "");
 
 		void execute();
+
+		int find_user_in_server(const std::string nickname_receiver);
+
+
+
+		void sendPrivMsgUser(User* user, std::string msg);
+		void	nick(User* user, const std::string& msg);
+		void sendPrivNoticeUser(User* user, std::string msg);
+		void sendJoin(User* user, std::string message);
+		void sendQuit(User* user, const std::string message);
+
+
+
+
 };
 
 
