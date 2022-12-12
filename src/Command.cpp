@@ -243,7 +243,8 @@ void Command::sendPrivMsgUser(User* user, std::string msg)		//13:57:27 ruslan1 |
 	/*-> implement ...*/
 
 
-
+	this->_command_state = true;
+	this->_reply_state = true;
 	//text to print
 	text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
 
@@ -271,6 +272,8 @@ void 	Command::nick(User* user, const std::string& msg)
 		if (msg.length() == 0)
 			return ;
 
+		this->_command_state = true;
+		this->_reply_state = true;
 		user->setNickname(msg);
 }
 
@@ -296,7 +299,8 @@ void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private 
 	//text to print
 	std::string text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
 
-
+	this->_command_state = true;
+	this->_reply_state = true;
 	
 	//std::cout << user->getNickname() << " : " << text << std::endl;
 	//-> implement anstatt oben: ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);

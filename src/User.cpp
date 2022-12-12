@@ -115,14 +115,12 @@ void User::write(void)
 
 	for (std::vector<Command*>::iterator iter = command_function.begin(); iter != command_function.end(); iter++)
 	{
-		(*iter)->_command_state = true;
 		if ((*iter)->getCommandState() == true)
 		{
 			 (*iter)->getCommandMessage() + static_cast<std::string>(MSG_END);	//do we have to append "\r\n"???
 
 			if (send((*iter)->receiver_fd, (*iter)->getCommandMessage().c_str(), (*iter)->getCommandMessage().length(), 0) < 0)
 				Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE FROM USER FAILED.");
-			(*iter)->_reply_state = true;
 			if ((*iter)->getReplyState() == true)
 			{
 				if (send(this->_fd, (*iter)->getReply().c_str(), (*iter)->getReply().length(), 0) < 0)
