@@ -203,13 +203,67 @@ Command::Command(User* user, Server* server, std::string message)
 // };
 
 
+/*make compile*/
+int	Command::find_user_in_server(const std::string nickname_receiver){
+	for (std::map<int, User*>::iterator iter = this->_server->_users.begin(); iter != this->_server->_users.end(); iter++)
+	{
+		if (iter->second->getNickname() == nickname_receiver)
+		{
+			this->user_receiver = nickname_receiver;			//in Command classe variable: User* user_receiver;
+			return (1);
+		}
+		else if (iter == this->_server->_users.end())
+		{
+			std::cout << "INVALID USER REQUEST. USER DOES NOT EXIST" << std::endl;
+			return (0);
+		}
+	}
+	return (1);
+}
 
 
 
 
 
 
+	//find  first space to have lenght of nick
+	index_of_first_space = msg.find_first_of(" ");
+	if (!index_of_first_space)	
+		return ;
+	std::string nick_receiver = msg.substr(0, index_of_first_space - 1);
 
+
+									
+//check that nick is valid, vector with all nicks? and that exists.
+	/*-> implement ...*/
+	if (find_user_in_server(nick_receiver) == 0)
+		return ;
+	
+
+
+
+
+
+
+	//herstellen hostname + message and return to client (will be sended to receiver client -> see chicago docs format)
+	//:nick!nick@ip_adresse msg
+	std::string ouput_to_client;
+	ouput_to_client.append(":");
+	ouput_to_client.append(user->getNickname());
+	ouput_to_client.append("!");
+	ouput_to_client.append(user->getNickname());
+	ouput_to_client.append(HOSTNAME);
+	ouput_to_client.append(" ");
+	ouput_to_client.append(msg);
+	user->setNickUserHost2(ouput_to_client);
+
+
+
+	//? how do I check thatprinted by dest KATHY
+	//std::cout << user->getNickname() << " | " << text << std::endl;
+	//	//-> implement anstatt oben: ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+	Log::printStringCol(CRITICAL, msg);
+};
 
 
 
@@ -301,6 +355,7 @@ Command::Command(User* user, Server* server, std::string message)
 // 	Log::printStringCol(CRITICAL, msg);
 // };
 
+
 void 	Command::nick(User* user, const std::string& msg)
 {
 		if (msg.length() == 0)
@@ -332,10 +387,27 @@ void 	Command::nick(User* user, const std::string& msg)
 // 	std::string text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
 
 
-// 	//std::cout << user->getNickname() << " : " << text << std::endl;
-// 	//-> implement anstatt oben: ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
-// 	Log::printStringCol(CRITICAL, msg);
-// };
+	
+	//std::cout << user->getNickname() << " : " << text << std::endl;
+	//-> implement anstatt oben: ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+	
+	/*von privatemessage kopiert -> verarbeiten*/
+	std::string ouput_to_client;
+	ouput_to_client.append(":");
+	ouput_to_client.append(user->getNickname());
+	ouput_to_client.append("!");
+	ouput_to_client.append(user->getNickname());
+	ouput_to_client.append(HOSTNAME);
+	ouput_to_client.append(" ");
+	ouput_to_client.append(msg);
+	user->setNickUserHost2(ouput_to_client);
+	
+	
+	
+	Log::printStringCol(CRITICAL, msg);
+};
+
+
 
 //in server add a vector with all channels names or in user all the joined channels; so I can test here if need to create a new one or not, without creating a temp channel to check it(line 29 channel)
 // void Command::sendJoin(User* user, const std::string message)

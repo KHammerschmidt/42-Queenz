@@ -171,7 +171,7 @@ public:
 		void nick(User* user, const std::string& msg);
 		void sendPrivNoticeUser(User* user, std::string msg);
 		void sendJoin(User* user, std::string message);
-		void sendQuit(User* user, const std::string message);
+		//void sendQuit(User* user, const std::string message);
 
 
 

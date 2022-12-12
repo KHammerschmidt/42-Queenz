@@ -21,7 +21,6 @@ class Command;
 
 class User
 {
-
 	private:
 		/* server related vars */
 		Server*					_server;
@@ -81,6 +80,8 @@ class User
 		void setFullname();
 		void setNickUserHost();
 		void setLastPing(time_t last_ping);
+   	void setNickUserHost2(std::string);
+
 
 		int getState();
 		void registerNewUser();
@@ -92,6 +93,7 @@ class User
 		void leave() {};
 
 		void sendPong();
+
 
 };
 
