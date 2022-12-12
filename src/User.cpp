@@ -103,24 +103,20 @@ void User::invoke(void)
 	for (std::vector<std::string>::iterator iter = _dataToSend.begin(); iter != _dataToSend.end(); iter++)
 		this->command_function.push_back(new Command(this, this->_server, *iter));
 
-	for (std::vector<std::string>::iterator iter = _dataToSend.begin(); iter != _dataToSend.end(); iter++)
-		this->_dataToSend.erase(iter);
-
-	// this->_dataToSend.erase(); //(this->_dataToSend().begin(), this->_dataToSend().end());
+	this->_dataToSend.clear();
 }
 
 /* Loop over vector and execute commands that are ready to send. */
 void User::write(void)
 {
-
 	for (std::vector<Command*>::iterator iter = command_function.begin(); iter != command_function.end(); iter++)
 	{
 		if ((*iter)->getCommandState() == true)
 		{
-			 (*iter)->getCommandMessage() + static_cast<std::string>(MSG_END);	//do we have to append "\r\n"???
-
+			//  (*iter)->getCommandMessage() + static_cast<std::string>(MSG_END);	//do we have to append "\r\n"???
 			if (send((*iter)->receiver_fd, (*iter)->getCommandMessage().c_str(), (*iter)->getCommandMessage().length(), 0) < 0)
 				Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE FROM USER FAILED.");
+
 			if ((*iter)->getReplyState() == true)
 			{
 				if (send(this->_fd, (*iter)->getReply().c_str(), (*iter)->getReply().length(), 0) < 0)

@@ -135,7 +135,8 @@ private:
 		std::string getReplies(int code, std::string arg1);
 
 public:
-		int receiver_fd;
+		bool	_valid_command;
+		int 	receiver_fd;
 		bool	_command_state;
 		bool	_reply_state;
 		std::string _command_message;
