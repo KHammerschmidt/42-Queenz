@@ -3,19 +3,149 @@
 
 bool Command::getCommandState(void) const { return this->_state; }			//command var _state (ready to send/or not)
 
+std::vector<std::string> Command::split(std::string str, std::string delimiter)
+{
+	size_t pos;
+	std::string tmp;
+	std::vector<std::string> splitted_message;
+
+	while ((pos = str.find(delimiter))!= std::string::npos)
+	{
+		tmp = str.substr(0, pos);
+		splitted_message.push_back(tmp);
+		str.erase(0, pos + delimiter.length());
+	}
+
+	if (str.length() != 0)
+		splitted_message.push_back(str);
+
+	return splitted_message;
+}
+
+int Command::check_characters(std::string str)
+{
+	for (size_t i = 0; i < str.length(); i++)
+	{
+		if (!isalpha(str.c_str()[i]) && !isdigit(str.c_str()[i]))		//Leerzeichen?
+			return -1;
+	}
+
+	if (str.length() >= 63)
+		return -1;
+
+	return 1;
+}
+
+bool Command::check_free_nickname(const std::string& nickname)
+{
+	std::vector<User*> user_temp = this->_server->getUsers();
+
+	for (std::vector<User*>::iterator iter = user_temp.begin(); iter != user_temp.end(); iter++)
+	{
+		if ((*iter)->getNickname() == nickname)
+			return false;
+	}
+
+	return true;
+}
+
+
+void Command::register_nickname(void)
+{
+	size_t param_size = this->_parameters.size();
+	std::stringstream ss;
+
+	if (param_size == 1)
+	{
+		err_command(ERR_NONICKNAMEGIVEN);
+		return ;
+	}
+
+	//checks for valid nickname (only letters and digits, & <= 63 characters);
+	if (check_characters(this->_parameters[1]) < 0)
+	{
+		err_command(ERR_ERRONEUSNICKNAME);
+		return ;
+	}
+
+	//nickname changeable or not? --> I decided no :)
+	if (this->_user->getNickname().length() != 0)
+	{
+		err_command(ERR_NICKCOLLISION);
+		return ;
+
+	}
+
+	//once we can connect 2 users I can check this! -->check if another user is already using this nickname
+	if (check_free_nickname(this->_parameters[1]) == false)
+	{
+		err_command(ERR_NICKNAMEINUSE);
+		return ;
+	}
+
+	// if all cases above are false the user can change their nickname
+	if (!this->_user->getNickname().length())
+	{
+		this->_user->setNickname(this->sender_nickname);
+		ss << "Changed nickname to " << this->_user->getNickname() << "\r\n";
+		this->_reply_message = ss.str();
+		this->_reply_state = true;								//send reply to users in chat when user is in chat
+		// this->_command_state = true;							//no command to execute
+	}
+
+	this->_parameters.clear();
+}
+
+void Command::err_command(std::string err_msg)
+{
+	this->_command_state = false;
+	this->_reply_message = err_msg;
+	this->_reply_state = true;
+}
+
+void Command::prepare_cmd(std::string message)
+{
+	this->_parameters = split(message, " ");
+
+	this->prefix = this->_parameters[0];
+	this->sender_nickname = this->_parameters[1];
+
+	for (size_t i = 0; i < this->prefix.length(); i++)
+		prefix[i] = std::toupper(prefix[i]);
+}
 
 Command::Command(User* user, Server* server, std::string message)
 	: _user(user), _server(server), _query(message), _command_state(false), _reply_state(false)
 {
-	if (message.find("/NICK") != std::string::npos)
-		nick(user, message);
-	else if (message.find("/PRIVMSG") != std::string::npos || message.find("/NOTICE") != std::string::npos)
-		sendPrivMsgUser(user, message);
+	prepare_cmd(message);
+
+	if (this->prefix == "/NICK")
+		register_nickname();
 	else
-	{
-		Log::printStringCol(WARNING, "WARNING: NO VALID COMMAND FOUND.");
-		this->_valid_command = false;
-	}
+		err_command(ERR_UNKNOWNCOMMAND_CMD);
+
+
+						// nick(user, message);
+	// else if (message.find("/PRIVMSG") != std::string::npos || message.find("/NOTICE") != std::string::npos)
+	// 	sendPrivMsgUser(user, message);
+	// else
+	// {
+	// 	Log::printStringCol(WARNING, "WARNING: NO VALID COMMAND FOUND.");
+	// 	this->_valid_command = false;
+	// }
+}
+//	std::cout << message << std::endl;
+// 	size_t pos = message.find("\\");
+// 	std::cout << pos << std::endl;
+// 	// if (size_t pos = message.find("\\") == std::string::npos)
+// 	if (pos != 0)
+// 	{
+// 		std::cout << ERR_UNKNOWNCOMMAND_CMD;
+// 		//  << std::endl;
+// 		return false;
+// 	}
+
+
 
 	// else if (message.find("/USER") != std::string::npos)
 	// 	user(user, message);
@@ -40,31 +170,10 @@ Command::Command(User* user, Server* server, std::string message)
 
 	// this->_parameters = split(message, " ");
 	// prefix = *(this->_parameters.begin());					//nickname (origin of message)
-	// for (size_t i = 0; i < prefix.length(); i++)			//prefix in upper case characters
+	// for (size_t i = 0; i < prefix.length(); i++)				//prefix in upper case characters
 	// 	prefix[i] = std::toupper(prefix[i]);
 	// this->_parameters.erase(_parameters.begin());			//delete prefix from vector
-}
 
-// void Command::execute(void)
-// {
-// 	std::cout << "This is Command::execute()" << std::endl;
-// 	std::cout << prefix << std::endl;
-// }
-
-// std::vector<std::string> Command::split(std::string str, std::string delimiter)
-// {
-// 	size_t pos;
-// 	std::string tmp;
-// 	std::vector<std::string> splitted_message;
-
-// 	while ((pos = str.find(delimiter))!= std::string::npos)
-// 	{
-// 		tmp = str.substr(0, pos);
-// 		splitted_message.push_back(tmp);
-// 		str.erase(0, pos + delimiter.length());
-// 	}
-// 	return splitted_message;
-// }
 
 // std::string Command::getPrefix() { return this->prefix; }
 // std::vector<std::string> Command::getParameters() { return this->_parameters; }
@@ -83,35 +192,8 @@ Command::Command(User* user, Server* server, std::string message)
 
 
 
-// Command::Command(Server* server) : _server(server) {}
-// Command::~Command() {}
 
-// void Command::invokeMessage(User *user)
-// {
-// 	std::vector<std::string> cmds_to_exec;
-
-// 	size_t pos_end_command = user->_buffer.find(MSG_END);
-// 	if (pos_end_command == std::string::npos)											//no full command
-// 		return ;
-
-// 	// while (pos_end_command != std::string::npos)
-// 	// {
-// 	std::string tmp = user->_buffer.substr(0, pos_end_command);						//create a substring until delimiter ("\r\n")
-// 	cmds_to_exec.push_back(tmp);													// push at end of vector
-// 	user->_buffer.erase(0, user->_buffer.length());
-
-// 	// if (pos_end_command == user->_buffer.length())
-// 	// 	break ;
-// 	// tmp = user->_buffer.substr(pos_end_command, user->_buffer.length());		//cut out first command
-// 	// if (tmp.length() == 0)
-// 	// 	break;
-// 	// else
-// 	// 	pos_end_command = user->_buffer.find(MSG_END);									//search for an additional command ("\r\n") would be present
-// 	// }
-// 	// print_cmds_to_exec(cmds_to_exec);												//for debug
-// 	execute_command(user, cmds_to_exec);
-// }
-// 	void Command::execute_command(User* user, std::vector<std::string> cmds_to_exec)
+//
 // void Command::execute_command(User* user, std::vector<std::string> cmds_to_exec)
 // {
 // 	for (std::vector<std::string>::iterator iter = cmds_to_exec.begin(); iter != cmds_to_exec.end(); iter++)
@@ -200,26 +282,34 @@ Command::Command(User* user, Server* server, std::string message)
 
 
 /*make compile*/
-int	Command::find_user_in_server(const std::string nickname_receiver){
-	for (std::map<int, User*>::iterator iter = this->_server->_users.begin(); iter != this->_server->_users.end(); iter++)
+int	Command::find_user_in_server(const std::string nickname_receiver)
+{
+	std::vector<User*> user_temp = this->_server->getUsers();
+
+	for (std::vector<User*>::iterator iter = user_temp.begin(); iter != user_temp.end(); iter++)
 	{
-		if (iter->second->getNickname() == nickname_receiver)
-		{
-			this->user_receiver = nickname_receiver;			//in Command classe variable: User* user_receiver;
-			return (1);
-		}
-		else if (iter == this->_server->_users.end())
-		{
-			std::cout << "INVALID USER REQUEST. USER DOES NOT EXIST" << std::endl;
-			return (0);
-		}
+		if ((*iter)->getNickname() == nickname_receiver)
+			return 1;
 	}
-	return (1);
+	std::cout << "INVALID USER REQUEST. USER DOES NOT EXIST" << std::endl;
+	return 0;
+
+	// KATHI: wrote a getter function for users and store them in temp vector
+// 	for (std::map<int, User*>::iterator iter = this->_server->_users.begin(); iter != this->_server->_users.end(); iter++)
+// 	{
+// 		if (iter->second->getNickname() == nickname_receiver)
+// 		{
+// 			this->user_receiver = nickname_receiver;			//in Command classe variable: User* user_receiver;
+// 			return (1);
+// 		}
+// 		else if (iter == this->_server->_users.end())			// --> this can never be true as function exits for loop when iter == server._users.end()
+// 		{
+// 			std::cout << "INVALID USER REQUEST. USER DOES NOT EXIST" << std::endl;
+// 			return (0);
+// 		}
+// 	}
+// 	return (1);
 }
-
-
-
-
 
 void Command::sendPrivMsgUser(User* user, std::string msg)		//13:57:27 ruslan1 | hi
 {																//4:01:04   libera  -- | MSG(ruslan1): hello
@@ -269,16 +359,15 @@ void Command::sendPrivMsgUser(User* user, std::string msg)		//13:57:27 ruslan1 |
 	Log::printStringCol(CRITICAL, msg);
 };
 
+// void 	Command::nick(User* user, const std::string& msg)
+// {
+// 		if (msg.length() == 0)
+// 			return ;
 
-void 	Command::nick(User* user, const std::string& msg)
-{
-		if (msg.length() == 0)
-			return ;
-
-		this->_command_state = true;
-		this->_reply_state = true;
-		user->setNickname(msg);
-}
+// 		this->_command_state = true;
+// 		this->_reply_state = true;
+// 		user->setNickname(msg);
+// }
 
 void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private message, but doesnt open a query, direct in channel
 {																//receiver see: 23:33:09   ircserv  -- | ruslan (~ruslan@ip_addr): hi
@@ -344,3 +433,50 @@ void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private 
 // 	//https://linux.die.net/man/2/sendto
 // 	Log::printStringCol(CRITICAL, message);
 // };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// -----------------		KATHI
+// void Command::invokeMessage(User *user)
+// {
+// 	std::vector<std::string> cmds_to_exec;
+
+// 	size_t pos_end_command = user->_buffer.find(MSG_END);
+// 	if (pos_end_command == std::string::npos)											//no full command
+// 		return ;
+
+// 	// while (pos_end_command != std::string::npos)
+// 	// {
+// 	std::string tmp = user->_buffer.substr(0, pos_end_command);						//create a substring until delimiter ("\r\n")
+// 	cmds_to_exec.push_back(tmp);													// push at end of vector
+// 	user->_buffer.erase(0, user->_buffer.length());
+
+// 	// if (pos_end_command == user->_buffer.length())
+// 	// 	break ;
+// 	// tmp = user->_buffer.substr(pos_end_command, user->_buffer.length());		//cut out first command
+// 	// if (tmp.length() == 0)
+// 	// 	break;
+// 	// else
+// 	// 	pos_end_command = user->_buffer.find(MSG_END);									//search for an additional command ("\r\n") would be present
+// 	// }
+// 	// print_cmds_to_exec(cmds_to_exec);												//for debug
+// 	execute_command(user, cmds_to_exec);
+// }

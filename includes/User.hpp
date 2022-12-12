@@ -35,7 +35,7 @@ class User
 		int						_state;
 
 		/* user identifier vars */
-		std::string 			_username;
+		std::string 			_username;		//usually set automatically by client
 		std::string 			_nickname;
 		std::string				_fullname;
 		std::string				_nick_user_host;

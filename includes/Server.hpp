@@ -44,7 +44,7 @@ class Server
 		std::vector<pollfd> 			_pollfds;
 
 
-		//std::map<int, User*>			_users;
+		std::map<int, User*>			_users;
 		std::map<std::string, Channel*> _channels;
 
 
@@ -56,8 +56,9 @@ class Server
 		std::map<std::string, Channel*>	channel_iterator;
 
 		//need to set private after test phase, otherwise is inacessible in command::fin_user_in_server
-		std::map<int, User*>			_users;						
+		// std::map<int, User*>			_users;
 
+		std::vector<User*> getUsers() const;
 
 	private:
 		void newSocket(void);
