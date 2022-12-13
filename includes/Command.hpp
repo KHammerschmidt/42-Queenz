@@ -81,9 +81,6 @@ public:
 		//void sendQuit(User* user, const std::string message);
 
 
-
-
-
 		// ------------ KATHI
 		bool set_vars(const std::string& message);
 		int check_characters(std::string str);
@@ -91,6 +88,7 @@ public:
 		void register_nickname(void);
 		void err_command(std::string err_msg);
 		void prepare_cmd(std::string message);
+		bool getReplyState(void) const;
 
 };
 

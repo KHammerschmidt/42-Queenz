@@ -76,17 +76,15 @@ class User
 		bool isRegistered() const;
 
 		void setNickname(const std::string& nickname);
-		void setUsername();
+		void setUsername(const std::string& username);
 		void setFullname();
-		void setNickUserHost();
+		// void setNickUserHost(std::string str);
 		void setLastPing(time_t last_ping);
-   	void setNickUserHost2(std::string);
-
+   		void setNickUserHost2(std::string);	// --> kannst auch gerne die setNickUserHost() benutzen :) 
 
 		int getState();
 		void registerNewUser();
 		int getFd();
-
 
 		void welcome() {};
 		void join(Channel* channel);
