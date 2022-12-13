@@ -14,11 +14,11 @@ User::User(int fd, sockaddr_in u_address, Server* server)			//not sure if needed
 int 		User::getFd() { return this->_fd; }
 void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
 
-void 		User::setNickUserHost() {this->_nick_user_host =  this->getNickname() + "!" + this->getUsername() + "@" + HOSTNAME; }
+// void 		User::setNickUserHost() {this->_nick_user_host =  this->getNickname() + "!" + this->getUsername() + "@" + HOSTNAME; }
 void 		User::setNickUserHost2(std::string output_to_client){this->_nick_user_host = output_to_client;};
 void 		User::setState(int new_state) { this->_state = new_state; }
 void 		User::setNickname(const std::string& nick){this->_nickname = nick; }
-
+void		User::setUsername(const std::string& username) { this->_username = username; }
 int 		User::getState() { return this->_state; }
 time_t 		User::getLastPing() const { return this->_last_ping; }
 std::string	User::getUsername() { return this->_username; }
@@ -118,6 +118,8 @@ void User::write(void)
 				Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE FROM USER FAILED.");
 
 		}
+
+		//vielleicht hier noch ein anderer loop durch vector um die Nachrichten an alle User zu senden?
 		if ((*iter)->getReplyState() == true)
 		{
 			if (send(this->_fd, (*iter)->getReply().c_str(), (*iter)->getReply().length(), 0) < 0)
@@ -129,9 +131,8 @@ void User::write(void)
 void User::clearCommandFunction(void)
 {
 	for (std::vector<Command *>::iterator iter = command_function.begin(); iter != command_function.end(); iter++)
-	{
 		delete *iter;
-	}
+
 	command_function.clear();
 }
 
