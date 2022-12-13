@@ -33,6 +33,7 @@ class Channel;
 
 class Server
 {
+
 	private:
 		uint16_t						_port;
 		int								_sockfd;

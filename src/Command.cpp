@@ -3,7 +3,8 @@
 
 bool Command::getCommandState(void) const { return this->_command_state; }			
 bool Command::getReplyState(void) const { return this->_reply_state; }
-std::string Command::getPrefix() { return this->prefix; }
+std::string Command::getPrefix() const { return this->prefix; }
+std::string Command::getUserCommand() const { return this->user_command; }
 std::vector<std::string> Command::getParameters() { return this->_parameters; }
 std::string Command::getQuery() { return this->_query; }
 
@@ -56,27 +57,32 @@ bool Command::check_free_nickname(const std::string& nickname)
 	return true;
 }
 
+std::string Command::getWelcomeReply(User* user)
+{
+	std::stringstream ss;
+	ss << ":" << user->getNickUserHost() << " :Welcome to the 42-Queenz.42.fr network";
+	return ss.str();
+}
+
 /* Register the user's nickname */
 void Command::register_nickname(void)
 {
 	size_t param_size = this->_parameters.size();
 	std::stringstream ss;
 
+	//no nickname specified
 	if (param_size == 1)
 	{
 		err_command(ERR_NONICKNAMEGIVEN);
 		return ;
 	}
 
+	this->sender_nickname = this->_parameters[1];
+
+	//check for characters/digits and length
 	if (check_characters(this->_parameters[1]) < 0)
 	{
 		err_command(ERR_ERRONEUSNICKNAME);
-		return ;
-	}
-
-	if (this->_user->getNickname().length() != 0)	//nickname changeable or not? --> I decided no :)
-	{
-		err_command(ERR_NICKCOLLISION);
 		return ;
 	}
 
@@ -87,12 +93,20 @@ void Command::register_nickname(void)
 		return ;
 	}
 
+	std::stringstream sstr;
+	//send to all users in a channel where user is member / as well to user himself?
+	sstr << ":" << this->_user->getNickname() << " changed their nickname to " << this->sender_nickname << "\r\n";
 	this->_user->setNickname(this->sender_nickname);
-	ss << "Changed nickname to " << this->_user->getNickname() << "\r\n";
-	this->_reply_message = ss.str();
-	this->_reply_state = true;							//send reply to all users in channel when user is in chat
-	this->_user->setState(REGISTERED);
-	this->_user->setUsername(this->sender_nickname);
+	this->_reply_message = sstr.str();
+	this->_reply_state = true;								//send reply to all users in channel when user is in chat
+	this->_command_state = false;
+
+	//necessary vector or reply messages
+	if (this->_user->getNickname() != "Random_User" && this->_user->getUsername() != "Random_User")
+	{
+		this->_reply_message = getWelcomeReply(this->_user);
+		this->_user->setState(REGISTERED);
+	}
 
 	this->_parameters.clear();
 }
@@ -106,27 +120,97 @@ void Command::err_command(std::string err_msg)
 	this->_reply_state = true;
 }
 
-/* Split the received string and save command(prefix) and sending user(sender_nickname)  */
+/* Split the received string and save command(cmd) and sending user(sender_nickname)  */
 void Command::prepare_cmd(std::string message)
 {
 	this->_parameters = split(message, " ");
 
 	//missing error handling in case of empty comand (only newline etc) or too less parameters
-	this->prefix = this->_parameters[0];
-	this->sender_nickname = this->_parameters[1];
+	this->user_command = this->_parameters[0];
 
-	for (size_t i = 0; i < this->prefix.length(); i++)
-		prefix[i] = std::toupper(prefix[i]);
+	for (size_t i = 0; i < this->user_command.length(); i++)
+		user_command[i] = std::toupper(user_command[i]);
+}
+
+void Command::register_username(void)
+{
+	//  Command: USER
+  	//	Parameters: <username> 0 * <realname>
+	// COMMAND <username> 0 * <realname>
+
+	//question Kathi: can two users have the same username? weechat greps username automatically
+	if (check_characters(this->_parameters[1]) < 0)
+	{
+		err_command(ERR_ERRONEUSNICKNAME);
+		return ;
+	}
+
+	this->_user->setUsername(this->_parameters[1]);
+
+	this->_parameters.clear();
+
+	std::stringstream sstr;
+
+	sstr << ":" << this->_user->getNickname() << " changed their nickname to " << this->sender_nickname << "\r\n";
+
+	// if (this->_parameters[3] != "*" || this->_parameters[4] != "*")
+	// {
+	// 	std::cout << "ERROR: INVALID SYNTAX: USAGE </USER> <nickname> <* *> <:Fullname>";
+	// 	return ;
+	// }
+
+
+
+	//send to all users in a channel where user is member / as well to user himself?
+	this->_reply_message = sstr.str();
+	this->_reply_state = true;								//send reply to all users in channel when user is in chat
+
+	//necessary vector or reply messages
+	if (this->_user->getNickname() != "Random_User" && this->_user->getUsername() != "Random_User")
+	{
+		this->_reply_message = getWelcomeReply(this->_user);
+		this->_user->setState(REGISTERED);
+	}
+
+
+
+	this->_user->setUsername(this->sender_nickname);
+	std::stringstream ss;
+
+	for (size_t i = 0; i < this->_parameters.size(); i++)
+		ss << this->_parameters[i];
+	
+	this->_user->setFullname(ss.str());
+
+		if (this->_user->getNickname() != "Random_User" && this->_user->getUsername() != "Random_User")
+	{
+		this->_reply_message = getWelcomeReply(this->_user);
+		this->_user->setState(REGISTERED);
+	}
+
+
+
+	// this->_user.setUsername()
 }
 
 
 Command::Command(User* user, Server* server, std::string message)
 	: _user(user), _server(server), _query(message), _command_state(false), _reply_state(false)
 {
-	prepare_cmd(message);	//saves command in var this->prefix
+	//if command starts with "\" then its a command. if it starts with : then its a reply 
+	prepare_cmd(message);	//saves command in var this->user_command
+	if (this->user_command.find(":") == 0)
+	{
+		std::cout << ("No command but a reply! No action needed by user.") << std::endl;
+		return ;
+	}
 
-	if (this->prefix == "/NICK")
+	// if (this->user_command.find("/") != 0)
+	// 	err_command(ERR_UNKNOWNCOMMAND_CMD);
+	if (this->user_command == "/NICK")
 		register_nickname();
+	else if (this->user_command == "/USER")
+		register_username();
 	else
 		err_command(ERR_UNKNOWNCOMMAND_CMD);
 }

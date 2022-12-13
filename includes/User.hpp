@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <sstream>
 #include <ctime>
+#include <stdlib.h>
 
 #include "Log.hpp"
 #include "Server.hpp"
@@ -45,6 +46,7 @@ class User
 		std::vector<std::string> 			_dataToSend;
 		// std::map<std::string, Channel *> 	channels;
 		std::vector<Command *> 				command_function;
+		int			authentified;
 
 	public:
 		User(int fd, sockaddr_in u_address, Server* server);
@@ -70,6 +72,7 @@ class User
 		std::string getUsername();
 		std::string getFullname() const;
 		time_t		getLastPing() const;
+		std::string getNickUserHost() const;
 		// std::string getPrefix() const;
 		// int			getFd() const;
 		void setState(int new_state);
@@ -77,7 +80,7 @@ class User
 
 		void setNickname(const std::string& nickname);
 		void setUsername(const std::string& username);
-		void setFullname();
+		void setFullname(std::string fullname);
 		// void setNickUserHost(std::string str);
 		void setLastPing(time_t last_ping);
    		void setNickUserHost2(std::string);	// --> kannst auch gerne die setNickUserHost() benutzen :) 
@@ -91,6 +94,11 @@ class User
 		void leave() {};
 
 		void sendPong();
+
+
+
+		void setAuth(int num);
+		int getAuth() const;
 
 
 };
