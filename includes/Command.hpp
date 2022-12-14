@@ -11,6 +11,7 @@
 #include "User.hpp"
 #include "Channel.hpp"
 #include "Log.hpp"
+#include "Utils.hpp"
 
 
 #define ERR_UNKNOWNCOMMAND_CMD 	"ERROR :Unkonwn command. Usage: </COMMAND> <PARAMETERS>\r\n"
@@ -64,7 +65,7 @@ public:
 		std::string getReply() { return this->_reply_message; }
 
 		Command(User* user, Server* server, std::string message);
-		std::vector<std::string> split(std::string str, std::string delimiter);
+		// std::vector<std::string> split(std::string str, std::string delimiter);
 
 		std::string getPrefix() const;
 		std::string getUserCommand() const;
@@ -92,7 +93,7 @@ public:
 
 		// ------------ KATHI
 		bool set_vars(const std::string& message);
-		int check_characters(std::string str);
+		// int check_characters(std::string str);
 		bool check_free_nickname(const std::string& nickname);
 		void register_nickname(void);
 		void err_command(std::string err_msg);

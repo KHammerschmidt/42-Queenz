@@ -8,7 +8,8 @@ SRC = 	main.cpp \
 		Command.cpp \
 		Log.cpp \
 		Server.cpp \
-		User.cpp
+		User.cpp	\
+		Utils.cpp
 
 OBJDIR = obj/
 
