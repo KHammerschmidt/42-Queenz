@@ -13,14 +13,13 @@ User::User(int fd, sockaddr_in u_address, Server* server)			//not sure if needed
 
 int 		User::getFd() { return this->_fd; }
 void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
-std::string	User::getNickUserHost() { return this->_nick_user_host; }
+std::string	User::getNickUserHost() const{ return this->_nick_user_host; }
 void		User::setAuth(int num) { this->authentified += num; }
 int			User::getAuth() const { return this->authentified; }
 void		User::setNickUserHost(std::string name) { this->_nick_user_host = name; }
 void 		User::setNickUserHost2(std::string output_to_client){this->_nick_user_host = output_to_client;};
 void 		User::setState(int new_state) { this->_state = new_state; }
 void 		User::setNickname(const std::string& nick){this->_nickname = nick; }
-void		User::setFullname(std::string fullname) { this->_fullname = fullname; }
 void		User::setUsername(const std::string& username) { this->_username = username; }
 void		User::setFullname(std::string fullname) { this->_fullname = fullname; }
 int 		User::getState() { return this->_state; }

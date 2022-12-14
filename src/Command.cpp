@@ -82,10 +82,9 @@ void Command::register_nickname(void)
 	}
 
 	this->_parameters.clear();
-  
+}
 
-/* ======================================================================================== */
-/* --------------------------------- REGISTER NICKNAME -----------------------------------  */
+
 /* Loop through existing users and check if nickname is already taken. */
 bool Command::check_free_nickname(const std::string& nickname)
 {
@@ -96,19 +95,10 @@ bool Command::check_free_nickname(const std::string& nickname)
 		if ((*iter)->getNickname() == nickname)
 			return false;
 	}
-
 	return true;
 }
 
 std::string Command::getWelcomeReply(User* user)
-{
-	std::stringstream ss;
-	ss << ":" << user->getNickUserHost() << " :Welcome to the 42-Queenz.42.fr network";
-	return ss.str();
-}
-
-/* Register the user's nickname */
-void Command::register_nickname(void)
 {
 	std::stringstream ss;
 	ss << ":" << user->getNickUserHost() << " :Welcome to the 42-Queenz.42.fr network";
@@ -132,10 +122,9 @@ void Command::register_username(void)
 
 	this->_user->setUsername(this->_parameters[1]);
 
-  this->_parameters.clear();
+ 	 this->_parameters.clear();
 
-	std::stringstream sstr;
-	sstr << ":" << this->_user->getNickname() << " changed their nickname to " << this->sender_nickname << "\r\n";
+
 
 	// if (this->_parameters[3] != "*" || this->_parameters[4] != "*")
 	// {
@@ -143,38 +132,13 @@ void Command::register_username(void)
 	// 	return ;
 	// }
 
-	//send to all users in a channel where user is member / as well to user himself?
-	this->_reply_message = sstr.str();
-	this->_reply_state = true;								//send reply to all users in channel when user is in chat
-
-	//necessary vector or reply messages
-	if (this->_user->getNickname() != "Random_User" && this->_user->getUsername() != "Random_User")
-	{
-		this->_reply_message = getWelcomeReply(this->_user);
-		this->_user->setState(REGISTERED);
-	}
-
-	std::stringstream sstr;
-	//send to all users in a channel where user is member / as well to user himself?
-	sstr << ":" << this->_user->getNickname() << " changed their nickname to " << this->sender_nickname << "\r\n";
-	this->_user->setNickname(this->sender_nickname);
-	this->_reply_message = sstr.str();
-	this->_reply_state = true;								//send reply to all users in channel when user is in chat
-	this->_command_state = false;
-
-	//necessary vector or reply messages
-	if (this->_user->getNickname() != "Random_User" && this->_user->getUsername() != "Random_User")
-	{
-		this->_reply_message = getWelcomeReply(this->_user);
-		this->_user->setState(REGISTERED);
-	}
-
+	std::stringstream ss;
 	for (size_t i = 0; i < this->_parameters.size(); i++)
 		ss << this->_parameters[i];
 
 	this->_user->setFullname(ss.str());
 
-		if (this->_user->getNickname() != "Random_User" && this->_user->getUsername() != "Random_User")
+	if (this->_user->getNickname() != "Random_User" && this->_user->getUsername() != "Random_User")
 	{
 		this->_reply_message = getWelcomeReply(this->_user);
 		this->_user->setState(REGISTERED);
@@ -206,6 +170,7 @@ void Command::prepare_cmd(std::string message)
 	for (size_t i = 0; i < this->user_command.length(); i++)
 		user_command[i] = std::toupper(user_command[i]);
 }
+
 
 
 
@@ -397,25 +362,25 @@ void Command::sendJoin(User* user, const std::string msg)
 
 
 
-/* ======================================================================================== */
-/* -------------------------------- HELPER FUNCTIONS  ------------------------------------  */
-/* In case of an error does not send command to destination, but replies back to user in a 
-   reply with a specified error string. */
-void Command::err_command(std::string err_msg)
-{
-	this->_command_state = false;
-	this->_reply_message = err_msg;
-	this->_reply_state = true;
-}
+// /* ======================================================================================== */
+// /* -------------------------------- HELPER FUNCTIONS  ------------------------------------  */
+// /* In case of an error does not send command to destination, but replies back to user in a 
+//    reply with a specified error string. */
+// void Command::err_command(std::string err_msg)
+// {
+// 	this->_command_state = false;
+// 	this->_reply_message = err_msg;
+// 	this->_reply_state = true;
+// }
 
-/* Split the received string and save command(cmd) and sending user(sender_nickname)  */
-void Command::prepare_cmd(std::string message)
-{
-	this->_parameters = Utils::split(message, " ");
+// /* Split the received string and save command(cmd) and sending user(sender_nickname)  */
+// void Command::prepare_cmd(std::string message)
+// {
+// 	this->_parameters = Utils::split(message, " ");
 
-	//missing error handling in case of empty comand (only newline etc) or too less parameters
-	this->user_command = this->_parameters[0];
+// 	//missing error handling in case of empty comand (only newline etc) or too less parameters
+// 	this->user_command = this->_parameters[0];
 
-	for (size_t i = 0; i < this->user_command.length(); i++)
-		user_command[i] = std::toupper(user_command[i]);
-}
+// 	for (size_t i = 0; i < this->user_command.length(); i++)
+// 		user_command[i] = std::toupper(user_command[i]);
+// }

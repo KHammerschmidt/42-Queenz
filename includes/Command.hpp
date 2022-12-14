@@ -42,7 +42,6 @@ private:
 
 		bool stop;
 		std::string getReplies(int code, std::string arg1);
-		std::map<int, std::string> send_map;
 
 public:
 		std::string sender_nickname;
@@ -65,7 +64,6 @@ public:
 		// std::vector<std::string> split(std::string str, std::string delimiter);
 
 		std::string getPrefix() const;
-		std::string getUserCommand() const;
 		std::vector<std::string> getParameters();
 		std::string getQuery();
 
@@ -93,11 +91,7 @@ public:
 		void err_command(std::string err_msg);
 		void prepare_cmd(std::string message);
 		bool getReplyState(void) const;
-		void register_username(void);
 
-		std::string getWelcomeReply(User* user);
-
-		std::string getPrefix() const;
 		std::string getUserCommand() const;
 
 		void register_username(void);
