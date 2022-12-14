@@ -169,8 +169,10 @@ void Command::sendPrivMsgUser(User* user, std::string msg)		//13:57:27 ruslan1 |
 	index_of_first_space = msg.find_first_of(" ");
 	std::string command = msg.substr(1, index_of_first_space - 1);
 	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
-	if (command.compare("PRIVMSG") != 0)
-		std::cout << "error";
+	if (command.compare("msg") != 0)
+	{	std::cout << "error";
+		return ;
+	}
 
 	//find  first space to have lenght of nick
 	index_of_first_space = msg.find_first_of(" ");
@@ -223,9 +225,12 @@ void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private 
 	index_of_first_space = msg.find_first_of(" ");
 	std::string command = msg.substr(1, index_of_first_space - 1);
 	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
-	if (command.compare("PRIVMSG") != 0)
+	if (command.compare("notice") != 0)
+	{
 		std::cout << "error";
-
+		return ;
+	}
+	
 	//find  first space to have lenght of nick
 	index_of_first_space = msg.find_first_of(" ");
 	if (!index_of_first_space)
@@ -262,15 +267,15 @@ void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private 
 
 
 //in server add a vector with all channels names or in user all the joined channels; so I can test here if need to create a new one or not, without creating a temp channel to check it(line 29 channel)
-// void Command::sendJoin(User* user, const std::string message)
-// {
-// 	if (!user || message.length() == 0)
-// 		return ;
+void Command::sendJoin(User* user, const std::string message)
+{
+	if (!user || message.length() == 0)
+		return ;
 
-// 	//Channel::createChannel(message);
+	Channel::createChannel(message);
 
-// 	Log::printStringCol(CRITICAL, message);
-// };
+	Log::printStringCol(CRITICAL, message);
+};
 
 // void Command::sendQuit(User* user, const std::string message)
 // {

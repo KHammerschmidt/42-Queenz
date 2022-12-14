@@ -1,7 +1,9 @@
 #ifndef CHANNEL_HPP
 # define CHANNEL_HPP
 
+#include <iostream>
 #include <map>
+#include <vector>
 #include <string>
 
 class User;
@@ -16,8 +18,8 @@ class Channel
 private:
 	std::string _name;
 	std::string	_topic;
-	// std::vector<Channel *> _channels;
-	// std::vector<User *> _users;
+	std::vector<Channel *> _channels;
+	std::vector<User *> _users;
 
 
 	// std::string _mode;
@@ -33,10 +35,10 @@ private:
 
 public:
 	Channel();
-	//Channel(const std::string name);
+	Channel(const std::string name);
 	~Channel();
 
-	// void 		setName(const std::string name);
+	void 		setName(const std::string name);
 	// std::string getName() const;
 
 	// void 		setTopic(const std::string topic);
@@ -46,8 +48,8 @@ public:
 	// void		addUser(User *user);
 	// void		deleteUser(User *user);
 
-	// void static createChannel(std::string channel_name);
-	// void		deleteChannel();
+	void static createChannel(std::string channel_name);
+	void		deleteChannel();
 
 	// void setMode(const std::string mode);
 	// std::string getMode() const;
