@@ -4,23 +4,22 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <map>
+#include <vector>
 
 #include "Server.hpp"
 #include "User.hpp"
 #include "Channel.hpp"
 #include "Log.hpp"
+#include "Utils.hpp"
 
 
 #define ERR_UNKNOWNCOMMAND_CMD 	"ERROR :Unkonwn command. Usage: </COMMAND> <PARAMETERS>\r\n"
 #define ERR_NONICKNAMEGIVEN 	"431 :Nickname not given\r\n"
 #define ERR_ERRONEUSNICKNAME 	"432: Erroneus nickname\r\n"
-#define ERR_NICKCOLLISION 		"436 :Nickname is already set\r\n"
 #define ERR_NICKNAMEINUSE 		"433 :Nickname is already in use\r\n"
-
-// #define RPLY_CHANGE_NICKNAME(nickname) { return nickname + " successfully changed their nickname"; }
-
-// //from 001 - 009: for client server connections
-#define RPL_WELCOME(source)		"001 " + source + " :Welcome " + source + " to the 42-Queenz-irc network"
+// #define ERR_NEEDMOREPARAMS		"461 :Not enough parameters\r\n"
+#define ERR_ALREADYREGISTERED	"462 :You may not reregister\r\n"
 
 class Command
 {
@@ -29,16 +28,18 @@ private:
 		User* _user;
 		Server* _server;
 
-		std::string user_receiver; //by msg and notice needed to check if user receiver exist
+		std::string user_receiver; 				//by msg and notice needed to check if user receiver exist
 		std::string text;
 		std::string prefix;
 		std::string _query;
 		std::vector<std::string> _parameters;	//[/COMMAND, NICKNAME, RECEIVER_NICKNAME, MESSAGE];
 
 
-		bool _state;		//ready to send data or not
+		std::string user_command;
+		bool _state;							//ready to send data or not
 		bool stop;
 		std::string getReplies(int code, std::string arg1);
+		std::map<int, std::string> send_map;
 
 public:
 		std::string sender_nickname;
@@ -56,17 +57,12 @@ public:
 		std::string getReply() { return this->_reply_message; }
 
 		Command(User* user, Server* server, std::string message);
-		std::vector<std::string> split(std::string str, std::string delimiter);
+		// std::vector<std::string> split(std::string str, std::string delimiter);
 
-		std::string getPrefix();
 		std::vector<std::string> getParameters();
 		std::string getQuery();
 
-		// void setStop(bool new_stop);
-		// bool getStop();
 
-		// void reply(User& user, int code, std::string arg1 = "");
-		// void reply(int code, std::string arg1 = "");
 		bool getCommandState() const;
 		void execute();
 
@@ -84,12 +80,18 @@ public:
 
 		// ------------ KATHI
 		bool set_vars(const std::string& message);
-		int check_characters(std::string str);
+		// int check_characters(std::string str);
 		bool check_free_nickname(const std::string& nickname);
 		void register_nickname(void);
 		void err_command(std::string err_msg);
 		void prepare_cmd(std::string message);
 		bool getReplyState(void) const;
+
+		std::string getPrefix() const;
+		std::string getUserCommand() const;
+
+		void register_username(void);
+		std::string getWelcomeReply(User* user);
 
 };
 
@@ -105,11 +107,6 @@ public:
 
 // reply msg format: always includes a prefix: command with 3 digits, full list of replies +
 // first parameter = target, nickname
-
-// void User::register()
-// {
-// 	reply(RPL_WELCOME(user->_nickname));
-// }
 
 
 #endif
@@ -175,33 +172,3 @@ public:
 // };
 
 // #endif
-
-
-// // invokeMessage()
-// // 1.
-
-// // maybe a vector with command args  ????
-// // vector[0] == command schlagwort
-// // vector[1] == user
-// // vector[2] == user to receive
-// // vector[3] = channel name
-
-// // functions or map with commands?
-// // std::map<std::string, Command*> _commands;
-// 	// this->_commands["PRIVMSG"] = new PrivMsgCommand(_server, user, msg);
-// 	// this->_commands["PRIVMSG #"] = new PrivMsgChannelCommand(_server, user, msg);
-
-// 	// this->_commands["NICK"] = new NickCommand(_server, user, msg, false);
-// 	// this->_commands["USER"] = new UserCommand(_server, user, msg, false);
-// 	// this->_commands["QUIT"] = new QuitCommand(_server, user, msg, false);
-// 	// this->_commands["PING"] = new PingCommand(_server, user, msg);
-
-// 	//  ......... tbc
-
-
-// // 	Command::~Command()
-// // {
-// // 	for (std::map<std::string, Channel*>::iterator iter = _commands.begin(); iter != _commands.end(); iter++)
-// // 		delete iter->second;
-// // }
-

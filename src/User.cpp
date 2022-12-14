@@ -7,31 +7,35 @@ User::User(int fd, sockaddr_in u_address, Server* server)			//not sure if needed
 		_port(ntohs(server->getAddr().sin_port)),
 		_user_address(u_address),
 		_fd(fd), _last_ping(std::time(0)), _state(CONNECTED),
-		_username(), _nickname(), _fullname(), _nick_user_host(),
+		_username("Random_User"), _nickname("Random_User"), _fullname("No full name"), _nick_user_host(),
 		_buffer(), _dataToSend(),
-		command_function() {}
+		command_function()  {}
+
+
 
 int 		User::getFd() { return this->_fd; }
 void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
-
-// void 		User::setNickUserHost() {this->_nick_user_host =  this->getNickname() + "!" + this->getUsername() + "@" + HOSTNAME; }
+std::string	User::getNickUserHost() { return this->_nick_user_host; }
+void		User::setAuth(int num) { this->authentified += num; }
+int			User::getAuth() const { return this->authentified; }
+void		User::setNickUserHost(std::string name) { this->_nick_user_host = name; }
 void 		User::setNickUserHost2(std::string output_to_client){this->_nick_user_host = output_to_client;};
 void 		User::setState(int new_state) { this->_state = new_state; }
 void 		User::setNickname(const std::string& nick){this->_nickname = nick; }
+void		User::setFullname(std::string fullname) { this->_fullname = fullname; }
 void		User::setUsername(const std::string& username) { this->_username = username; }
 int 		User::getState() { return this->_state; }
 time_t 		User::getLastPing() const { return this->_last_ping; }
 std::string	User::getUsername() { return this->_username; }
 std::string User::getNickname() { return this->_nickname; }
 
-
 bool 		User::isRegistered() const
 {
-	if (!this->_nickname.length() || !this->_username.length() || !this->_nick_user_host.length()) // || !this->_password.length())
+	if (!this->_nickname.compare("Random_User") || ! this->_username.compare("Random_USER"))
 		return false;
-
 	return true;
 }
+
 /* Function gets called when there is data to receive for the user. */
 void User::onUser(void)
 {
@@ -106,6 +110,7 @@ void User::invoke(void)
 	this->_dataToSend.clear();
 }
 
+//  (*iter)->getCommandMessage() + static_cast<std::string>(MSG_END);	//do we have to append "\r\n"???
 /* Loop over vector and execute commands that are ready to send. */
 void User::write(void)
 {
@@ -113,7 +118,6 @@ void User::write(void)
 	{
 		if ((*iter)->getCommandState() == true)
 		{
-			//  (*iter)->getCommandMessage() + static_cast<std::string>(MSG_END);	//do we have to append "\r\n"???
 			if (send((*iter)->receiver_fd, (*iter)->getCommandMessage().c_str(), (*iter)->getCommandMessage().length(), 0) < 0)
 				Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE FROM USER FAILED.");
 
