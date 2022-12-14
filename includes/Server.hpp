@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <ctime>
 #include <arpa/inet.h>
+#include <stdlib.h>
 
 #include "User.hpp"
 #include "Channel.hpp"
@@ -42,7 +43,7 @@ class Server
 
 		std::vector<pollfd> 			_pollfds;
 
-
+		int			authentified;
 		std::map<int, User*>			_users;
 		std::map<std::string, Channel*> _channels;
 
@@ -83,9 +84,14 @@ class Server
 		bool 		getServerStatus() const;
 		std::string getPassword() const;
 		User* 		getUser(int fd);
+		std::string getNickUserHost() const;
 
 		void setPort(std::string port_str);
 		void setServerStatus(bool status);
+		void setFullname(std::string fullname);
+
+		void setAuth(int num);
+		int getAuth() const;
 };
 
 #endif

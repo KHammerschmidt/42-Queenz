@@ -13,15 +13,14 @@ User::User(int fd, sockaddr_in u_address, Server* server)			//not sure if needed
 
 int 		User::getFd() { return this->_fd; }
 void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
-std::string	User::getNickUserHost() const { return this->_nick_user_host; }
-
+std::string	User::getNickUserHost() { return this->_nick_user_host; }
 void		User::setAuth(int num) { this->authentified += num; }
 int			User::getAuth() const { return this->authentified; }
-
-// void 		User::setNickUserHost() {this->_nick_user_host =  this->getNickname() + "!" + this->getUsername() + "@" + HOSTNAME; }
+void		User::setNickUserHost(std::string name) { this->_nick_user_host = name; }
 void 		User::setNickUserHost2(std::string output_to_client){this->_nick_user_host = output_to_client;};
 void 		User::setState(int new_state) { this->_state = new_state; }
 void 		User::setNickname(const std::string& nick){this->_nickname = nick; }
+void		User::setFullname(std::string fullname) { this->_fullname = fullname; }
 void		User::setUsername(const std::string& username) { this->_username = username; }
 void		User::setFullname(std::string fullname) { this->_fullname = fullname; }
 int 		User::getState() { return this->_state; }
@@ -29,14 +28,13 @@ time_t 		User::getLastPing() const { return this->_last_ping; }
 std::string	User::getUsername() { return this->_username; }
 std::string User::getNickname() { return this->_nickname; }
 
-
 bool User::isRegistered() const
 {
-	if (!this->_nickname.length() || !this->_username.length() || !this->_nick_user_host.length()) // || !this->_password.length())
+	if (!this->_nickname.compare("Random_User") || ! this->_username.compare("Random_USER"))
 		return false;
-
 	return true;
 }
+
 /* Function gets called when there is data to receive for the user. */
 void User::onUser(void)
 {
@@ -111,6 +109,7 @@ void User::invoke(void)
 	this->_dataToSend.clear();
 }
 
+//  (*iter)->getCommandMessage() + static_cast<std::string>(MSG_END);	//do we have to append "\r\n"???
 /* Loop over vector and execute commands that are ready to send. */
 //  (*iter)->getCommandMessage() + static_cast<std::string>(MSG_END);	//do we have to append "\r\n"???
 void User::write(void)
