@@ -7,21 +7,22 @@ Channel::Channel(std::string channel_name) {setName(channel_name);}
 Channel::~Channel() {}
 
 void        Channel::setName(const std::string name){
-    std::string name_init = "&#!+";
+    // std::string name_init = "&#!+";
     unsigned long i = 0;
 
-    if (name.empty())
-        return ;
-    while (name_init[i])
-    {
-        if (name_init[i] != name[0])
-            break ;
-        i++;
-        if (i == 4)
-            return ;
-    }
+    //not necessary, parsing of "#" alreadz in Command: P.S. Warum &!+?
+    // if (name.empty())
+    //     return ;
+    // while (name_init[i])
+    // {
+    //     if (name_init[i] != name[0])
+    //         break ;
+    //     i++;
+    //     if (i == 4)
+    //         return ;
+    // }
 
-    //kann ueberspringen
+    //kann ueberspringen, edge case if channel_name > 50 chars
     // if (name.size() > 50)
     //     this->_name = name.resize(50);
     // else
@@ -45,8 +46,7 @@ void        Channel::setName(const std::string name){
             return ;
         }
     }
-    _channels.push_back(this);
-    /*implement function error handling instead of all this. Maybe use some boolean, return true or false.*/
+    // _channels.push_back(this);//instead of push here, push where all the channel are listed-> in user? Ask Kathy
 }
 // std::string Channel::getName() const{return this->_name;}
 
@@ -71,17 +71,18 @@ void        Channel::deleteChannel()
 // }
 
 
-// void		Channel::addUser(User *newUser){
-//     _user.push_back(newUser);
-// }
-// void		Channel::deleteUser(User *user){
-//      for (std::vector<User *>::iterator it = _users.begin(); it != _users.end(); ++it)
-//         if (*it == user)
-//             _users.erase(it);
-    
-//     deleteChannel();
+void		Channel::addUser(User *newUser){
+    _users.push_back(newUser);
+}
 
-// }
+void		Channel::deleteUser(User *user){
+     for (std::vector<User *>::iterator it = _users.begin(); it != _users.end(); ++it)
+        if (*it == user)
+            _users.erase(it);
+    
+    deleteChannel();
+
+}
 
 
 

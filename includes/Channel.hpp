@@ -45,8 +45,8 @@ public:
 	// std::string getTopic() const;
 	// void 		changeTopic(const std::string newTopic);
 
-	// void		addUser(User *user);
-	// void		deleteUser(User *user);
+	void		addUser(User *user);
+	void		deleteUser(User *user);
 
 	void static createChannel(std::string channel_name);
 	void		deleteChannel();

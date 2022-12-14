@@ -267,15 +267,40 @@ void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private 
 
 
 //in server add a vector with all channels names or in user all the joined channels; so I can test here if need to create a new one or not, without creating a temp channel to check it(line 29 channel)
-void Command::sendJoin(User* user, const std::string message)
+void Command::sendJoin(User* user, const std::string msg)
 {
-	if (!user || message.length() == 0)
+	if (!user || msg.length() == 0)
 		return ;
 
-	Channel::createChannel(message);
+	int index_of_first_space;
 
-	Log::printStringCol(CRITICAL, message);
+	index_of_first_space = msg.find_first_of(" ");
+	std::string command = msg.substr(1, index_of_first_space - 1);
+	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+	if (command.compare("join") != 0)
+	{
+		std::cout << "error";
+		return ;
+	}
+
+
+	//if command_arg[0] !="#" return (original message: ""Channel_name:": No such channel"); else check if channel already exist or not.
+	if (command_arg[0] != '#')
+		return ;
+	
+	//check if channel exist
+		//channel_name.addUser(user);
+	//else
+		Channel::createChannel(msg);
+
+	Log::printStringCol(CRITICAL, msg);
 };
+
+
+//void sendChannelMsg(User* user, std::string msg)
+// {
+		//formatierung: /msg #channel_name message
+// }
 
 // void Command::sendQuit(User* user, const std::string message)
 // {
