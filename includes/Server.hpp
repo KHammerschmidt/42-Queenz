@@ -6,8 +6,6 @@
 #include <map>
 #include <vector>
 
-#include <errno.h>				// FOR DEBUG ONLY!!
-
 #include <ctime>
 #include <netinet/in.h>
 #include <poll.h>
@@ -33,6 +31,7 @@ class Channel;
 
 class Server
 {
+
 	private:
 		uint16_t						_port;
 		int								_sockfd;

@@ -1,47 +1,41 @@
 #include "../includes/Command.hpp"
-#include <iostream>
 
+/* ======================================================================================== */
+/* ---------------------------------- GETTERS/SETTERS ------------------------------------  */
 bool Command::getCommandState(void) const { return this->_command_state; }			
 bool Command::getReplyState(void) const { return this->_reply_state; }
-std::string Command::getPrefix() { return this->prefix; }
+std::string Command::getPrefix() const { return this->prefix; }
+std::string Command::getUserCommand() const { return this->user_command; }
 std::vector<std::string> Command::getParameters() { return this->_parameters; }
 std::string Command::getQuery() { return this->_query; }
 
-/* Splits a string by a delimiter and saves content in vector. */
-std::vector<std::string> Command::split(std::string str, std::string delimiter)
-{
-	size_t pos;
-	std::string tmp;
-	std::vector<std::string> splitted_message;
 
-	while ((pos = str.find(delimiter))!= std::string::npos)
+/* ======================================================================================== */
+/* -------------------------------- CONSTRUCTOR MAIN LOOP  -------------------------------  */
+Command::Command(User* user, Server* server, std::string message)
+	: _user(user), _server(server), _query(message), _command_state(false), _reply_state(false)
+{
+	//if command starts with "\" then its a command. if it starts with : then its a reply 
+	prepare_cmd(message);	//saves command in var this->user_command
+	if (this->user_command.find(":") == 0)
 	{
-		tmp = str.substr(0, pos);
-		splitted_message.push_back(tmp);
-		str.erase(0, pos + delimiter.length());
+		std::cout << ("No command but a reply! No action needed by user.") << std::endl;
+		return ;
 	}
 
-	if (str.length() != 0)
-		splitted_message.push_back(str);
-
-	return splitted_message;
+	// if (this->user_command.find("/") != 0)	// how to check if first character is a /
+	// 	err_command(ERR_UNKNOWNCOMMAND_CMD);
+	if (this->user_command == "/NICK")
+		register_nickname();
+	else if (this->user_command == "/USER")
+		register_username();
+	else
+		err_command(ERR_UNKNOWNCOMMAND_CMD);
 }
 
-/* Valid nickname consists of a-z and 0-9 and size <= 63 characters. */
-int Command::check_characters(std::string str)
-{
-	for (size_t i = 0; i < str.length(); i++)
-	{
-		if (!isalpha(str.c_str()[i]) && !isdigit(str.c_str()[i]))		//Leerzeichen?
-			return -1;
-	}
 
-	if (str.length() >= 63)
-		return -1;
-
-	return 1;
-}
-
+/* ======================================================================================== */
+/* --------------------------------- REGISTER NICKNAME -----------------------------------  */
 /* Loop through existing users and check if nickname is already taken. */
 bool Command::check_free_nickname(const std::string& nickname)
 {
@@ -56,27 +50,32 @@ bool Command::check_free_nickname(const std::string& nickname)
 	return true;
 }
 
+std::string Command::getWelcomeReply(User* user)
+{
+	std::stringstream ss;
+	ss << ":" << user->getNickUserHost() << " :Welcome to the 42-Queenz.42.fr network";
+	return ss.str();
+}
+
 /* Register the user's nickname */
 void Command::register_nickname(void)
 {
 	size_t param_size = this->_parameters.size();
 	std::stringstream ss;
 
+	//no nickname specified
 	if (param_size == 1)
 	{
 		err_command(ERR_NONICKNAMEGIVEN);
 		return ;
 	}
 
-	if (check_characters(this->_parameters[1]) < 0)
+	this->sender_nickname = this->_parameters[1];
+
+	//check for characters/digits and length
+	if (Utils::check_characters(this->_parameters[1]) < 0)
 	{
 		err_command(ERR_ERRONEUSNICKNAME);
-		return ;
-	}
-
-	if (this->_user->getNickname().length() != 0)	//nickname changeable or not? --> I decided no :)
-	{
-		err_command(ERR_NICKCOLLISION);
 		return ;
 	}
 
@@ -87,49 +86,82 @@ void Command::register_nickname(void)
 		return ;
 	}
 
+	std::stringstream sstr;
+	//send to all users in a channel where user is member / as well to user himself?
+	sstr << ":" << this->_user->getNickname() << " changed their nickname to " << this->sender_nickname << "\r\n";
 	this->_user->setNickname(this->sender_nickname);
-	ss << "Changed nickname to " << this->_user->getNickname() << "\r\n";
-	this->_reply_message = ss.str();
-	this->_reply_state = true;							//send reply to all users in channel when user is in chat
-	this->_user->setState(REGISTERED);
-	this->_user->setUsername(this->sender_nickname);
+	this->_reply_message = sstr.str();
+	this->_reply_state = true;								//send reply to all users in channel when user is in chat
+	this->_command_state = false;
+
+	//necessary vector or reply messages
+	if (this->_user->getNickname() != "Random_User" && this->_user->getUsername() != "Random_User")
+	{
+		this->_reply_message = getWelcomeReply(this->_user);
+		this->_user->setState(REGISTERED);
+	}
 
 	this->_parameters.clear();
 }
 
-/* In case of an error does not send command to destination, but replies back to user in a 
-   reply with a specified error string. */
-void Command::err_command(std::string err_msg)
+
+/* ======================================================================================== */
+/* --------------------------------- REGISTER USERNAME -----------------------------------  */
+void Command::register_username(void)
 {
-	this->_command_state = false;
-	this->_reply_message = err_msg;
-	this->_reply_state = true;
+	//  Command: USER
+  	//	Parameters: <username> 0 * <realname>
+	// COMMAND <username> 0 * <realname>
+
+	//question Kathi: can two users have the same username? weechat greps username automatically
+	if (Utils::check_characters(this->_parameters[1]) < 0)
+	{
+		err_command(ERR_ERRONEUSNICKNAME);
+		return ;
+	}
+
+	this->_user->setUsername(this->_parameters[1]);
+
+	this->_parameters.clear();
+
+	std::stringstream sstr;
+	sstr << ":" << this->_user->getNickname() << " changed their nickname to " << this->sender_nickname << "\r\n";
+
+	// if (this->_parameters[3] != "*" || this->_parameters[4] != "*")
+	// {
+	// 	std::cout << "ERROR: INVALID SYNTAX: USAGE </USER> <nickname> <* *> <:Fullname>";
+	// 	return ;
+	// }
+
+	//send to all users in a channel where user is member / as well to user himself?
+	this->_reply_message = sstr.str();
+	this->_reply_state = true;								//send reply to all users in channel when user is in chat
+
+	//necessary vector or reply messages
+	if (this->_user->getNickname() != "Random_User" && this->_user->getUsername() != "Random_User")
+	{
+		this->_reply_message = getWelcomeReply(this->_user);
+		this->_user->setState(REGISTERED);
+	}
+
+	this->_user->setUsername(this->sender_nickname);
+	std::stringstream ss;
+
+	for (size_t i = 0; i < this->_parameters.size(); i++)
+		ss << this->_parameters[i];
+	
+	this->_user->setFullname(ss.str());
+
+		if (this->_user->getNickname() != "Random_User" && this->_user->getUsername() != "Random_User")
+	{
+		this->_reply_message = getWelcomeReply(this->_user);
+		this->_user->setState(REGISTERED);
+	}
+
+	// this->_user.setUsername()
 }
 
-/* Split the received string and save command(prefix) and sending user(sender_nickname)  */
-void Command::prepare_cmd(std::string message)
-{
-	this->_parameters = split(message, " ");
 
-	//missing error handling in case of empty comand (only newline etc) or too less parameters
-	this->prefix = this->_parameters[0];
-	this->sender_nickname = this->_parameters[1];
-
-	for (size_t i = 0; i < this->prefix.length(); i++)
-		prefix[i] = std::toupper(prefix[i]);
-}
-
-
-Command::Command(User* user, Server* server, std::string message)
-	: _user(user), _server(server), _query(message), _command_state(false), _reply_state(false)
-{
-	prepare_cmd(message);	//saves command in var this->prefix
-
-	if (this->prefix == "/NICK")
-		register_nickname();
-	else
-		err_command(ERR_UNKNOWNCOMMAND_CMD);
-}
 
 /* Compiles now :) */
 int	Command::find_user_in_server(const std::string nickname_receiver)
@@ -317,110 +349,25 @@ void Command::sendJoin(User* user, const std::string msg)
 
 
 
+/* ======================================================================================== */
+/* -------------------------------- HELPER FUNCTIONS  ------------------------------------  */
+/* In case of an error does not send command to destination, but replies back to user in a 
+   reply with a specified error string. */
+void Command::err_command(std::string err_msg)
+{
+	this->_command_state = false;
+	this->_reply_message = err_msg;
+	this->_reply_state = true;
+}
 
+/* Split the received string and save command(cmd) and sending user(sender_nickname)  */
+void Command::prepare_cmd(std::string message)
+{
+	this->_parameters = Utils::split(message, " ");
 
+	//missing error handling in case of empty comand (only newline etc) or too less parameters
+	this->user_command = this->_parameters[0];
 
-
-
-
-
-
-
-
-
-
-
-// -----------------		KATHI
-// void Command::invokeMessage(User *user)
-// {
-// 	std::vector<std::string> cmds_to_exec;
-
-// 	size_t pos_end_command = user->_buffer.find(MSG_END);
-// 	if (pos_end_command == std::string::npos)											//no full command
-// 		return ;
-
-// 	// while (pos_end_command != std::string::npos)
-// 	// {
-// 	std::string tmp = user->_buffer.substr(0, pos_end_command);						//create a substring until delimiter ("\r\n")
-// 	cmds_to_exec.push_back(tmp);													// push at end of vector
-// 	user->_buffer.erase(0, user->_buffer.length());
-
-// 	// if (pos_end_command == user->_buffer.length())
-// 	// 	break ;
-// 	// tmp = user->_buffer.substr(pos_end_command, user->_buffer.length());		//cut out first command
-// 	// if (tmp.length() == 0)
-// 	// 	break;
-// 	// else
-// 	// 	pos_end_command = user->_buffer.find(MSG_END);									//search for an additional command ("\r\n") would be present
-// 	// }
-// 	// print_cmds_to_exec(cmds_to_exec);												//for debug
-// 	execute_command(user, cmds_to_exec);
-// }
-
-// void Command::execute_command(User* user, std::vector<std::string> cmds_to_exec)
-// {
-// 	for (std::vector<std::string>::iterator iter = cmds_to_exec.begin(); iter != cmds_to_exec.end(); iter++)
-// 	{
-// 		switch(extract_command(*iter))	//*iter is a string
-// 		{
-// 			case NICK:
-// 				sendNickname(user, *iter);
-// 				break ;
-// 			case USER:
-// 				sendUsername(user, *iter);
-// 				break ;
-// 			case PING:
-// 				sendPong(user, *iter);
-// 				break ;
-// 			case JOIN:
-// 				sendJoin(user, *iter);
-// 				break ;
-// 			case PRIVMSG_CH:
-// 				sendPrivMsgChannel(user, *iter);
-// 				break ;
-// 			case PRIVMSG_U:
-// 				sendPrivMsgUser(user, *iter);
-// 				break ;
-// 			default:
-// 				Log::printStringCol(CRITICAL, "ERROR: COMMAND UNKNOWN");
-// 				// user->_buffer.erase(0, user->_buffer.length());
-// 				return ;
-// 		}
-// 	}
-// }
-
-// int Command::extract_command(const std::string& message)
-// {
-// 	if (message.find("/NICK") != std::string::npos)
-// 		return 0;												//REGISTER NICKNAME
-// 	else if (message.find("/USER") != std::string::npos)
-// 		return 1;												//REGISTER USERNAME
-// 	else if (message.find("/PING") != std::string::npos)
-// 		return 2;												//SEND PONG
-// 	else if (message.find("/JOIN") != std::string::npos)
-// 		return 3;												//JOIN CHANNEL
-// 	else if (message.find("/PRIVMSG #") != std::string::npos)
-// 		return 4;
-// 	else if (message.find("/PRIVMSG") != std::string::npos || message.find("/NOTICE") != std::string::npos)
-// 		return 5;
-// 	else
-// 		return -1;
-// }
-
-
-// size_t pos;
-// std::string delimiter(":");	//before colon: command & user (the one who send message)
-// if ((pos = message.find(delimiter)) != std::string::npos)
-// {
-// 	std::string remainder;
-// 	std::string tmp = message.substr(0, pos);
-// 	message.erase(0, pos + delimiter.length());
-// 	remainder = message;
-// 	message = tmp;
-// }
-
-// this->_parameters = split(message, " ");
-// prefix = *(this->_parameters.begin());					//nickname (origin of message)
-// for (size_t i = 0; i < prefix.length(); i++)				//prefix in upper case characters
-// 	prefix[i] = std::toupper(prefix[i]);
-// this->_parameters.erase(_parameters.begin());			//delete prefix from vector
+	for (size_t i = 0; i < this->user_command.length(); i++)
+		user_command[i] = std::toupper(user_command[i]);
+}
