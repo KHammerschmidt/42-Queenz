@@ -1,5 +1,4 @@
 #include "../includes/Command.hpp"
-#include <iostream>
 
 /* ======================================================================================== */
 /* ---------------------------------- GETTERS/SETTERS ------------------------------------  */
@@ -11,42 +10,6 @@ std::vector<std::string> Command::getParameters() { return this->_parameters; }
 std::string Command::getQuery() { return this->_query; }
 
 
-// /* Splits a string by a delimiter and saves content in vector. */
-// std::vector<std::string> Command::split(std::string str, std::string delimiter)
-// {
-// 	size_t pos;
-// 	std::string tmp;
-// 	std::vector<std::string> splitted_message;
-
-// 	while ((pos = str.find(delimiter))!= std::string::npos)
-// 	{
-// 		tmp = str.substr(0, pos);
-// 		splitted_message.push_back(tmp);
-// 		str.erase(0, pos + delimiter.length());
-// 	}
-
-// 	if (str.length() != 0)
-// 		splitted_message.push_back(str);
-
-// 	return splitted_message;
-// }
-
-// /* Valid nickname consists of a-z and 0-9 and size <= 63 characters. */
-// int Command::check_characters(std::string str)
-// {
-// 	for (size_t i = 0; i < str.length(); i++)
-// 	{
-// 		if (!isalpha(str.c_str()[i]) && !isdigit(str.c_str()[i]))		//Leerzeichen?
-// 			return -1;
-// 	}
-
-// 	if (str.length() >= 63)
-// 		return -1;
-
-// 	return 1;
-// }
-
-
 /* ======================================================================================== */
 /* -------------------------------- CONSTRUCTOR MAIN LOOP  -------------------------------  */
 Command::Command(User* user, Server* server, std::string message)
@@ -56,7 +19,10 @@ Command::Command(User* user, Server* server, std::string message)
 	prepare_cmd(message);	//saves command in var this->user_command
 
 	if (this->user_command.find(":") == 0)
-		return ;
+  {
+		  std::cout << ("No command but a reply! No action needed by user.") << std::endl;
+		  return ;
+   }
 
 	// if (this->user_command.find("/") != 0)	// how to check if first character is a /
 	// 	err_command(ERR_UNKNOWNCOMMAND_CMD);
@@ -116,8 +82,10 @@ void Command::register_nickname(void)
 	}
 
 	this->_parameters.clear();
-}
+  
 
+/* ======================================================================================== */
+/* --------------------------------- REGISTER NICKNAME -----------------------------------  */
 /* Loop through existing users and check if nickname is already taken. */
 bool Command::check_free_nickname(const std::string& nickname)
 {
@@ -139,6 +107,13 @@ std::string Command::getWelcomeReply(User* user)
 	return ss.str();
 }
 
+/* Register the user's nickname */
+void Command::register_nickname(void)
+{
+	std::stringstream ss;
+	ss << ":" << user->getNickUserHost() << " :Welcome to the 42-Queenz.42.fr network";
+	return ss.str();
+}
 
 /* ======================================================================================== */
 /* --------------------------------- REGISTER USERNAME -----------------------------------  */
@@ -157,7 +132,7 @@ void Command::register_username(void)
 
 	this->_user->setUsername(this->_parameters[1]);
 
-	this->_parameters.clear();
+  this->_parameters.clear();
 
 	std::stringstream sstr;
 	sstr << ":" << this->_user->getNickname() << " changed their nickname to " << this->sender_nickname << "\r\n";
@@ -179,8 +154,20 @@ void Command::register_username(void)
 		this->_user->setState(REGISTERED);
 	}
 
-	this->_user->setUsername(this->sender_nickname);
-	std::stringstream ss;
+	std::stringstream sstr;
+	//send to all users in a channel where user is member / as well to user himself?
+	sstr << ":" << this->_user->getNickname() << " changed their nickname to " << this->sender_nickname << "\r\n";
+	this->_user->setNickname(this->sender_nickname);
+	this->_reply_message = sstr.str();
+	this->_reply_state = true;								//send reply to all users in channel when user is in chat
+	this->_command_state = false;
+
+	//necessary vector or reply messages
+	if (this->_user->getNickname() != "Random_User" && this->_user->getUsername() != "Random_User")
+	{
+		this->_reply_message = getWelcomeReply(this->_user);
+		this->_user->setState(REGISTERED);
+	}
 
 	for (size_t i = 0; i < this->_parameters.size(); i++)
 		ss << this->_parameters[i];
@@ -195,8 +182,6 @@ void Command::register_username(void)
 
 	// this->_user.setUsername()
 }
-
-
 
 
 /* ======================================================================================== */
@@ -221,11 +206,6 @@ void Command::prepare_cmd(std::string message)
 	for (size_t i = 0; i < this->user_command.length(); i++)
 		user_command[i] = std::toupper(user_command[i]);
 }
-
-
-
-
-
 
 
 
@@ -408,3 +388,34 @@ void Command::sendJoin(User* user, const std::string msg)
 // 	//https://linux.die.net/man/2/sendto
 // 	Log::printStringCol(CRITICAL, message);
 // };
+
+
+
+
+
+
+
+
+
+/* ======================================================================================== */
+/* -------------------------------- HELPER FUNCTIONS  ------------------------------------  */
+/* In case of an error does not send command to destination, but replies back to user in a 
+   reply with a specified error string. */
+void Command::err_command(std::string err_msg)
+{
+	this->_command_state = false;
+	this->_reply_message = err_msg;
+	this->_reply_state = true;
+}
+
+/* Split the received string and save command(cmd) and sending user(sender_nickname)  */
+void Command::prepare_cmd(std::string message)
+{
+	this->_parameters = Utils::split(message, " ");
+
+	//missing error handling in case of empty comand (only newline etc) or too less parameters
+	this->user_command = this->_parameters[0];
+
+	for (size_t i = 0; i < this->user_command.length(); i++)
+		user_command[i] = std::toupper(user_command[i]);
+}

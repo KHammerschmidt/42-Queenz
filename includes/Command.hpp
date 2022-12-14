@@ -21,6 +21,7 @@
 // #define ERR_NEEDMOREPARAMS		"461 :Not enough parameters\r\n"
 #define ERR_ALREADYREGISTERED	"462 :You may not reregister\r\n"
 
+
 class Command
 {
 
@@ -35,8 +36,10 @@ private:
 		std::vector<std::string> _parameters;	//[/COMMAND, NICKNAME, RECEIVER_NICKNAME, MESSAGE];
 
 
+
 		std::string user_command;
 		bool _state;							//ready to send data or not
+
 		bool stop;
 		std::string getReplies(int code, std::string arg1);
 		std::map<int, std::string> send_map;
@@ -50,6 +53,8 @@ public:
 		std::string _command_message;
 		std::string _reply_message;
 
+		std::map<int, std::string>	send_map;
+
 		bool getCommandState() { return this->_command_state; }
 		bool getReplyState() { return this->_reply_state; }
 
@@ -59,6 +64,8 @@ public:
 		Command(User* user, Server* server, std::string message);
 		// std::vector<std::string> split(std::string str, std::string delimiter);
 
+		std::string getPrefix() const;
+		std::string getUserCommand() const;
 		std::vector<std::string> getParameters();
 		std::string getQuery();
 
@@ -86,6 +93,9 @@ public:
 		void err_command(std::string err_msg);
 		void prepare_cmd(std::string message);
 		bool getReplyState(void) const;
+		void register_username(void);
+
+		std::string getWelcomeReply(User* user);
 
 		std::string getPrefix() const;
 		std::string getUserCommand() const;

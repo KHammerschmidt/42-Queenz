@@ -11,8 +11,6 @@ User::User(int fd, sockaddr_in u_address, Server* server)			//not sure if needed
 		_buffer(), _dataToSend(),
 		command_function()  {}
 
-
-
 int 		User::getFd() { return this->_fd; }
 void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
 std::string	User::getNickUserHost() { return this->_nick_user_host; }
@@ -24,12 +22,13 @@ void 		User::setState(int new_state) { this->_state = new_state; }
 void 		User::setNickname(const std::string& nick){this->_nickname = nick; }
 void		User::setFullname(std::string fullname) { this->_fullname = fullname; }
 void		User::setUsername(const std::string& username) { this->_username = username; }
+void		User::setFullname(std::string fullname) { this->_fullname = fullname; }
 int 		User::getState() { return this->_state; }
 time_t 		User::getLastPing() const { return this->_last_ping; }
 std::string	User::getUsername() { return this->_username; }
 std::string User::getNickname() { return this->_nickname; }
 
-bool 		User::isRegistered() const
+bool User::isRegistered() const
 {
 	if (!this->_nickname.compare("Random_User") || ! this->_username.compare("Random_USER"))
 		return false;
@@ -112,6 +111,7 @@ void User::invoke(void)
 
 //  (*iter)->getCommandMessage() + static_cast<std::string>(MSG_END);	//do we have to append "\r\n"???
 /* Loop over vector and execute commands that are ready to send. */
+//  (*iter)->getCommandMessage() + static_cast<std::string>(MSG_END);	//do we have to append "\r\n"???
 void User::write(void)
 {
 	for (std::vector<Command*>::iterator iter = command_function.begin(); iter != command_function.end(); iter++)
@@ -120,10 +120,8 @@ void User::write(void)
 		{
 			if (send((*iter)->receiver_fd, (*iter)->getCommandMessage().c_str(), (*iter)->getCommandMessage().length(), 0) < 0)
 				Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE FROM USER FAILED.");
-
 		}
 
-		//vielleicht hier noch ein anderer loop durch vector um die Nachrichten an alle User zu senden?
 		if ((*iter)->getReplyState() == true)
 		{
 			if (send(this->_fd, (*iter)->getReply().c_str(), (*iter)->getReply().length(), 0) < 0)
