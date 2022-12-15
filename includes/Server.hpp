@@ -93,6 +93,7 @@ class Server
 		void setAuth(int num);
 		int getAuth() const;
 		int getServerFd(void);
+
 };
 
 #endif

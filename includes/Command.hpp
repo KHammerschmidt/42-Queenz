@@ -14,12 +14,15 @@
 #include "Utils.hpp"
 
 
-#define ERR_UNKNOWNCOMMAND_CMD 	"ERROR :Unkonwn command. Usage: </COMMAND> <PARAMETERS>\r\n"
+#define ERR_UNKNOWNCOMMAND 		"Unknown command\r\n"
+#define ERR_NEEDMOREPARAMS		"Not enough parameters\r\n"
+
 #define ERR_NONICKNAMEGIVEN 	"431 :Nickname not given\r\n"
 #define ERR_ERRONEUSNICKNAME 	"432: Erroneus nickname\r\n"
 #define ERR_NICKNAMEINUSE 		"433 :Nickname is already in use\r\n"
-// #define ERR_NEEDMOREPARAMS		"461 :Not enough parameters\r\n"
-#define ERR_ALREADYREGISTERED	"462 :You may not reregister\r\n"
+
+#define ERR_PASSWDMISMATCH 		"Password incorrect\r\n"
+#define ERR_ALREADYREGISTERED 	"You may not reregister\r\n"
 
 
 class Command
@@ -29,14 +32,19 @@ private:
 		User* _user;
 		Server* _server;
 
+		std::string query;
+		bool 		authenticated;
+		bool		command_state;
+		bool		reply_state;
+		std::string user_command;
+
+
+
 		std::string user_receiver; 				//by msg and notice needed to check if user receiver exist
 		std::string text;
 		std::string prefix;
-		std::string _query;
-		std::vector<std::string> _parameters;	//[/COMMAND, NICKNAME, RECEIVER_NICKNAME, MESSAGE];
+		std::vector<std::string> _args;	//[/COMMAND, NICKNAME, RECEIVER_NICKNAME, MESSAGE];
 
-		std::string user_command;
-		bool authenticated;
 
 
 		bool _state;							//ready to send data or not
@@ -49,15 +57,14 @@ public:
 		std::string sender_nickname;
 		bool	_valid_command;
 		int 	receiver_fd;
-		bool	_command_state;
-		bool	_reply_state;
+
 		std::string _command_message;
 		std::string _reply_message;
 
 		std::map<int, std::string>	send_map;
 
-		bool getCommandState() { return this->_command_state; }
-		bool getReplyState() { return this->_reply_state; }
+		bool getCommandState() { return this->command_state; }
+		bool getReplyState() { return this->reply_state; }
 
 		std::string getCommandMessage() { return this->_command_message; }
 		std::string getReply() { return this->_reply_message; }
@@ -90,8 +97,8 @@ public:
 		// int check_characters(std::string str);
 		bool check_free_nickname(const std::string& nickname);
 		void register_nickname(void);
-		void err_command(std::string err_msg);
-		void prepare_cmd(std::string message);
+		void err_command(std::string err_num, std::string cmd, std::string code);
+		bool parse_command(std::string message);
 		bool getReplyState(void) const;
 		void send_pong();
 		std::string getUserCommand() const;
@@ -101,6 +108,9 @@ public:
 		void register_pass(void);
 		void register_cap(void);
 
+		void print_vector(std::vector<std::string> vctr);
+		std::string put_reply(User* user, std::string err_num, std::string code);
+		std::string put_reply_cmd(User* user, std::string err_num, std::string cmd, std::string code);
 };
 
 

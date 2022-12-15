@@ -7,10 +7,11 @@ User::User(int fd, sockaddr_in u_address, Server* server)			//not sure if needed
 		_port(ntohs(server->getAddr().sin_port)),
 		_user_address(u_address),
 		_fd(fd), _last_ping(std::time(0)), _state(CONNECTED),
-		_username("Random_User"), _nickname("Random_User"), _fullname("No full name"), _nick_user_host(),
-		_password(),
+		_username(), _nickname(), _fullname(), _nick_user_host(),
+		_password(), authentified(false),
 		_buffer(), _dataToSend(),
-		command_function() {}
+		command_function() { }
+
 
 int 		User::getFd() { return this->_fd; }
 void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
@@ -32,8 +33,9 @@ std::string User::getPassword() const { return this->_password; }
 
 bool User::isRegistered() const
 {
-	if (!this->_nickname.compare("Random_User") || ! this->_username.compare("Random_USER"))
+	if (!this->_nickname.length() || !this->_username.length())
 		return false;
+
 	return true;
 }
 
@@ -54,6 +56,7 @@ void User::receive(void)
 	memset(&recv_buffer, 0, sizeof(BUFFER_SIZE + 1));
 
 	size_t size = recv(this->_fd, &recv_buffer, BUFFER_SIZE, 0);
+	std::cout << "size in user: " << size << std::endl;
 	if (size < 0)
 	{
 		// search for NICK UND USER DANN REGISTER otherwise delete user
@@ -92,7 +95,7 @@ void User::receive(void)
 void User::split(void)
 {
 	size_t pos;
-	std::string delimiter(MSG_END);
+	std::string delimiter("\r\n");
 
 	while ((pos = this->_buffer.find(delimiter)) != std::string::npos)
 	{
@@ -106,7 +109,10 @@ void User::split(void)
 void User::invoke(void)
 {
 	for (std::vector<std::string>::iterator iter = _dataToSend.begin(); iter != _dataToSend.end(); iter++)
+	{
+		// std::cout << *iter << std::endl;
 		this->command_function.push_back(new Command(this, this->_server, *iter));
+	}
 
 	this->_dataToSend.clear();
 }
