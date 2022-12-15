@@ -80,7 +80,7 @@ public:
 		bool getCommandState() const;
 		void execute();
 
-		int find_user_in_server(const std::string nickname_receiver);
+		int find_user_in_server( std::string nickname_receiver);
 
 		void setNickname(const std::string& nickname);
 

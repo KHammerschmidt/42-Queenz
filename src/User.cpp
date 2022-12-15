@@ -16,6 +16,7 @@ User::User(int fd, sockaddr_in u_address, Server* server)			//not sure if needed
 int 		User::getFd() { return this->_fd; }
 void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
 std::string	User::getNickUserHost() const{ return this->_nick_user_host; }
+std::string	User::getFullname() const { return this->_fullname; }
 void		User::setAuth(int num) { this->authentified += num; }
 int			User::getAuth() const { return this->authentified; }
 void		User::setNickUserHost(std::string name) { this->_nick_user_host = name; }
@@ -56,7 +57,6 @@ void User::receive(void)
 	memset(&recv_buffer, 0, sizeof(BUFFER_SIZE + 1));
 
 	size_t size = recv(this->_fd, &recv_buffer, BUFFER_SIZE, 0);
-	std::cout << "size in user: " << size << std::endl;
 	if (size < 0)
 	{
 		// search for NICK UND USER DANN REGISTER otherwise delete user
@@ -103,16 +103,15 @@ void User::split(void)
 		this->_buffer.erase(0, pos + delimiter.length());
 		this->_dataToSend.push_back(tmp);
 	}
+	if (this->_buffer.length() != 0)
+		this->_dataToSend.push_back(this->_buffer);
 }
 
 /* Create a Command object for every input string and push it into the vector. */
 void User::invoke(void)
 {
 	for (std::vector<std::string>::iterator iter = _dataToSend.begin(); iter != _dataToSend.end(); iter++)
-	{
-		// std::cout << *iter << std::endl;
 		this->command_function.push_back(new Command(this, this->_server, *iter));
-	}
 
 	this->_dataToSend.clear();
 }

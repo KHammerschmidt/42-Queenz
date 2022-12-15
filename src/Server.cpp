@@ -48,19 +48,11 @@ void Server::run()
 			if (pfds_iterator->revents == 0)
 				continue;
 
-			// revents wird mit jedem poll um 1 erhöht.
-			// wir initialisieren revents bei jedem user mit -1.
-			// d.h. wenn revents von dem user 0 ist, überspringen wir ihn
-
 			if ((pfds_iterator->revents & POLLHUP) == POLLHUP)		//could be a problem when a user quits??
 				serverError(7);
 
 			if ((pfds_iterator->revents & POLLIN) == POLLIN)
 			{
-				// if (pfds_iterator->revents == 0)
-				// {
-				// 	std::cout << " I AM HERE IN POLL LOOP" << std::endl;
-				// }
 				if (this->_pollfds[0].revents == POLLIN)
 				{
 					connectNewUser();

@@ -19,11 +19,7 @@ Command::Command(User* user, Server* server, std::string message)
 		return ;
 
 	if (this->user_command == "PASS")
-	{
-		std::cout << "HERE IN PASS" << std::endl;
 		register_pass();
-		std::cout << this->_user->getPassword() << std::endl;
-	}
 	else if (this->user_command == "CAP")
 		register_cap();
 	else if (this->user_command == "NICK")
@@ -65,17 +61,13 @@ void Command::register_pass(void)
 		return ;
 	}
 
-	std::cout << "args: " << this->_args[0] << std::endl;
-	std::cout << "server: " << this->_server->getPassword();
-
-	if (this->_args[0].compare(this->_server->getPassword()))
+	if (this->_server->getPassword().compare(this->_args[1]))
 	{
 		err_command("464", user_command, ERR_PASSWDMISMATCH);
 		return ;
 	}
 
 	this->_user->setPassword(this->_args[1]);
-
 	if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
 	{
 		getWelcomeReply(this->_user);
@@ -95,7 +87,7 @@ void Command::register_cap(void)
 /* Register the user's nickname */
 void Command::register_nickname(void)
 {
-	size_t param_size = this->_args.size();
+	// size_t param_size = this->_args.size();
 	std::stringstream ss;
 
 	// if (param_size == 1)
@@ -106,8 +98,8 @@ void Command::register_nickname(void)
 
 	this->sender_nickname = this->_args[1];
 
-	if (!param_size)
-		return ;
+	// if (!param_size)
+	// 	return ;
 	// if (Utils::check_characters(this->_args[1]) < 0)
 	// {
 	// 	err_command(ERR_ERRONEUSNICKNAME);
@@ -126,12 +118,17 @@ void Command::register_nickname(void)
 	this->_reply_message = getWelcomeReply(this->_user);
 	this->reply_state = true;								//send reply to all users in channel when user is in chat
 	this->command_state = false;
-
 	if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
 	{
 		getWelcomeReply(this->_user);
 		this->_user->setState(REGISTERED);
 	}
+
+	// if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
+	// {
+	// 	getWelcomeReply(this->_user);
+	// 	this->_user->setState(REGISTERED);
+	// }
 
 	// this->_user->setState(REGISTERED);					//send reply to all users in channel when user is in chat
 	this->_args.clear();
@@ -185,17 +182,25 @@ void Command::register_username(void)
 	// 	return ;
 	// }
 
-	std::stringstream ss;
-	for (size_t i = 0; i < this->_args.size(); i++)
-		ss << this->_args[i];
+	// std::stringstream ss;
+	// for (size_t i = 0; i < this->_args.size(); i++)
+	// 	ss << this->_args[i];
 
-	this->_user->setFullname(ss.str());
+	// this->_user->setFullname(ss.str());
 
+	this->_user->setUsername(this->_args[2]);
+	this->_user->setFullname(this->_args[3]);
 	if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
 	{
 		getWelcomeReply(this->_user);
 		this->_user->setState(REGISTERED);
 	}
+
+	// if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
+	// {
+	// 	getWelcomeReply(this->_user);
+	// 	this->_user->setState(REGISTERED);
+	// }
 	// this->_reply_message = getWelcomeReply(this->_user);
 
 	// this->_user.setUsername()
@@ -242,6 +247,7 @@ bool Command::parse_command(std::string message)
 	this->_args.erase(this->_args.begin());
 	this->sender_nickname = this->_args[0];
 	this->_args.erase(this->_args.begin());
+
 	return true;
 }
 
@@ -284,82 +290,59 @@ void Command::print_vector(std::vector<std::string> vctr)
 
 
 /* Compiles now :) */
-int	Command::find_user_in_server(const std::string nickname_receiver)
+int	Command::find_user_in_server(std::string nickname_receiver)
 {
 	std::vector<User*> user_temp = this->_server->getUsers();
 
 	for (std::vector<User*>::iterator iter = user_temp.begin(); iter != user_temp.end(); iter++)
 	{
-		if ((*iter)->getNickname() == nickname_receiver)
-			return 1;
+		std::cout << (*iter)->getNickname()<< std::endl;
+		//if ((*iter)->getNickname() == nickname_receiver)
+		//	return 1;
 	}
+	nickname_receiver = " ";
 	Log::printStringCol(CRITICAL, "INVALID USER REQUEST. USER DOES NOT EXIST");
 	return 0;
-
-// VERSION BEFORE UPDATE KATHI
-// KATHI: I wrote a getter function for users and store them in temp vector
-// 	for (std::map<int, User*>::iterator iter = this->_server->_users.begin(); iter != this->_server->_users.end(); iter++)
-// 	{
-// 		if (iter->second->getNickname() == nickname_receiver)
-// 		{
-// 			this->user_receiver = nickname_receiver;			//in Command classe variable: User* user_receiver;
-// 			return (1);
-// 		}
-// 		else if (iter == this->_server->_users.end())			// --> this can never be true as function exits for loop when iter == server._users.end()
-// 		{
-// 			std::cout << "INVALID USER REQUEST. USER DOES NOT EXIST" << std::endl;
-// 			return (0);
-// 		}
-// 	}
-// 	return (1);
 }
 
 void Command::sendPrivMsgUser(User* user, std::string msg)		//13:57:27 ruslan1 | hi
 {																//4:01:04   libera  -- | MSG(ruslan1): hello
-	int index_of_first_space;
+// 	int index_of_first_space;
 
-	index_of_first_space = msg.find_first_of(" ");
-	std::string command = msg.substr(1, index_of_first_space - 1);
-	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
-	if (command.compare("msg") != 0)
-	{	std::cout << "error";
-		return ;
-	}
+// 	index_of_first_space = msg.find_first_of(" ");
+// 	std::string command = msg.substr(1, index_of_first_space - 1);
+// 	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+// 	if (command.compare("msg") != 0)
+// 	{	std::cout << "error";
+// 		return ;
+// 	}
 
-	//find  first space to have lenght of nick
-	index_of_first_space = msg.find_first_of(" ");
-	if (!index_of_first_space)
-		return ;
-	std::string nick_receiver = msg.substr(0, index_of_first_space - 1);
+// 	//find  first space to have lenght of nick
+// 	index_of_first_space = msg.find_first_of(" ");
+// 	if (!index_of_first_space)
+// 		return ;
+// 	std::string nick_receiver = msg.substr(0, index_of_first_space - 1);
 
-	//
-	if (find_user_in_server(nick_receiver) == 0)
-		return ;
+// 	//
+//  	if (find_user_in_server(nick_receiver) == 0)
+// // 		return ;
 
+	find_user_in_server("khammers");
+// //check that nick is valid, vector with all nicks? and that exists.
+// 	/*-> implement ...*/
 
-//check that nick is valid, vector with all nicks? and that exists.
-	/*-> implement ...*/
-
-	this->command_state = true;
-	this->reply_state = true;
-	//text to print
-	text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+// 	this->command_state = true;
+// 	this->reply_state = true;
+// 	//text to print
+// 	text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
 
 
 	//KATHI Kommentar: Max hatte uns den Tipp gegeben mit std::stringstream zu arbeiten
-	// std::stringstream ss;
-	// ss << ":" << user->getNickname() << "!"<< user->getUsername()" << "@" << HOSTNAME << " " << msg;
-	// user->setNickUserHost2(ss.str()); 	//um stringstream in normalen std::string umzuwandeln
+	 std::stringstream ss;
+	 ss << ":" << user->getNickname() << "!"<< user->getUsername() << "@" << HOSTNAME << " " << msg;
+	user->setNickUserHost2(ss.str()); 	//um stringstream in normalen std::string umzuwandeln
 
-	std::string ouput_to_client;
-	ouput_to_client.append(":");
-	ouput_to_client.append(user->getNickname());
-	ouput_to_client.append("!");
-	ouput_to_client.append(user->getNickname());
-	ouput_to_client.append(HOSTNAME);
-	ouput_to_client.append(" ");
-	ouput_to_client.append(msg);
-	user->setNickUserHost2(ouput_to_client);
+
 
 
 
@@ -461,34 +444,3 @@ void Command::sendJoin(User* user, const std::string msg)
 // 	//https://linux.die.net/man/2/sendto
 // 	Log::printStringCol(CRITICAL, message);
 // };
-
-
-
-
-
-
-
-
-
-// /* ======================================================================================== */
-// /* -------------------------------- HELPER FUNCTIONS  ------------------------------------  */
-// /* In case of an error does not send command to destination, but replies back to user in a
-//    reply with a specified error string. */
-// void Command::err_command(std::string err_msg)
-// {
-// 	this->command_state = false;
-// 	this->_reply_message = err_msg;
-// 	this->reply_state = true;
-// }
-
-// /* Split the received string and save command(cmd) and sending user(sender_nickname)  */
-// void Command::parse_command(std::string message)
-// {
-// 	this->_args = Utils::split(message, " ");
-
-// 	//missing error handling in case of empty comand (only newline etc) or too less parameters
-// 	this->user_command = this->_args[0];
-
-// 	for (size_t i = 0; i < this->user_command.length(); i++)
-// 		user_command[i] = std::toupper(user_command[i]);
-// }
