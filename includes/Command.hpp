@@ -35,10 +35,12 @@ private:
 		std::string _query;
 		std::vector<std::string> _parameters;	//[/COMMAND, NICKNAME, RECEIVER_NICKNAME, MESSAGE];
 
-
-
 		std::string user_command;
+		bool authenticated;
+
+
 		bool _state;							//ready to send data or not
+
 
 		bool stop;
 		std::string getReplies(int code, std::string arg1);
@@ -76,7 +78,7 @@ public:
 		void setNickname(const std::string& nickname);
 
 		void sendPrivMsgUser(User* user, std::string msg);
-		//void sendChannelMsg(User* user, std::string msg);		
+		//void sendChannelMsg(User* user, std::string msg);
 		void nick(User* user, const std::string& msg);
 		void sendPrivNoticeUser(User* user, std::string msg);
 		void sendJoin(User* user, std::string message);
@@ -91,11 +93,13 @@ public:
 		void err_command(std::string err_msg);
 		void prepare_cmd(std::string message);
 		bool getReplyState(void) const;
-
+		void send_pong();
 		std::string getUserCommand() const;
 
 		void register_username(void);
 		std::string getWelcomeReply(User* user);
+		void register_pass(void);
+		void register_cap(void);
 
 };
 

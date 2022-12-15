@@ -8,8 +8,9 @@ User::User(int fd, sockaddr_in u_address, Server* server)			//not sure if needed
 		_user_address(u_address),
 		_fd(fd), _last_ping(std::time(0)), _state(CONNECTED),
 		_username("Random_User"), _nickname("Random_User"), _fullname("No full name"), _nick_user_host(),
+		_password(),
 		_buffer(), _dataToSend(),
-		command_function()  {}
+		command_function() {}
 
 int 		User::getFd() { return this->_fd; }
 void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
@@ -22,10 +23,12 @@ void 		User::setState(int new_state) { this->_state = new_state; }
 void 		User::setNickname(const std::string& nick){this->_nickname = nick; }
 void		User::setUsername(const std::string& username) { this->_username = username; }
 void		User::setFullname(std::string fullname) { this->_fullname = fullname; }
+void		User::setPassword(std::string pw) { this->_password = pw; }
 int 		User::getState() { return this->_state; }
 time_t 		User::getLastPing() const { return this->_last_ping; }
 std::string	User::getUsername() { return this->_username; }
 std::string User::getNickname() { return this->_nickname; }
+std::string User::getPassword() const { return this->_password; }
 
 bool User::isRegistered() const
 {

@@ -9,7 +9,7 @@ int parse(int argc, char** argv)
 {
 	if (argc != 3 || std::atoi(argv[1]) <= 0 || std::atoi(argv[1]) > 65535)
 		return -1;
-	
+
 	return 0;
 }
 
@@ -25,8 +25,8 @@ int main(int argc, char** argv)
 
 	signal(SIGINT, handler);
 
-	while (running)
-		server->run();
+	// while (running)
+	server->run();
 
 	return 0;
 }

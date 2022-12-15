@@ -2,7 +2,7 @@
 
 /* ======================================================================================== */
 /* ---------------------------------- GETTERS/SETTERS ------------------------------------  */
-bool Command::getCommandState(void) const { return this->_command_state; }			
+bool Command::getCommandState(void) const { return this->_command_state; }
 bool Command::getReplyState(void) const { return this->_reply_state; }
 std::string Command::getPrefix() const { return this->prefix; }
 std::string Command::getUserCommand() const { return this->user_command; }
@@ -13,26 +13,59 @@ std::string Command::getQuery() { return this->_query; }
 /* ======================================================================================== */
 /* -------------------------------- CONSTRUCTOR MAIN LOOP  -------------------------------  */
 Command::Command(User* user, Server* server, std::string message)
-	: _user(user), _server(server), _query(message), _command_state(false), _reply_state(false)
+	: _user(user), _server(server), _query(message), authenticated(false), _command_state(false),	_reply_state(false)
 {
-	//if command starts with "\" then its a command. if it starts with : then its a reply 
-	prepare_cmd(message);	//saves command in var this->user_command
+	prepare_cmd(message);
 
-	if (this->user_command.find(":") == 0)
-  {
-		  std::cout << ("No command but a reply! No action needed by user.") << std::endl;
-		  return ;
-   }
-
-	// if (this->user_command.find("/") != 0)	// how to check if first character is a /
-	// 	err_command(ERR_UNKNOWNCOMMAND_CMD);
-	if (this->user_command == "/NICK")
+	if (this->user_command == "PASS")
+		register_pass();
+	else if (this->user_command == "CAP")
+		register_cap();
+	else if (this->user_command == "NICK")
 		register_nickname();
-	else if (this->user_command == "/USER")
+	else if (this->user_command == "USER")
 		register_username();
+	else if (this->user_command == "PING")
+		send_pong();
 	else
 		err_command(ERR_UNKNOWNCOMMAND_CMD);
+
+	// if (DBUG MSG)
+	// {
+		// if (this->user_command.find(":") == 0)
+		// {
+		// 	  std::cout << ("No command but a reply! No action needed by user.") << std::endl;
+		// 	  return ;
+		// }
+
+		// if (this->user_command.find("/") != 0)	// how to check if first character is a /
+		// 	err_command(ERR_UNKNOWNCOMMAND_CMD);
+	// }
+
 }
+
+/* ======================================================================================== */
+/* --------------------------------- REGISTER PASSWORD -----------------------------------  */
+void Command::register_pass(void)
+{
+	if (this->_user->getPassword().length() != 0)
+		std::cout << "ERROR: PASSWORD ALREADY SET." << std::endl;
+
+	if (this->_server->getPassword().compare(this->_parameters[1]))
+		this->_user->setPassword(this->_parameters[1]);
+	else
+		std::cout << "ERROR: INVALID PASSWORD." << std::endl;
+
+	this->_parameters.clear();
+	// this->authenticated = true;
+}
+
+void Command::register_cap(void)
+{
+	this->_parameters.clear();
+	return ;
+}
+
 
 /* ======================================================================================== */
 /* --------------------------------- REGISTER NICKNAME -----------------------------------  */
@@ -47,40 +80,34 @@ void Command::register_nickname(void)
 		err_command(ERR_NONICKNAMEGIVEN);
 		return ;
 	}
-	
+
 	this->sender_nickname = this->_parameters[1];
 
-	if (Utils::check_characters(this->_parameters[1]) < 0)
-	{
-		err_command(ERR_ERRONEUSNICKNAME);
-		return ;
-	}
+	// if (Utils::check_characters(this->_parameters[1]) < 0)
+	// {
+	// 	err_command(ERR_ERRONEUSNICKNAME);
+	// 	return ;
+	// }
 
 	//once we can connect 2 users I can check this! -->check if another user is already using this nickname
-	if (check_free_nickname(this->_parameters[1]) == false)
-	{
-		err_command(ERR_NICKNAMEINUSE);
-		return ;
-	}
+	// if (check_free_nickname(this->_parameters[1]) == false)
+	// {
+	// 	err_command(ERR_NICKNAMEINUSE);
+	// 	return ;
+	// }
 
-
-	std::stringstream sstr;
-	//send to all users in a channel where user is member / as well to user himself?
-	sstr << ":" << this->_user->getNickname() << " changed their nickname to " << this->sender_nickname << "\r\n";
 	this->_user->setNickname(this->sender_nickname);
 
-	this->_reply_message = sstr.str();
+	this->_reply_message = getWelcomeReply(this->_user);
 	this->_reply_state = true;								//send reply to all users in channel when user is in chat
 	this->_command_state = false;
+
+	// if (this->_user->getNickname() != "Random_User" && this->_user->getUsername() != "Random_User")
+	// {
+		// this->_user->setState(REGISTERED);
+	// }
+
 	// this->_user->setState(REGISTERED);					//send reply to all users in channel when user is in chat
-
-	//necessary vector or reply messages
-	if (this->_user->getNickname() != "Random_User" && this->_user->getUsername() != "Random_User")
-	{
-		this->_reply_message = getWelcomeReply(this->_user);
-		this->_user->setState(REGISTERED);
-	}
-
 	this->_parameters.clear();
 }
 
@@ -101,7 +128,7 @@ bool Command::check_free_nickname(const std::string& nickname)
 std::string Command::getWelcomeReply(User* user)
 {
 	std::stringstream ss;
-	ss << ":" << user->getNickUserHost() << " :Welcome to the 42-Queenz.42.fr network";
+	ss << ":" << HOSTNAME << " 001 " << user->getNickname() << " :Welcome to the 42-Queenz.42.fr network " << user->getNickUserHost() << "\r\n";
 	return ss.str();
 }
 
@@ -114,13 +141,13 @@ void Command::register_username(void)
 	// COMMAND <username> 0 * <realname>
 
 	//question Kathi: can two users have the same username? weechat greps username automatically
-	if (Utils::check_characters(this->_parameters[1]) < 0)
-	{
-		err_command(ERR_ERRONEUSNICKNAME);
-		return ;
-	}
+	// if (Utils::check_characters(this->_parameters[1]) < 0)
+	// {
+	// 	err_command(ERR_ERRONEUSNICKNAME);
+	// 	return ;
+	// }
 
-	this->_user->setUsername(this->_parameters[1]);
+	// this->_user->setUsername(this->_parameters[1]);
 
  	 this->_parameters.clear();
 
@@ -149,8 +176,20 @@ void Command::register_username(void)
 
 
 /* ======================================================================================== */
+/* ------------------------------ PING / PONG FUNCTIONS  ---------------------------------  */
+void Command::send_pong(void)
+{
+	std::cout << " PING RECEIVED " << std::endl;
+	this->receiver_fd = this->_server->getServerFd();
+	this->_command_message = this->_parameters[1];
+	this->_command_state = true;
+	this->_reply_state = false;
+}
+
+
+/* ======================================================================================== */
 /* -------------------------------- HELPER FUNCTIONS  ------------------------------------  */
-/* In case of an error does not send command to destination, but replies back to user in a 
+/* In case of an error does not send command to destination, but replies back to user in a
    reply with a specified error string. */
 void Command::err_command(std::string err_msg)
 {
@@ -165,7 +204,9 @@ void Command::prepare_cmd(std::string message)
 	this->_parameters = Utils::split(message, " ");
 
 	//missing error handling in case of empty comand (only newline etc) or too less parameters
-	this->user_command = this->_parameters[0];
+	std::vector<std::string> command = Utils::split(this->_parameters[0], "/");
+	this->user_command = command[0];
+	command.clear();
 
 	for (size_t i = 0; i < this->user_command.length(); i++)
 		user_command[i] = std::toupper(user_command[i]);
@@ -274,7 +315,7 @@ void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private 
 		std::cout << "error";
 		return ;
 	}
-	
+
 	//find  first space to have lenght of nick
 	index_of_first_space = msg.find_first_of(" ");
 	if (!index_of_first_space)
@@ -331,7 +372,7 @@ void Command::sendJoin(User* user, const std::string msg)
 	//if command_arg[0] !="#" return (original message: ""Channel_name:": No such channel"); else check if channel already exist or not.
 	if (command_arg[0] != '#')
 		return ;
-	
+
 	//check if channel exist
 		//channel_name.addUser(user);
 	//else
@@ -364,7 +405,7 @@ void Command::sendJoin(User* user, const std::string msg)
 
 // /* ======================================================================================== */
 // /* -------------------------------- HELPER FUNCTIONS  ------------------------------------  */
-// /* In case of an error does not send command to destination, but replies back to user in a 
+// /* In case of an error does not send command to destination, but replies back to user in a
 //    reply with a specified error string. */
 // void Command::err_command(std::string err_msg)
 // {
