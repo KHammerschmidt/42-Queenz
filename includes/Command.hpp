@@ -69,6 +69,10 @@ public:
 		std::string getCommandMessage() { return this->_command_message; }
 		std::string getReply() { return this->_reply_message; }
 
+		int find_user_in_server(const std::string nickname_receiver);
+		User *return_user_in_server(const std::string nickname_receiver);
+
+
 		Command(User* user, Server* server, std::string message);
 		// std::vector<std::string> split(std::string str, std::string delimiter);
 
@@ -80,7 +84,6 @@ public:
 		bool getCommandState() const;
 		void execute();
 
-		int find_user_in_server( std::string nickname_receiver);
 
 		void setNickname(const std::string& nickname);
 

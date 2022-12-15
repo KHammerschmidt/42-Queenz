@@ -28,6 +28,8 @@ Command::Command(User* user, Server* server, std::string message)
 		register_username();
 	else if (this->user_command == "PING")
 		send_pong();
+	else if (this->user_command == "PRIVMSG")
+		sendPrivMsgUser(_user, query);
 	else
 		err_command("421", message, ERR_UNKNOWNCOMMAND);
 
@@ -289,68 +291,101 @@ void Command::print_vector(std::vector<std::string> vctr)
 
 
 
-/* Compiles now :) */
-int	Command::find_user_in_server(std::string nickname_receiver)
+User	*Command::return_user_in_server(const std::string nickname_receiver)
 {
 	std::vector<User*> user_temp = this->_server->getUsers();
 
 	for (std::vector<User*>::iterator iter = user_temp.begin(); iter != user_temp.end(); iter++)
 	{
-		std::cout << (*iter)->getNickname()<< std::endl;
-		//if ((*iter)->getNickname() == nickname_receiver)
-		//	return 1;
+		if ((*iter)->getNickname() == nickname_receiver)
+			return (*iter);
 	}
-	nickname_receiver = " ";
+	return NULL;
+	//throw error
+}
+
+
+int	Command::find_user_in_server(const std::string nickname_receiver)
+{
+	std::vector<User*> user_temp = this->_server->getUsers();
+
+	// //
+	// std::cout << "-----------";
+	// for (std::vector<User*>::iterator iter = user_temp.begin(); iter != user_temp.end(); iter++)
+	// {
+	// 	std::cout << ((*iter)->getNickname()) << "-----------" << std::endl;
+	// }
+	// //
+
+	for (std::vector<User*>::iterator iter = user_temp.begin(); iter != user_temp.end(); iter++)
+	{
+		if ((*iter)->getNickname() == nickname_receiver)
+			return 1;
+	}
+
 	Log::printStringCol(CRITICAL, "INVALID USER REQUEST. USER DOES NOT EXIST");
 	return 0;
 }
 
-void Command::sendPrivMsgUser(User* user, std::string msg)		//13:57:27 ruslan1 | hi
-{																//4:01:04   libera  -- | MSG(ruslan1): hello
-// 	int index_of_first_space;
 
-// 	index_of_first_space = msg.find_first_of(" ");
-// 	std::string command = msg.substr(1, index_of_first_space - 1);
-// 	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
-// 	if (command.compare("msg") != 0)
-// 	{	std::cout << "error";
-// 		return ;
-// 	}
+void Command::sendPrivMsgUser(User* user, std::string msg)		
+{				
+	//std::string msg = "/PRIVMSG ben ciao";
+    int index_of_first_space;
 
-// 	//find  first space to have lenght of nick
-// 	index_of_first_space = msg.find_first_of(" ");
-// 	if (!index_of_first_space)
-// 		return ;
-// 	std::string nick_receiver = msg.substr(0, index_of_first_space - 1);
+	index_of_first_space = msg.find_first_of(" ");
+	std::string command = msg.substr(0, index_of_first_space);
+	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+	if (command.compare("PRIVMSG") != 0)
+	{	std::cout << command;		
+		return ;
+	}
 
-// 	//
-//  	if (find_user_in_server(nick_receiver) == 0)
-// // 		return ;
+	//find  first space to have lenght of nick
+	index_of_first_space = command_arg.find_first_of(" ");
+	if (!index_of_first_space)
+		return ;
+	std::string nick_receiver = command_arg.substr(0, index_of_first_space);
+	//test
+	// if (nick_receiver.compare("b") != 0)
+	// {	std::cout << nick_receiver << "++++++++";
+	// 	return ;
+	// }
+	//std::cout << nick_receiver << "-------";
 
-	find_user_in_server("khammers");
-// //check that nick is valid, vector with all nicks? and that exists.
-// 	/*-> implement ...*/
+	if (find_user_in_server(nick_receiver) == 0)
+		return ;
 
-// 	this->command_state = true;
-// 	this->reply_state = true;
-// 	//text to print
-// 	text = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+
+	//text to print
+   	std::string text = command_arg.substr(index_of_first_space + 1, command_arg.length() - index_of_first_space);
 
 
 	//KATHI Kommentar: Max hatte uns den Tipp gegeben mit std::stringstream zu arbeiten
-	 std::stringstream ss;
-	 ss << ":" << user->getNickname() << "!"<< user->getUsername() << "@" << HOSTNAME << " " << msg;
-	user->setNickUserHost2(ss.str()); 	//um stringstream in normalen std::string umzuwandeln
+	// std::stringstream ss;
+	// ss << ":" << user->getNickname() << "!"<< user->getUsername()" << "@" << HOSTNAME << " " << msg;
+	// user->setNickUserHost2(ss.str()); 	//um stringstream in normalen std::string umzuwandel
 
 
-
-
-
-	//? how do I check that printed by dest KATHY
-	//std::cout << user->getNickname() << " | " << text << std::endl;
-	//	//-> implement anstatt oben: ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+	std::stringstream ss;
+	this->command_state = true;
+	ss << user->getNickUserHost() << " PRIVMSG " << nick_receiver << " :" << text << "\r\n";
+	this->_command_message = ss.str();
+	this->receiver_fd = return_user_in_server(nick_receiver)->getFd();
+		
 	Log::printStringCol(CRITICAL, msg);
+
 };
+
+
+
+
+
+
+
+
+
+
 
 void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private message, but doesnt open a query, direct in channel
 {																//receiver see: 23:33:09   ircserv  -- | ruslan (~ruslan@ip_addr): hi
