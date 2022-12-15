@@ -5,8 +5,6 @@
 Server::Server(char** argv)
 	: _serv_address(), _users(), _channels()
 {
-	// Log::printStringCol(REGULAR, WELCOME_BEFORE);
-
 	setPort(argv[1]);
 	this->_password = argv[2];
 
@@ -20,8 +18,6 @@ Server::Server(char** argv)
 
 Server::~Server()
 {
-	// // Log::printStringCol(LOG, "SHUTTING DOWN SERVER");
-
 	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
 		deleteUser((*iter).second);
 
@@ -47,7 +43,6 @@ void Server::run()
 
 		if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)
 			serverError(2);
-
 		for (pfds_iterator = this->_pollfds.begin(); pfds_iterator != this->_pollfds.end(); pfds_iterator++)
 		{
 			if (pfds_iterator->revents == 0)
@@ -85,11 +80,11 @@ void Server::connectNewUser()
 	// else
 	// 	// Log::printStringCol(LOG, NEW_CONNECTION);
 
-	pollfd user_pollfd = {new_fd, POLLIN, 0};
+	pollfd user_pollfd = {new_fd, POLLIN, -1};
 	this->_pollfds.push_back(user_pollfd);
 
-	// User* new_user = new User(new_fd, ntohs(s_address.sin_port));  //this->_serv_address);
 	User* new_user = new User(new_fd, s_address, this);
+
 	// if (new_user->getState() != 0)				//this means != CONNECTED
 	// {
 	// 	// Log::printStringCol(REGULAR, ERR_USER_REGISTRY);

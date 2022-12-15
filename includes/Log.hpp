@@ -29,10 +29,6 @@
 #define ERR_PING_TIMEOUT 		"WARNING: PING TIMED OUT."
 #define ERR_POLLIN				"WARNING: SERVER IS SHUTTING DOWN. NO POLLIN DETECTED.\nALL USERS LEFT SERVER.\n"
 
-/* COMMAND MESSAGES */
-#define ERR_UNKNOWNCOMMAND(source, command)	"421 " + source + " " + command + " :Unknown command"
-
-
 enum MSG_STATE { REGULAR, LOG, CRITICAL, WARNING };
 
 struct Log

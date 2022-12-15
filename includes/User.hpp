@@ -41,13 +41,13 @@ class User
 		std::string				_fullname;
 		std::string				_nick_user_host;
 		std::string				_password;
+		bool 					authentified;
 
 		/* command related vars */
 		std::string							_buffer;
 		std::vector<std::string> 			_dataToSend;
 		// std::map<std::string, Channel *> 	channels;
 		std::vector<Command *> 				command_function;
-		int authentified;
 
 	public:
 		User(int fd, sockaddr_in u_address, Server* server);
@@ -100,8 +100,44 @@ class User
 
 		void setAuth(int num);
 		int getAuth() const;
+		void authenticate_user(void);
 
 
 };
 
 #endif
+
+
+// switch (poll(fds, _users.size(), SERVER_TIMEOUT))
+// {
+//     case -1:
+//         irc_log(error, "poll error: ", "");
+//         break ;
+//     case 0:
+//         irc_log(error, "poll timeout: ", "");
+//         break ;
+//     default:
+// 	{
+//         accept_connections();
+//         for (Users::iterator user_it = _users.begin(); user_it < _users.end(); user_it++)
+//         {
+//             ++user_it->socket.revents;
+//             if (user_it == _users.begin() || user_it->socket.revents == 0)                  // we don't want to get input from server and recently accepted users before polling them
+//                 continue ;
+//             char buffer[BUFFER_SIZE];
+//             std::memset(&buffer, 0, sizeof(buffer));
+//             int err = recv(user_it->socket.fd, &buffer, sizeof(buffer), 0);                 // err < 0 -> nothing to receive!
+//             if (err == 0)
+//             {                                                                 // rc == 0 -> connection closed by User
+//                 irc_log(trace, "closing user: ", user_it->socket.fd);
+//                 user_it->part_all_channels(_channels);
+//                 close(user_it->socket.fd);
+//                 _users.erase(user_it);
+//             }
+//             else
+//             {
+//                 parse_cmd(user_it, buffer);
+//             }
+//         } /* End of existing connection is readable */
+// 	}
+// } /* End of switch */

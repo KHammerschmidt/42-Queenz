@@ -7,14 +7,16 @@ User::User(int fd, sockaddr_in u_address, Server* server)			//not sure if needed
 		_port(ntohs(server->getAddr().sin_port)),
 		_user_address(u_address),
 		_fd(fd), _last_ping(std::time(0)), _state(CONNECTED),
-		_username("Random_User"), _nickname("Random_User"), _fullname("No full name"), _nick_user_host(),
-		_password(),
+		_username(), _nickname(), _fullname(), _nick_user_host(),
+		_password(), authentified(false),
 		_buffer(), _dataToSend(),
-		command_function() {}
+		command_function() { }
+
 
 int 		User::getFd() { return this->_fd; }
 void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
 std::string	User::getNickUserHost() const{ return this->_nick_user_host; }
+std::string	User::getFullname() const { return this->_fullname; }
 void		User::setAuth(int num) { this->authentified += num; }
 int			User::getAuth() const { return this->authentified; }
 void		User::setNickUserHost(std::string name) { this->_nick_user_host = name; }
@@ -32,8 +34,9 @@ std::string User::getPassword() const { return this->_password; }
 
 bool User::isRegistered() const
 {
-	if (!this->_nickname.compare("Random_User") || ! this->_username.compare("Random_USER"))
+	if (!this->_nickname.length() || !this->_username.length())
 		return false;
+
 	return true;
 }
 
@@ -92,7 +95,7 @@ void User::receive(void)
 void User::split(void)
 {
 	size_t pos;
-	std::string delimiter(MSG_END);
+	std::string delimiter("\r\n");
 
 	while ((pos = this->_buffer.find(delimiter)) != std::string::npos)
 	{
@@ -100,6 +103,8 @@ void User::split(void)
 		this->_buffer.erase(0, pos + delimiter.length());
 		this->_dataToSend.push_back(tmp);
 	}
+	if (this->_buffer.length() != 0)
+		this->_dataToSend.push_back(this->_buffer);
 }
 
 /* Create a Command object for every input string and push it into the vector. */
