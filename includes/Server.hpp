@@ -61,8 +61,8 @@ class Server
 		std::vector<User*> getUsers() const;
 
 	private:
-		void newSocket(void);
-		void sendPing();			//who sends the ping? client? automatic?
+		void setNewSocket(void);
+		void sendPing();
 
 		void connectNewUser();
 		void serverError(int code);
@@ -92,6 +92,7 @@ class Server
 
 		void setAuth(int num);
 		int getAuth() const;
+		int getServerFd(void);
 };
 
 #endif

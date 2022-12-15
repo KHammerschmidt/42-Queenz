@@ -40,6 +40,7 @@ class User
 		std::string 			_nickname;
 		std::string				_fullname;
 		std::string				_nick_user_host;
+		std::string				_password;
 
 		/* command related vars */
 		std::string							_buffer;
@@ -73,6 +74,7 @@ class User
 		std::string getFullname() const;
 		time_t		getLastPing() const;
 		std::string getNickUserHost() const;
+		std::string getPassword() const;
 		// std::string getPrefix() const;
 		// int			getFd() const;
 		void setState(int new_state);
@@ -81,9 +83,10 @@ class User
 		void setNickname(const std::string& nickname);
 		void setUsername(const std::string& username);
 		void setFullname(std::string fullname);
+		void setPassword(std::string pw);
 	  	void setNickUserHost(std::string str);
 		void setLastPing(time_t last_ping);
-   		void setNickUserHost2(std::string);	// --> kannst auch gerne die setNickUserHost() benutzen :) 
+   		void setNickUserHost2(std::string);	// --> kannst auch gerne die setNickUserHost() benutzen :)
 
 		int getState();
 		void registerNewUser();

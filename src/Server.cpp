@@ -1,19 +1,16 @@
 #include "../includes/Server.hpp"
 
-int 		Server::getPort() const { return this->_port; }
-int 		Server::getTimeout() const { return this->_timeout; }
-bool 		Server::getServerStatus() const { return this->_serverRunningStatus; }
-std::string Server::getPassword() const { return this->_password; }
-
+/* ======================================================================================== */
+/* ----------------------------- CONSTRUCTOR/DESTRUCTOR ----------------------------------  */
 Server::Server(char** argv)
 	: _serv_address(), _users(), _channels()
 {
-	Log::printStringCol(REGULAR, WELCOME_BEFORE);
+	// Log::printStringCol(REGULAR, WELCOME_BEFORE);
 
 	setPort(argv[1]);
 	this->_password = argv[2];
 
-	newSocket();
+	setNewSocket();
 	this->_timeout = 3 * 60 * 1000;
 
 	pollfd server_fd = { this->_sockfd, POLLIN, 0};
@@ -23,7 +20,7 @@ Server::Server(char** argv)
 
 Server::~Server()
 {
-	Log::printStringCol(LOG, "SHUTTING DOWN SERVER");
+	// // Log::printStringCol(LOG, "SHUTTING DOWN SERVER");
 
 	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
 		deleteUser((*iter).second);
@@ -37,6 +34,142 @@ Server::~Server()
 	delete this;
 }
 
+/* ======================================================================================== */
+/* ------------------------------------ MAIN LOOP ----------------------------------------  */
+/* Makes the server listen to incoming requests and loops over these requests to identify a POLLIN event.
+   If file descriptor is readable, the pollfds struct indicates if either a new user registered or another
+   command has been sent. The function then calls the respective function. */
+void Server::run()
+{
+	while (this->getServerStatus() == true)
+	{
+		// // Log::printStringCol(REGULAR, SERV_LISTENING);
+
+		if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)
+			serverError(2);
+
+		for (pfds_iterator = this->_pollfds.begin(); pfds_iterator != this->_pollfds.end(); pfds_iterator++)
+		{
+			if (pfds_iterator->revents == 0)
+				continue;
+
+			if ((pfds_iterator->revents & POLLHUP) == POLLHUP)		//could be a problem when a user quits??
+				serverError(7);
+
+			if ((pfds_iterator->revents & POLLIN) == POLLIN)
+			{
+				if (this->_pollfds[0].revents == POLLIN)
+				{
+					connectNewUser();
+					break ;
+				}
+
+				this->_users[pfds_iterator->fd]->onUser();
+			}
+		}
+	}
+}
+
+/* ======================================================================================== */
+/* --------------------------------- USER CONNECTION --------------------------------------  */
+/* To register, user sends request via server socket, the only outer connection. A new fd for user is created with accept(). */
+void Server::connectNewUser()
+{
+	int new_fd;
+	struct sockaddr_in s_address;
+	socklen_t s_size = sizeof(s_address);
+
+	new_fd = accept(this->_sockfd,(sockaddr *) &s_address, &(s_size));
+	if (new_fd < 0)
+		serverError(3);
+	// else
+	// 	// Log::printStringCol(LOG, NEW_CONNECTION);
+
+	pollfd user_pollfd = {new_fd, POLLIN, 0};
+	this->_pollfds.push_back(user_pollfd);
+
+	// User* new_user = new User(new_fd, ntohs(s_address.sin_port));  //this->_serv_address);
+	User* new_user = new User(new_fd, s_address, this);
+	// if (new_user->getState() != 0)				//this means != CONNECTED
+	// {
+	// 	// Log::printStringCol(REGULAR, ERR_USER_REGISTRY);
+	// 	deleteUser(new_user);
+	// 	return ;
+	// }
+
+	this->_users.insert(std::make_pair(new_fd, new_user));
+
+	std::cout << "New User on port: new_fd: " << new_fd << " | inet_ntoa: " << inet_ntoa(s_address.sin_addr);
+	std::cout << ":" << ntohs(s_address.sin_port) << " (" << new_fd << ")" << std::endl;
+}
+
+/* Erases file descriptor from vector _users and _pollfds.
+   Maybe also delete user from channel? how to check internal? */
+void Server::disconnectUser(User* user)
+{
+	if (!user)
+		return ;
+		// Log::printStringCol(LOG, "DISCONNECTING USER");
+
+	// // maybe in try / catch in case of fd cannot be find/invalid fd?
+	// // User* user = this->_users.at(fd);
+	// int user_fd = getUserfd(user);
+	// if (user_fd < 0)
+	// {
+	// 	// Log::printStringCol(RED, "Error: no user found.");
+	// 	serverError(4);
+	// }
+
+	// user->leave();		// leave channels
+	// // erase this user from std::map by its fd
+	// this->_users.erase(user_fd);
+
+	// // erase user from pollfds
+	// for (pfds_iterator = _pollfds.begin(); pfds_iterator != _pollfds.end(); pfds_iterator++)
+	// {
+	// 	if (pfds_iterator->fd == user_fd)
+	// 	{
+	// 		this->_pollfds.erase(pfds_iterator);
+	// 		close(user_fd);
+	// 		break ;
+	// 	}
+	// }
+	// delete user;
+	// deleteUser();
+}
+
+/* ======================================================================================== */
+/* -------------------------------------- GETTERS ----------------------------------------  */
+int 		Server::getPort() const { return this->_port; }
+int 		Server::getTimeout() const { return this->_timeout; }
+int 		Server::getServerFd(void) { return (this->_sockfd); }
+bool 		Server::getServerStatus() const { return this->_serverRunningStatus; }
+std::string Server::getPassword() const { return this->_password; }
+
+User* Server::getUser(int fd)
+{
+	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
+	{
+		if ((*iter).first == fd)
+			return ((*iter).second);
+	}
+	return NULL;
+}
+
+/* Function returns a vector with User objects, extracted from member type std::map<int, User*>. */
+std::vector<User*> Server::getUsers() const
+{
+	std::vector<User *> users_temp = std::vector<User*>();
+
+	for (std::map<int, User *>::const_iterator iter = _users.begin(); iter != _users.end(); iter++)
+		users_temp.push_back(iter->second);
+
+	return users_temp;
+}
+
+
+/* ======================================================================================== */
+/* -------------------------------------- SETTERS ----------------------------------------  */
 void Server::setServerStatus(bool new_status) { this->_serverRunningStatus = new_status; }
 void Server::setPort(std::string port_str)
 {
@@ -45,7 +178,7 @@ void Server::setPort(std::string port_str)
 }
 
 /* Creates a new socket, sets options and binds it to the server and listens on socket. */
-void Server::newSocket(void)
+void Server::setNewSocket(void)
 {
 	this->_sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->_sockfd < 0)
@@ -70,19 +203,21 @@ void Server::newSocket(void)
 		serverError(1);
 }
 
+/* ======================================================================================== */
+/* -------------------------------- HELPER FUNCTIONS -------------------------------------  */
 /* Prints error messages, closes server fd and sets server status to false which shuts down the server. */
 void Server::serverError(int code)
 {
 	switch(code)
 	{
-		case 1: Log::printStringCol(CRITICAL, ERR_SOCKET_CONNECTION); break;
-		case 2: Log::printStringCol(CRITICAL, ERR_POLL); break;
-		case 3: Log::printStringCol(CRITICAL, ERR_ACCEPT); break;
-		case 4: Log::printStringCol(CRITICAL, ERR_USER_CREDENTIALS); break;
-		case 5: Log::printStringCol(CRITICAL, ERR_PING_TIMEOUT); break;
-		case 6: Log::printStringCol(CRITICAL, ERR_SEND); break;
-		case 7: Log::printStringCol(WARNING, ERR_POLLIN); break;
-		default: Log::printStringCol(CRITICAL, ERR_ANY_OTHER_ERR); break;
+		case 1: break; // Log::printStringCol(CRITICAL, ERR_SOCKET_CONNECTION); break;
+		case 2: break; // Log::printStringCol(CRITICAL, ERR_POLL); break;
+		case 3: break; // Log::printStringCol(CRITICAL, ERR_ACCEPT); break;
+		case 4: break; // Log::printStringCol(CRITICAL, ERR_USER_CREDENTIALS); break;
+		case 5: break; // Log::printStringCol(CRITICAL, ERR_PING_TIMEOUT); break;
+		case 6: break; // Log::printStringCol(CRITICAL, ERR_SEND); break;
+		case 7: break; // Log::printStringCol(WARNING, ERR_POLLIN); break;
+		default: break;// Log::printStringCol(CRITICAL, ERR_ANY_OTHER_ERR); break;
 	}
 
 	close(this->_sockfd);
@@ -90,82 +225,8 @@ void Server::serverError(int code)
 	exit(-1);
 }
 
-/* Makes the server listen to incoming requests and loops over these requests to identify a POLLIN event.
-   If file descriptor is readable, the pollfds struct indicates if either a new user registered or another
-   command has been sent. The function then calls the respective function. */
-void Server::run()
-{
-	while (this->getServerStatus() == true)
-	{
-		Log::printStringCol(REGULAR, SERV_LISTENING);
-
-		if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)
-			serverError(2);
-
-		for (pfds_iterator = this->_pollfds.begin(); pfds_iterator != this->_pollfds.end(); pfds_iterator++)
-		{
-			if (pfds_iterator->revents == 0)
-				continue;
-
-			//who sends ping? to where? and the same than revents == 0?
-
-			if ((pfds_iterator->revents & POLLHUP) == POLLHUP)
-				serverError(7);
-
-			if ((pfds_iterator->revents & POLLIN) == POLLIN)
-			{
-				if (this->_pollfds[0].revents == POLLIN)
-				{
-					connectNewUser();
-					break ;
-				}
-				this->_users[pfds_iterator->fd]->onUser();
-			}
-		}
-	}
-}
-
-User* Server::getUser(int fd)
-{
-	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
-	{
-		if ((*iter).first == fd)
-			return ((*iter).second);
-	}
-	return NULL;
-}
-
-/* To register, user sends request via server socket, the only outer connection. A new fd for user is created with accept(). */
-void Server::connectNewUser()
-{
-	int new_fd;
-	struct sockaddr_in s_address;
-	socklen_t s_size = sizeof(s_address);
-
-	new_fd = accept(this->_sockfd,(sockaddr *) &s_address, &(s_size));
-	if (new_fd < 0)
-		serverError(3);
-	else
-		Log::printStringCol(LOG, NEW_CONNECTION);
-
-	pollfd user_pollfd = {new_fd, POLLIN, 0};
-	this->_pollfds.push_back(user_pollfd);
-
-	// User* new_user = new User(new_fd, ntohs(s_address.sin_port));
-	User* new_user = new User(new_fd, s_address, this); //this->_serv_address);
-	if (new_user->getState() != 0)		//this means != CONNECTED
-	{
-		Log::printStringCol(REGULAR, ERR_USER_REGISTRY);
-		deleteUser(new_user);
-		return ;
-	}
-
-	this->_users.insert(std::make_pair(new_fd, new_user));
-
-	std::cout << "New User on port: new_fd: " << new_fd << " | inet_ntoa: " << inet_ntoa(s_address.sin_addr);
-	std::cout << ":" << ntohs(s_address.sin_port) << " (" << new_fd << ")" << std::endl;
-}
-
+/* ======================================================================================== */
+/* ------------------------------------- OTHERS ------------------------------------------  */
 /* Server sends Ping to users to see if connection is still intact. */
 void Server::sendPing()
 {
@@ -181,40 +242,9 @@ void Server::sendPing()
 	}
 }
 
-/* Erases file descriptor from vector _users and _pollfds.
-	Maybe also delete user from channel? how to check internal? */
-void Server::disconnectUser(User* user)
-{
-	if (user)
-		Log::printStringCol(LOG, "DISCONNECTING USER");
 
-	// // maybe in try / catch in case of fd cannot be find/invalid fd?
-	// // User* user = this->_users.at(fd);
-	// int user_fd = getUserfd(user);
-	// if (user_fd < 0)
-	// {
-	// 	Log::printStringCol(RED, "Error: no user found.");
-	// 	serverError(4);
-	// }
-
-	// user->leave();		// leave channels
-	// // erase this user from std::map by its fd
-	// this->_users.erase(user_fd);
-
-	// // erase user from pollfds
-	// for (pfds_iterator = _pollfds.begin(); pfds_iterator != _pollfds.end(); pfds_iterator++)
-	// {
-	// 	if (pfds_iterator->fd == user_fd)
-	// 	{
-	// 		this->_pollfds.erase(pfds_iterator);
-	// 		close(user_fd);
-	// 		break ;
-	// 	}
-	// }
-	// delete user;
-	// deleteUser();
-}
-
+/* ======================================================================================== */
+/* -------------------------- DELETION OF USERS / CHANNEL ---------------------------------  */
 //delete and disconnect
 void Server::deleteUser(User* user)
 {
@@ -230,16 +260,12 @@ void Server::deleteChannel(Channel* channel)
 }
 
 
-/* Function returns a vector with User objects, extracted from member type std::map<int, User*>. */
-std::vector<User*> Server::getUsers() const
-{
-	std::vector<User *> users_temp = std::vector<User*>();
 
-	for (std::map<int, User *>::const_iterator iter = _users.begin(); iter != _users.end(); iter++)
-		users_temp.push_back(iter->second);
 
-	return users_temp;
-}
+
+
+
+
 
 // int Server::getUserfd(User* user)
 // {
@@ -277,7 +303,7 @@ not used, and should also be NULL. */
 // if (pfds_iterator->revents != POLLIN)		//e.g. POLLHUP (in explanations.txt) when POLLHUP then disconnect and break
 // {
 // 	setServerStatus(false);
-// 	Log::printStringCol(RED, "Error: unexpected result. Nothing to read. Connection will be disabled.");
+// 	// Log::printStringCol(RED, "Error: unexpected result. Nothing to read. Connection will be disabled.");
 // 	break ;
 // }
 
@@ -350,9 +376,9 @@ not used, and should also be NULL. */
 // // _pollfds[0] stellt das erste pollfd struct dar in dem die server socket gespeichert ist. Nur über diese socket können sich neue User registrieren.
 // if ((this->_pollfds[0].revents & POLLIN) == POLLIN)		// oder (this->_pollfds... & POLLIN)
 // {
-// 	Log::printStringCol(LOG, "A new user is being connected to server");
+// 	// Log::printStringCol(LOG, "A new user is being connected to server");
 // 	connectNewUser();
-// 	Log::printStringCol(LOG, "--- Done. User connected to server");
+// 	// Log::printStringCol(LOG, "--- Done. User connected to server");
 // 	break ;
 // }
 
@@ -365,7 +391,7 @@ not used, and should also be NULL. */
 // 	this->_users[iter_poll->fd]->receiveData(this);		// receive(this)	// implement receive Funktion in User
 // 	// }
 // 	// break ;
-// 	Log::printStringCol(LOG, "User receive Data loop --- end");
+// 	// Log::printStringCol(LOG, "User receive Data loop --- end");
 // }
 // else
 // {
