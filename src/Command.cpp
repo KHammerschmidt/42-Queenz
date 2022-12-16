@@ -30,6 +30,8 @@ Command::Command(User* user, Server* server, std::string message)
 		send_pong();
 	else if (this->user_command == "PRIVMSG" || this->user_command == "NOTICE")
 		sendPrivMsgUser(_user, query);
+	else if (this->user_command == "PING")
+		sendQuit(_user);
 	else
 		err_command("421", message, ERR_UNKNOWNCOMMAND);
 
@@ -435,10 +437,11 @@ void Command::sendJoin(User* user, const std::string msg)
 		//formatierung: /msg #channel_name message
 // }
 
-// void Command::sendQuit(User* user, const std::string message)
-// {
-// 	//close the socket but let the fd still on listening modus
-// 	//https://stackoverflow.com/questions/27798419/closing-client-socket-and-keeping-server-socket-active
-// 	//https://linux.die.net/man/2/sendto
-// 	Log::printStringCol(CRITICAL, message);
-// };
+
+void Command::sendQuit(User* user)
+{
+	close(user->getFd());
+	//close the socket but let the fd still on listening modus
+	//https://stackoverflow.com/questions/27798419/closing-client-socket-and-keeping-server-socket-active
+	//Log::printStringCol(CRITICAL, message);
+};
