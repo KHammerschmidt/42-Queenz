@@ -19,8 +19,7 @@ std::string	User::getNickUserHost() const{ return this->_nick_user_host; }
 std::string	User::getFullname() const { return this->_fullname; }
 void		User::setAuth(int num) { this->authentified += num; }
 int			User::getAuth() const { return this->authentified; }
-void		User::setNickUserHost(std::string name) { this->_nick_user_host = name; }
-void 		User::setNickUserHost2(std::string output_to_client){this->_nick_user_host = output_to_client;};
+void		User::setNickUserHost(std::string _nick_user_host) { this->_nick_user_host = _nick_user_host; }
 void 		User::setState(int new_state) { this->_state = new_state; }
 void 		User::setNickname(const std::string& nick){this->_nickname = nick; }
 void		User::setUsername(const std::string& username) { this->_username = username; }

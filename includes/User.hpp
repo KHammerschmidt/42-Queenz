@@ -86,7 +86,6 @@ class User
 		void setPassword(std::string pw);
 	  	void setNickUserHost(std::string str);
 		void setLastPing(time_t last_ping);
-   		void setNickUserHost2(std::string);	// --> kannst auch gerne die setNickUserHost() benutzen :)
 
 		int getState();
 		void registerNewUser();

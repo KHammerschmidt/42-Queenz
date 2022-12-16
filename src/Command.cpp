@@ -366,22 +366,23 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 	// ss << ":" << user->getNickname() << "!"<< user->getUsername()" << "@" << HOSTNAME << " " << msg;
 	// user->setNickUserHost2(ss.str()); 	//um stringstream in normalen std::string umzuwandel
 
+	std::string temp;
+	temp.append(":");
+	temp.append(user->getNickname());
+	temp.append("!");
+	temp.append(user->getNickname());
+	temp.append(HOSTNAME);
+	user->setNickUserHost(temp);
 
 	std::stringstream ss;
 	this->command_state = true;
-	ss << user->getNickUserHost() << " PRIVMSG " << nick_receiver << " :" << text << "\r\n";
+	ss << user->getNickUserHost() << " PRIVMSG " << nick_receiver << " " << text << "\r\n";
 	this->_command_message = ss.str();
 	this->receiver_fd = return_user_in_server(nick_receiver)->getFd();
 		
 	Log::printStringCol(CRITICAL, msg);
 
 };
-
-
-
-
-
-
 
 
 
@@ -418,7 +419,6 @@ void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private 
 	//std::cout << user->getNickname() << " : " << text << std::endl;
 	//-> implement anstatt oben: ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
 
-	/*von privatemessage kopiert -> verarbeiten*/
 	std::string ouput_to_client;
 	ouput_to_client.append(":");
 	ouput_to_client.append(user->getNickname());
@@ -427,7 +427,7 @@ void Command::sendPrivNoticeUser(User* user, std::string msg)	//same as private 
 	ouput_to_client.append(HOSTNAME);
 	ouput_to_client.append(" ");
 	ouput_to_client.append(msg);
-	user->setNickUserHost2(ouput_to_client);
+	user->setNickUserHost(ouput_to_client);
 
 
 
