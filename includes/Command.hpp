@@ -46,7 +46,8 @@ private:
 		std::vector<std::string> _args;	//[/COMMAND, NICKNAME, RECEIVER_NICKNAME, MESSAGE];
 
 
-
+		//channel related
+		std::vector<User*> channels_replies;
 		bool _state;							//ready to send data or not
 
 
@@ -70,7 +71,11 @@ public:
 		std::string getReply() { return this->_reply_message; }
 
 		User 	*return_user_in_server(const std::string nickname_receiver);
-		Channel	*return_channel_in_server(const std::string channel_name, Server *_server);
+	//	Channel	*return_channel_in_server(const std::string channel_name, Server *_server);
+
+		void get_users_in_channel(const std::string channel_name, Server *server);
+
+		std::string return_string_all_users_in_channel(const std::string channel_name, Server *server);
 
 
 
@@ -89,7 +94,6 @@ public:
 		void setNickname(const std::string& nickname);
 
 		void sendPrivMsgUser(User* user, std::string msg);
-		//void sendChannelMsg(User* user, std::string msg);
 		void nick(User* user, const std::string& msg);
 		void sendJoin(User* user, std::string message, Server* server);
 		void sendQuit(User* user);

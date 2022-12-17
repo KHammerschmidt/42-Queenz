@@ -56,14 +56,14 @@ class Server
 		std::map<int, User*>::iterator 	user_iterator;
 		std::map<std::string, Channel*>	channel_iterator;
 
-
+	//RUS-> ich habe _channels vector und  _channel_users map implementiert, die muessen hier deleted werde.
 
 		std::vector<User*> getUsers() const;
 
 		/*Channel related*/
 		//std::map<int, Channel*> _channels; //all channels->create getChannels and put me private, dont be lazy :D
 		/*typedef*/ std::vector<Channel*>	_channels; //all channels
-		std::map<Channel*, User*> 		_channel_users;//pair channel/user
+		std::multimap<std::string, User*> 	_channel_users;//pair channel/user, with multimap can use key channel multiple times
 		//std::vector<_channels> d;
 
 	private:
