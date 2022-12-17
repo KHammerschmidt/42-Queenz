@@ -87,7 +87,7 @@ class User
 		void setUsername(const std::string& username);
 		void setFullname(std::string fullname);
 		void setPassword(std::string pw);
-	  	void setNickUserHost(std::string str);
+	  	void setNickUserHost();
 		void setLastPing(time_t last_ping);
 		void setUserChannelStatus(const std::string &status);
 

@@ -21,11 +21,12 @@ Server::~Server()
 	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
 		deleteUser((*iter).second);
 
-	for (std::map<std::string, Channel*>::iterator iter = this->_channels.begin(); iter != _channels.end(); iter++)
-		deleteChannel((*iter).second);
+	//RUS-> ich habe _channels vector und  _channel_users map implementiert, die muessen hier deleted werden.
+	// for (std::map<std::string, Channel*>::iterator iter = this->_channels.begin(); iter != _channels.end(); iter++)
+	// 	deleteChannel((*iter).second);
 
 	this->_users.clear();
-	this->_channels.clear();
+	// this->_channels.clear();
 
 	delete this;
 }

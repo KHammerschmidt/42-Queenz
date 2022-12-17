@@ -306,7 +306,13 @@ User	*Command::return_user_in_server(const std::string nickname_receiver)
 	//throw error
 }
 
-
+/*NOTICE behaviour:
+like PRIVMSG,but:
+if query not opened, 
+	print message in server;
+otherwise p
+	rint it in query.
+*/
 void Command::sendPrivMsgUser(User* user, std::string msg)		
 {				
     int index_of_first_space;
@@ -317,59 +323,31 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 	if (command.compare("PRIVMSG") != 0 && command.compare("NOTICE") != 0)
 		return ;//write error and return 
 	
-
 	//find  first space to have lenght of nick
 	index_of_first_space = command_arg.find_first_of(" ");
 	if (!index_of_first_space)
 		return ;
 	std::string nick_receiver = command_arg.substr(0, index_of_first_space);
-	//test
-	// if (nick_receiver.compare("b") != 0)
-	// {	std::cout << nick_receiver << "++++++++";
-	// 	return ;
-	// }
-	//std::cout << nick_receiver << "-------";
 
 	if (return_user_in_server(nick_receiver) == NULL)
 		return ;
 
-
 	//text to print
    	std::string text = command_arg.substr(index_of_first_space + 1, command_arg.length() - index_of_first_space);
 
-
-	//KATHI Kommentar: Max hatte uns den Tipp gegeben mit std::stringstream zu arbeiten
-	// std::stringstream ss;
-	// ss << ":" << user->getNickname() << "!"<< user->getUsername()" << "@" << HOSTNAME << " " << msg;
-	// user->setNickUserHost2(ss.str()); 	//um stringstream in normalen std::string umzuwandel
-
-	//this should be done in USER
-	std::string temp;
-	temp.append(":");
-	temp.append(user->getNickname());
-	temp.append("!");
-	temp.append(user->getNickname());
-	temp.append(HOSTNAME);
-	user->setNickUserHost(temp);
-
-
+	user->setNickUserHost();
 	std::stringstream ss;
 	this->command_state = true;
+	std::cout << user->getNickUserHost() << "-------";
 	ss << user->getNickUserHost() << " " << command << " " << nick_receiver << " " << text << "\r\n";
 	this->_command_message = ss.str();
 	this->receiver_fd = return_user_in_server(nick_receiver)->getFd();
-
 
 	Log::printStringCol(CRITICAL, msg);
 
 };
 
-/*NOTICE:
-if query not opened, 
-	print message in server;
-otherwise p
-	rint it in query.
-*/
+
 
 
 
@@ -423,16 +401,8 @@ void Command::sendJoin(User* user, const std::string msg, Server* server)
 		server->_channel_users.insert(std::pair<Channel*,User*> (return_channel_in_server(channel_name, server), user));
 
 
-
-
-	//this should be done in USER
-	std::string temp;
-	temp.append(":");
-	temp.append(user->getNickname());
-	temp.append("!");
-	temp.append(user->getNickname());
-	temp.append(HOSTNAME);
-	user->setNickUserHost(temp);
+//Reply to all users in channel + reply to sender user; 
+//all receives: UserNickHostSender << "JOIN" << " #" << Channel_name; 
 
 
 	std::stringstream ss;
@@ -443,8 +413,6 @@ void Command::sendJoin(User* user, const std::string msg, Server* server)
 
 
 	Log::printStringCol(CRITICAL, msg);
-
-
 };
 
 
