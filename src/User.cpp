@@ -126,6 +126,7 @@ void User::write(void)
 	{
 		if ((*iter)->getCommandState() == true)
 		{
+			std::cout << "------" << (*iter)->getCommandMessage().c_str() <<  "++++++++" << std::endl;
 			if (send((*iter)->receiver_fd, (*iter)->getCommandMessage().c_str(), (*iter)->getCommandMessage().length(), 0) < 0)
 				Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE FROM USER FAILED.");
 		}

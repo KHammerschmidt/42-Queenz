@@ -75,7 +75,7 @@ public:
 
 		void get_users_in_channel(const std::string channel_name, Server *server);
 
-		std::string return_string_all_users_in_channel(const std::string channel_name, Server *server);
+		std::string return_string_all_users_in_channel(const std::string channel_name, Server *server, std::string nickname);
 
 
 

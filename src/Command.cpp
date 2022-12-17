@@ -338,7 +338,7 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 
 	std::stringstream ss;
 	this->command_state = true;
-	std::cout << user->getNickUserHost() << "-------";//test
+	//std::cout << user->getNickUserHost() << "-------";//test
 	ss << user->getNickUserHost() << " " << command << " " << nick_receiver << " " << text << "\r\n";
 	this->_command_message = ss.str();
 	this->receiver_fd = return_user_in_server(nick_receiver)->getFd();
@@ -362,9 +362,7 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 // }
 
 //create a string with all nicknames of users of this channel
-
-
-std::string Command::return_string_all_users_in_channel(const std::string channel_name, Server *server)
+std::string Command::return_string_all_users_in_channel(const std::string channel_name, Server *server, std::string nickname)
 {
 	std::multimap<std::string, User*> map_temp = server->_channel_users;
 	std::multimap<std::string, User*>::iterator it;
@@ -373,8 +371,9 @@ std::string Command::return_string_all_users_in_channel(const std::string channe
 	for (;;)
 	{		
 		it = map_temp.find(channel_name);
-		if (it !=  map_temp.end())
+		if (it !=  map_temp.end() && it->second->getNickname() != nickname)
 		{
+			//std::cout << "+++++" << (*it).second->getNickname() << "------" << nickname << "+++++\n";
 			ss.append((*it).second->getNickname());
 			ss.append(" ");
 			map_temp.erase(it);
@@ -382,6 +381,8 @@ std::string Command::return_string_all_users_in_channel(const std::string channe
 		}
 		break;
 	}
+	if (!ss.empty())
+		ss.erase(ss.length() -1);
 	return (ss);
 }
 
@@ -407,22 +408,21 @@ void Command::get_users_in_channel(const std::string channel_name, Server *serve
 }
 
 
-
 //in server add a vector with all channels names or in user all the joined channels; so I can test here if need to create a new one or not, without creating a temp channel to check it(line 29 channel)
 void Command::sendJoin(User* user, const std::string msg, Server* server)
 {
     int index_of_first_space;
 
-	//std::cout << msg << "-------";
 	index_of_first_space = msg.find_first_of(" ");
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string channel_name = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);
-	std::string prefix_channel = msg.substr(index_of_first_space + 1, index_of_first_space + 2);
+	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);//msg.length() - index_of_first_space - channel_name.length() - 1);
 	
+
 	//test command is JOIN
 	if (command.compare("JOIN") != 0 || prefix_channel.compare("#") !=0)// "&#!+" -> should we handle them?
-
 		return ;//write error and return 
+
 
 	//test channel_name errors	
 	if (channel_name.find(" ") != (unsigned long) -1 || channel_name.find(":") != (unsigned long) -1 
@@ -433,12 +433,11 @@ void Command::sendJoin(User* user, const std::string msg, Server* server)
 	if (channel_name.length() > 50)
     	    channel_name.resize(50);
 	
+	
 
-	/*return if a channel exist in server
-	  return vector with all users in channel in server (can use just this actually)
-	*/
 
-	//test if channel exist	
+	//test if channel aready exist	
+   //return vector with all users in channel in server (can use just this actually)
 	get_users_in_channel(channel_name, server);
 	if (this->channels_replies.size() == 0)//means vector was not filled-> no user setted for the channel->  channel doesnt exist
 	{
@@ -450,46 +449,42 @@ void Command::sendJoin(User* user, const std::string msg, Server* server)
 	server->_channel_users.insert(std::pair<std::string, User*> (channel_name, user));// statt new channel find the already existing channel->getName()
 
 	/*check numbers of Chicago by JOIN Replies Command*/
-
+	this->reply_state = true;
+	this->command_state = true;
 	//2)Reply to all users in channel + reply to sender user; 
 	//all receives: UserNickHostSender << "JOIN" << " #" << Channel_name; 
 	std::stringstream ss;
-	this->reply_state = false;
-	this->command_state = true;
 	ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
 	this->_command_message = ss.str();
-	this->reply_state = false;
 	//this->receiver_fd = return_channel_in_server(nick_receiver)->getFd();fix
 
+
+	// this->reply_state = true;
+	// this->command_state = false;
 	//ALL USERS of Channel "channelname" in vector this->channels replies; here replies (2a, 2b, 2c)
 	for (std::vector<User*>::iterator it = channels_replies.begin(); it != channels_replies.end(); it++)
 	{
 		this->receiver_fd = (return_user_in_server((*it)->getNickname())->getFd());
-	}//IMPORTANT: how to loop throught he fds
 
+		//3) Reply RPL_TOPIC to sender: "bar.example.org"(what is this?) << " 332 " << nick_sender << " #" << channel_name << " :" << channel.getTopic(); 
+		ss << "@" << HOSTNAME << " 332 " << user->getNickname() << " #" << channel_name << " :A timey wimey channel (this should be channelName->getTopic()" << "\r\n";
+		this->_command_message = ss.str();
+	
+	
+		//4a) RPL_NAMREPLY, users currently in channel: "bar.example.org"(what is this?) << " 352 " << nick_sender << " #" << channel_name << " :" << @user1(@means is an op) << " " << user2 << " " user_sender 
+		ss << "@" << HOSTNAME << " 353 " << user->getNickname() << " #" << channel_name << " " << return_string_all_users_in_channel(channel_name, server, user->getNickname()) << "\r\n";
+		this->_command_message = ss.str();
+		//user->write();
+	
+		//4b) RPL_ENDOFNAMES: "bar.example.org" << " 366 " << nick_sender << " #" << channel_name << " :End of NAMES list"
+		ss << "@" << HOSTNAME << " 366 " << user->getNickname() << " #" << channel_name << " End of /NAMES list" << "\r\n";
+		this->_command_message = ss.str();
+	
+	}
+	std::cout <<  "-------"  <<"++++++++++";
 
-	//3) Reply RPL_TOPIC to sender: "bar.example.org"(what is this?) << " 332 " << nick_sender << " #" << channel_name << " :" << channel.getTopic(); 
-	std::stringstream s3;
-	this->reply_state = false;
-	this->command_state = true;
-	s3 << HOSTNAME << " 332 " << user->getUsername() << " #" << channel_name << " :A timey wimey channel (this should be channelName->getTopic()" << "\r\n";
-	this->_command_message = ss.str();
-
-	//4a) RPL_NAMREPLY, users currently in channel: "bar.example.org"(what is this?) << " 352 " << nick_sender << " #" << channel_name << " :" << @user1(@means is an op) << " " << user2 << " " user_sender 
-	std::stringstream s4a;
-	this->reply_state = false;
-	this->command_state = true;
-	s4a << HOSTNAME << " 352 " << user->getUsername() << " #" << channel_name << " " << return_string_all_users_in_channel(channel_name, server) << "\r\n";
-	this->_command_message = ss.str();
 	Log::printStringCol(CRITICAL, msg);
 
-	//4b) RPL_ENDOFNAMES: "bar.example.org" << " 352 " << nick_sender << " #" << channel_name << " :End of NAMES list"
-	std::stringstream s4b;
-	this->reply_state = false;
-	this->command_state = true;
-	s4b << HOSTNAME << " 366 " << user->getUsername() << " #" << channel_name << " :End of NAMES list" << "\r\n";
-	this->_command_message = ss.str();
-	Log::printStringCol(CRITICAL, msg);
 };
 
 
