@@ -69,8 +69,9 @@ public:
 		std::string getCommandMessage() { return this->_command_message; }
 		std::string getReply() { return this->_reply_message; }
 
-		int find_user_in_server(const std::string nickname_receiver);
-		User *return_user_in_server(const std::string nickname_receiver);
+		User 	*return_user_in_server(const std::string nickname_receiver);
+		Channel	*return_channel_in_server(const std::string channel_name, Server *_server);
+
 
 
 		Command(User* user, Server* server, std::string message);
@@ -90,7 +91,7 @@ public:
 		void sendPrivMsgUser(User* user, std::string msg);
 		//void sendChannelMsg(User* user, std::string msg);
 		void nick(User* user, const std::string& msg);
-		void sendJoin(User* user, std::string message);
+		void sendJoin(User* user, std::string message, Server* server);
 		void sendQuit(User* user);
 
 

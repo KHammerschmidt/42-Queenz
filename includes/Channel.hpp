@@ -9,7 +9,7 @@
 class User;
 class Server;
 
-// enum {channel_creator, channel_operator, channel_member};
+ //enum channels_operators {channel_creator = 1, channel_operator = 2, channel_member = 3};
 
 
 class Channel
@@ -18,10 +18,12 @@ class Channel
 private:
 	std::string _name;
 	std::string	_topic;
-	std::vector<Channel *> _channels;
-	std::vector<User *> _users;
 
 
+	/*User status*/
+	//int	_user_status; //c->creator, o->operator, u->normal user
+	
+	
 	// std::string _mode;
 	// std::map<int, std::string> user_mode;
 	// std::vector<User *> invited;
@@ -29,9 +31,9 @@ private:
 
 	// std::string mode;
 
-	// std::map<std::string, User*> current_members; 	//list of members in channel
-	// std::map<std::string, User*> channel_operators; // channel operators can perform
-	// std::map<std::string, User*> channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator
+	std::map<int, User*> _channel_members; 	//list of members in channel
+	std::map<int, User*> _channel_operators; // channel operators can perform
+	std::map<int, User*> _channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator
 
 public:
 	Channel();
@@ -39,17 +41,21 @@ public:
 	~Channel();
 
 	void 		setName(const std::string name);
-	// std::string getName() const;
+	void		setUserStatus(int status);
+	std::string getName() const;
+	int			getUserStatus();
 
 	// void 		setTopic(const std::string topic);
 	// std::string getTopic() const;
 	// void 		changeTopic(const std::string newTopic);
 
-	void		addUser(User *user);
-	void		deleteUser(User *user);
+	void		addUser(User *user);//, Server *server);
+	// void		deleteUser(User *user);
 
-	void static createChannel(std::string channel_name);
 	void		deleteChannel();
+	//void setMode(const std::string mode, const User &user1, const User &user2);
+
+
 
 	// void setMode(const std::string mode);
 	// std::string getMode() const;

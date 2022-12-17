@@ -25,11 +25,14 @@ void 		User::setNickname(const std::string& nick){this->_nickname = nick; }
 void		User::setUsername(const std::string& username) { this->_username = username; }
 void		User::setFullname(std::string fullname) { this->_fullname = fullname; }
 void		User::setPassword(std::string pw) { this->_password = pw; }
+void 		User::setUserChannelStatus(const std::string &status) {this->_userStatusInChannel = status;}
 int 		User::getState() { return this->_state; }
 time_t 		User::getLastPing() const { return this->_last_ping; }
 std::string	User::getUsername() { return this->_username; }
 std::string User::getNickname() { return this->_nickname; }
 std::string User::getPassword() const { return this->_password; }
+std::string User::getUserChannelStatus() { return this->_userStatusInChannel; }
+
 
 bool User::isRegistered() const
 {

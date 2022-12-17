@@ -30,6 +30,8 @@ Command::Command(User* user, Server* server, std::string message)
 		send_pong();
 	else if (this->user_command == "PRIVMSG" || this->user_command == "NOTICE")
 		sendPrivMsgUser(_user, query);
+	else if (this->user_command == "JOIN")
+		sendJoin(_user, query, _server);
 	else if (this->user_command == "PING")
 		sendQuit(_user);
 	else
@@ -291,8 +293,6 @@ void Command::print_vector(std::vector<std::string> vctr)
 }
 
 
-
-
 User	*Command::return_user_in_server(const std::string nickname_receiver)
 {
 	std::vector<User*> user_temp = this->_server->getUsers(); 
@@ -307,32 +307,8 @@ User	*Command::return_user_in_server(const std::string nickname_receiver)
 }
 
 
-int	Command::find_user_in_server(const std::string nickname_receiver)
-{
-	std::vector<User*> user_temp = this->_server->getUsers();
-
-	// //
-	// std::cout << "-----------";
-	// for (std::vector<User*>::iterator iter = user_temp.begin(); iter != user_temp.end(); iter++)
-	// {
-	// 	std::cout << ((*iter)->getNickname()) << "-----------" << std::endl;
-	// }
-	// //
-
-	for (std::vector<User*>::iterator iter = user_temp.begin(); iter != user_temp.end(); iter++)
-	{
-		if ((*iter)->getNickname() == nickname_receiver)
-			return 1;
-	}
-
-	Log::printStringCol(CRITICAL, "INVALID USER REQUEST. USER DOES NOT EXIST");
-	return 0;
-}
-
-
 void Command::sendPrivMsgUser(User* user, std::string msg)		
 {				
-	//std::string msg = "/PRIVMSG ben ciao";
     int index_of_first_space;
 
 	index_of_first_space = msg.find_first_of(" ");
@@ -354,7 +330,7 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 	// }
 	//std::cout << nick_receiver << "-------";
 
-	if (find_user_in_server(nick_receiver) == 0)
+	if (return_user_in_server(nick_receiver) == NULL)
 		return ;
 
 
@@ -397,38 +373,78 @@ otherwise p
 
 
 
+Channel	*Command::return_channel_in_server(const std::string channel_name, Server *server)
+{
+	std::vector<Channel*> channel_temp = server->_channels;
 
+	for (std::vector<Channel*>::iterator it = channel_temp.begin(); it != channel_temp.end(); it++)
+	{
+		if ((*it)->getName() == channel_name)
+			return (*it);
+	} 
+	return NULL;	//throw error
+}
 
 
 
 //in server add a vector with all channels names or in user all the joined channels; so I can test here if need to create a new one or not, without creating a temp channel to check it(line 29 channel)
-void Command::sendJoin(User* user, const std::string msg)
+void Command::sendJoin(User* user, const std::string msg, Server* server)
 {
-	if (!user || msg.length() == 0)
-		return ;
+    int index_of_first_space;
 
-	int index_of_first_space;
-
+	//std::cout << msg << "-------";
 	index_of_first_space = msg.find_first_of(" ");
-	std::string command = msg.substr(1, index_of_first_space - 1);
-	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
-	if (command.compare("join") != 0)
+	std::string command = msg.substr(0, index_of_first_space);
+	std::string channel_name = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);
+	std::string prefix_channel = msg.substr(index_of_first_space + 1, index_of_first_space + 2);
+	
+	//test command is JOIN
+	if (command.compare("JOIN") != 0 || prefix_channel.compare("#") !=0)// "&#!+" -> should we handle them?
+
+		return ;//write error and return 
+
+	//test channel_name errors	
+	if (channel_name.find(" ") != (unsigned long) -1 || channel_name.find(":") != (unsigned long) -1 
+														 || channel_name.find(",") != (unsigned long) -1)
+			return; //print error invalid channel_name
+	
+	//test channel_name lenght
+	if (channel_name.length() > 50)
+    	    channel_name.resize(50);
+	
+	//test if channel exist
+	if (return_channel_in_server(channel_name, server) == NULL)
 	{
-		std::cout << "error";
-		return ;
+		Channel* new_channel = new Channel(channel_name);
+		server->_channels.push_back(new_channel);
+		server->_channel_users.insert(std::pair<Channel*,User*> (new_channel, user));
 	}
+	else
+		server->_channel_users.insert(std::pair<Channel*,User*> (return_channel_in_server(channel_name, server), user));
 
 
-	//if command_arg[0] !="#" return (original message: ""Channel_name:": No such channel"); else check if channel already exist or not.
-	if (command_arg[0] != '#')
-		return ;
 
-	//check if channel exist
-		//channel_name.addUser(user);
-	//else
-		Channel::createChannel(msg);
+
+	//this should be done in USER
+	std::string temp;
+	temp.append(":");
+	temp.append(user->getNickname());
+	temp.append("!");
+	temp.append(user->getNickname());
+	temp.append(HOSTNAME);
+	user->setNickUserHost(temp);
+
+
+	std::stringstream ss;
+	this->command_state = true;
+	ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
+	this->_command_message = ss.str();
+	//this->receiver_fd = return_channel_in_server(nick_receiver)->getFd();fix
+
 
 	Log::printStringCol(CRITICAL, msg);
+
+
 };
 
 

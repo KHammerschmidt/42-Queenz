@@ -45,7 +45,8 @@ class Server
 
 		int			authentified;
 		std::map<int, User*>			_users;
-		std::map<std::string, Channel*> _channels;
+		
+
 
 
 		// time_t							_last_ping;
@@ -55,10 +56,15 @@ class Server
 		std::map<int, User*>::iterator 	user_iterator;
 		std::map<std::string, Channel*>	channel_iterator;
 
-		//need to set private after test phase, otherwise is inacessible in command::fin_user_in_server
-		// std::map<int, User*>			_users;
+
 
 		std::vector<User*> getUsers() const;
+
+		/*Channel related*/
+		//std::map<int, Channel*> _channels; //all channels->create getChannels and put me private, dont be lazy :D
+		/*typedef*/ std::vector<Channel*>	_channels; //all channels
+		std::map<Channel*, User*> 		_channel_users;//pair channel/user
+		//std::vector<_channels> d;
 
 	private:
 		void setNewSocket(void);

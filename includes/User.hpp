@@ -46,9 +46,11 @@ class User
 		/* command related vars */
 		std::string							_buffer;
 		std::vector<std::string> 			_dataToSend;
-		// std::map<std::string, Channel *> 	channels;
+		// std::map<std::string, Channel *> 	channels; -> implemented in server
 		std::vector<Command *> 				command_function;
 
+		/*user state in channel*/
+		std::string				_userStatusInChannel;
 	public:
 		User(int fd, sockaddr_in u_address, Server* server);
 		~User();
@@ -75,6 +77,7 @@ class User
 		time_t		getLastPing() const;
 		std::string getNickUserHost() const;
 		std::string getPassword() const;
+		std::string getUserChannelStatus();
 		// std::string getPrefix() const;
 		// int			getFd() const;
 		void setState(int new_state);
@@ -86,6 +89,7 @@ class User
 		void setPassword(std::string pw);
 	  	void setNickUserHost(std::string str);
 		void setLastPing(time_t last_ping);
+		void setUserChannelStatus(const std::string &status);
 
 		int getState();
 		void registerNewUser();
