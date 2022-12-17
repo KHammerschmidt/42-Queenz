@@ -146,7 +146,6 @@ void User::clearCommandFunction(void)
 	command_function.clear();
 }
 
-
 void	User::setNickUserHost() {
 	this->_nick_user_host.append(":");
 	this->_nick_user_host.append(this->getNickname());

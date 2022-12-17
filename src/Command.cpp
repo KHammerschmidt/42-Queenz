@@ -120,6 +120,7 @@ void Command::register_nickname(void)
 	// }
 
 	this->_user->setNickname(this->sender_nickname);
+	this->_user->setNickUserHost();//needed here ^^
 
 	this->_reply_message = getWelcomeReply(this->_user);
 	this->reply_state = true;								//send reply to all users in channel when user is in chat
@@ -335,10 +336,9 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 	//text to print
    	std::string text = command_arg.substr(index_of_first_space + 1, command_arg.length() - index_of_first_space);
 
-	user->setNickUserHost();
 	std::stringstream ss;
 	this->command_state = true;
-	std::cout << user->getNickUserHost() << "-------";
+	std::cout << user->getNickUserHost() << "-------";//test
 	ss << user->getNickUserHost() << " " << command << " " << nick_receiver << " " << text << "\r\n";
 	this->_command_message = ss.str();
 	this->receiver_fd = return_user_in_server(nick_receiver)->getFd();
@@ -403,7 +403,6 @@ void Command::sendJoin(User* user, const std::string msg, Server* server)
 
 //Reply to all users in channel + reply to sender user; 
 //all receives: UserNickHostSender << "JOIN" << " #" << Channel_name; 
-
 
 	std::stringstream ss;
 	this->command_state = true;
