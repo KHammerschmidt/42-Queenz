@@ -126,7 +126,7 @@ void User::write(void)
 	{
 		if ((*iter)->getCommandState() == true)
 		{
-			std::cout << "------" << (*iter)->getCommandMessage().c_str() <<  "++++++++" << std::endl;
+			//std::cout << "------" << (*iter)->getCommandMessage().c_str() <<  "++++++++" << std::endl;
 			if (send((*iter)->receiver_fd, (*iter)->getCommandMessage().c_str(), (*iter)->getCommandMessage().length(), 0) < 0)
 				Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE FROM USER FAILED.");
 		}
@@ -148,6 +148,7 @@ void User::clearCommandFunction(void)
 }
 
 void	User::setNickUserHost() {
+	this->_nick_user_host.clear();
 	this->_nick_user_host.append(":");
 	this->_nick_user_host.append(this->getNickname());
 	this->_nick_user_host.append("!");

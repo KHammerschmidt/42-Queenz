@@ -73,13 +73,11 @@ public:
 		User 	*return_user_in_server(const std::string nickname_receiver);
 	//	Channel	*return_channel_in_server(const std::string channel_name, Server *_server);
 
-		void get_users_in_channel(const std::string channel_name, Server *server);
+		bool get_users_in_channel(const std::string channel_name, Server *server, User *user);
 
-		std::string return_string_all_users_in_channel(const std::string channel_name, Server *server, std::string nickname);
+		std::string return_string_all_users_in_channel(const std::string channel_name, Server *server, User *user);
 
-
-
-		Command(User* user, Server* server, std::string message);
+			Command(User* user, Server* server, std::string message);
 		// std::vector<std::string> split(std::string str, std::string delimiter);
 
 		std::string getPrefix() const;
@@ -96,6 +94,7 @@ public:
 		void sendPrivMsgUser(User* user, std::string msg);
 		void nick(User* user, const std::string& msg);
 		void sendJoin(User* user, std::string message, Server* server);
+		void sendChannelMsg(User* user, std::string text, std::string channel_name);
 		void sendQuit(User* user);
 
 

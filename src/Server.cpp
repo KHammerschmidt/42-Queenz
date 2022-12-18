@@ -3,7 +3,7 @@
 /* ======================================================================================== */
 /* ----------------------------- CONSTRUCTOR/DESTRUCTOR ----------------------------------  */
 Server::Server(char** argv)
-	: _serv_address(), _users(), _channels()
+	: _serv_address(), _users(), _channels(), _channels_by_name()
 {
 	setPort(argv[1]);
 	this->_password = argv[2];
@@ -26,12 +26,15 @@ Server::~Server()
 
 	for (std::vector<Channel*>::iterator iter = this->_channels.begin(); iter != this->_channels.end(); iter++)
 		deleteChannel(*iter);
+	
+
 	// for (std::map<std::string, Channel*>::iterator iter = this->_channels.begin(); iter != _channels.end(); iter++)
 	// 	deleteChannel((*iter).second);
 
 	this->_users.clear();
 	this->_channel_users.clear();
 	this->_channels.clear();
+	this->_channels_by_name.clear();
 	this->_channel_users.clear();
 	delete this;
 }
