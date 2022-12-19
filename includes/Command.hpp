@@ -73,9 +73,12 @@ public:
 		User 	*return_user_in_server(const std::string nickname_receiver);
 	//	Channel	*return_channel_in_server(const std::string channel_name, Server *_server);
 
-		bool get_users_in_channel(const std::string channel_name, Server *server, User *user);
+		bool new_channel_to_create(const std::string channel_name);
+		bool joinInputFormatCheck(std::string command, std::string channel_name, std::string prefix_channel);
+		bool handleDoubleUserError(std::string channel_name);
 
-		std::string return_string_all_users_in_channel(const std::string channel_name, Server *server, User *user);
+
+		std::string return_string_all_users_in_channel(const std::string channel_name);//, Server *server, User *user);
 
 			Command(User* user, Server* server, std::string message);
 		// std::vector<std::string> split(std::string str, std::string delimiter);
@@ -93,7 +96,7 @@ public:
 
 		void sendPrivMsgUser(User* user, std::string msg);
 		void nick(User* user, const std::string& msg);
-		void sendJoin(User* user, std::string message, Server* server);
+		void sendJoin(User* user, std::string message);
 		void sendChannelMsg(User* user, std::string text, std::string channel_name);
 		void sendQuit(User* user);
 

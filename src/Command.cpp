@@ -31,7 +31,7 @@ Command::Command(User* user, Server* server, std::string message)
 	else if (this->user_command == "PRIVMSG" || this->user_command == "NOTICE")
 		sendPrivMsgUser(_user, query);
 	else if (this->user_command == "JOIN")
-		sendJoin(_user, query, _server);
+		sendJoin(_user, query);
 	else if (this->user_command == "PING")
 		sendQuit(_user);
 	else
@@ -323,7 +323,7 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
 	if (command.compare("PRIVMSG") != 0 && command.compare("NOTICE") != 0)
 		return ;//write error and return 
-	
+
 	//find  first space to have lenght of nick
 	index_of_first_space = command_arg.find_first_of(" ");
 	if (!index_of_first_space)
@@ -331,13 +331,10 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 	std::string nick_receiver = command_arg.substr(0, index_of_first_space);
 	//text to print
    	std::string text = command_arg.substr(index_of_first_space + 1, command_arg.length() - index_of_first_space);
-		std::cout << "------" << "1" << "++++++++\n";
 
 	//check if is a Channel related messaged
 	if (nick_receiver.substr(0, 1).compare("#") == 0)
 	{
-		std::cout << "------" << "2" << "++++++++\n";
-
 		//check if channel name is valid (voraussetzt get_users function was called and channels->replied is not empty)
 		//if (this->channels_replies.size() > 0)
 		sendChannelMsg(user, text, nick_receiver);
@@ -362,173 +359,150 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 
 	Log::printStringCol(CRITICAL, msg);
 
-};
-
-
-//not more needed.
-// Channel	*Command::return_channel_in_server(const std::string channel_name, Server *server)
-// {
-// 	std::vector<Channel*> channel_temp = server->_channels;
-
-// 	for (std::vector<Channel*>::iterator it = channel_temp.begin(); it != channel_temp.end(); it++)
-// 	{
-// 		if ((*it)->getName() == channel_name)
-// 			return (*it);
-// 	} 
-// 	return NULL;	//throw error
-// }
+}
 
 //create a string with all nicknames of users of this channel
-std::string Command::return_string_all_users_in_channel(const std::string channel_name, Server *server, User *user)
+std::string Command::return_string_all_users_in_channel(const std::string channel_name)
 {//353
-	std::multimap<std::string, User*> map_temp = server->_channel_users;
-	std::multimap<std::string, User*>::iterator it;
-	std::string ss; int i = 1;
+	std::stringstream ss;
 
-	user->getNickname(); //einfach so ^^
-	for (;;)
-	{		
-					//std::cout << "??????";
-
-		it = map_temp.find(channel_name);
-		//bool b = it !=  map_temp.end() && it->second->getNickname() != user->getNickname();
-		//if (map_temp.size() != 0)//test
-		//	std::cout << "TEST: " << "	first: " << it->first << "	second: "<< it->second->getNickname() << "	user: " << user->getNickname() <<"\n";
-		if (it !=  map_temp.end()) //not good, first time is invetable-> find another way to avoid to put the same user channel pair multiple times -> Not && it->second->getNickname() != user->getNickname())
-		{
-			ss.append((*it).second->getNickname());
-			ss.append(" ");
-			map_temp.erase(it);
-			std::cout << "+++++ How many times durcheloopt in return_string_all_users_in_channel: " << "------" << i++ << "------ ss: " << ss << "+++++\n";
-			if (i > 10)
-				break ;
-			continue;
-		}
-		break;
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++){	
+		if (((*it).first).compare(channel_name) == 0)
+			ss << ((*it).second->getNickname()) << " ";
 	}
-	if (!ss.empty())
-		ss.erase(ss.length() -1);
-	return (ss);
+
+	std::string s = ss.str();
+	if (s.empty())
+		return (NULL);
+	s.erase(s.length() -1);
+	return (s);
 }
 
-
-
-//create a vector with all the users enrolled in this channel. Also check if user already in channel and returns a boolean false
-bool Command::get_users_in_channel(const std::string channel_name, Server *server, User *user)
+//check if a channel with this channel_name already exist
+bool Command::new_channel_to_create(const std::string channel_name)
 {
-	std::multimap<std::string, User*> map_temp = server->_channel_users;
-	std::multimap<std::string, User*>::iterator it;
-	int i = 0;
-	
-	if (map_temp.size() == 0)
-	{
-		this->channels_replies.push_back(user);
+	bool new_channel_to_create = true;
+
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)		
+		if (((*it).first).compare(channel_name) == 0)
+			new_channel_to_create = false ;
+
+	return new_channel_to_create;
+}
+
+bool Command::joinInputFormatCheck(std::string command, std::string channel_name, std::string prefix_channel)
+{
+	//bool error = false;
+
+	if (command.compare("JOIN") != 0 || prefix_channel.compare("#") !=0)
 		return true;
-	}
-	
 
-	for (;;)
-	{		
-		it = map_temp.find(channel_name);
-		if (it !=  map_temp.end())
-		{
-			//std::cout << "------" << "2.5.2--USER= " << map_temp.find(channel_name)->second << "++++++++\n";
-			//if ((map_temp.find(channel_name)->second)->getNickname().compare(nickname) != 0)
-			//add condition: spring just if actual user is in map of channel_users && channelname already exist in channels
-			if ((map_temp.find(channel_name))->second->getNickname() == user->getNickname())//LAST-> I think is enough: if find the channel in map and the user corresponding to it have already joined // && std::find(server->_channels_by_name.begin(), server->_channels_by_name.end(), channel_name ) != server->_channels_by_name.end()) 
-				return false;
-			this->channels_replies.push_back(user);
-			map_temp.erase(it);
-			if (i++ > 20)
-				break;
-			continue;
-		}
-		break;
-	}
-	return true;
-	//write in another way
-	// IDEE-> but bad idea working with original channel->users
-	// for (;;)
-	// {		
-	// 	it = server->_channel_users.find(channel_name);
-	// 	if (it !=  server->_channel_users.end())
-	// 	{
-	// 		if ((server->_channel_users.find(channel_name)->second)->getNickname().compare(nickname) != 0)
-	// 			this->channels_replies.push_back(server->_channel_users.find(channel_name)->second);
-	// 		if (i++ == )
-	// 			break;
-	// 		//std::cout << "------" << "2.5.--USER= " << server->_channel_users.find(channel_name)->second << "++++++++\n";
-	// 		//server->_channel_users.erase(it);
-	// 		continue;
-	// 	}
-	// 	break;
-	// }
+	//test channel_name errors	
+			std::cout << channel_name << "---------------TEST 2 -----------------\n";
+
+	if (channel_name.find(" ") != (unsigned long) -1 || channel_name.find(":") != (unsigned long) -1 || channel_name.find(",") != (unsigned long) -1)
+		return true;
 
 
-
+	return false;
 }
 
 
-//in server add a vector with all channels names or in user all the joined channels; so I can test here if need to create a new one or not, without creating a temp channel to check it(line 29 channel)
-void Command::sendJoin(User* user, const std::string msg, Server* server)
+bool Command::handleDoubleUserError(std::string channel_name)
+
 {
-    int index_of_first_space;
+	//bool error= = false;
+
+	if (_server->_channel_users.size() == 0)
+		return false;
+
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)	 		
+		if (((*it).first).compare(channel_name) == 0 && (((*it).second->getNickname()).compare(_user->getNickname()) == 0))
+			return true;
+		std::cout << "---------------TEST 3 -----------------\n";
+
+	return false;
+
+}
+
+void Command::sendJoin(User* user, const std::string msg)
+{
+	/*create function format msg, bis the resize part*/
+	int index_of_first_space;
 
 	index_of_first_space = msg.find_first_of(" ");
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string channel_name = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);
-	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);//msg.length() - index_of_first_space - channel_name.length() - 1);
+	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
 	
-
-	//test command is JOIN
-	if (command.compare("JOIN") != 0 || prefix_channel.compare("#") !=0)// "&#!+" -> should we handle them?
-		return ;//write error and return 
-
-
-	//test channel_name errors	
-	if (channel_name.find(" ") != (unsigned long) -1 || channel_name.find(":") != (unsigned long) -1 
-														 || channel_name.find(",") != (unsigned long) -1)
-			return; //print error invalid channel_name
-	
-	//test channel_name lenght
 	if (channel_name.length() > 50)
     	    channel_name.resize(50);
-	
-	
 
+	if (joinInputFormatCheck(command, channel_name, prefix_channel) == true)
+		return ;
 
-	//test if, no doppelt
-	server->_channel_users.insert(std::pair<std::string, User*> (channel_name, user));// statt new channel find the already existing channel->getName()
+	if (handleDoubleUserError(channel_name) == true)
+		return ;
 
+	_server->_channel_users.insert(std::pair<std::string, User*> (channel_name, user));
 
-
-	//test if channel aready exist	
-   //return vector with all users in channel in server (can use just this actually)
-	//if (get_users_in_channel(channel_name, server, user) == false)
-	//	return; //print error: User already present in channel
-	//std::cout << "------" << "2.5.2.0--size= " << this->channels_replies.size() << "++++++++\n";
-
-	//if (this->channels_replies.size() == 1)//means vector was not filled-> no user setted for the channel->  channel doesnt exist
-	if (get_users_in_channel(channel_name, server, user) == true)
+	if (new_channel_to_create(channel_name) == true)
 	{
 		Channel* new_channel = new Channel(channel_name);
-		server->_channels.push_back(new_channel);
-		server->_channels_by_name.push_back(new_channel->getName());
-
+		_server->_channels.push_back(new_channel);
 	}
-	// add current user to channel map		
 
-	/*check numbers of Chicago by JOIN Replies Command*/
 	this->reply_state = true;
 	this->command_state = true;
+	std::stringstream ss;
+	//int i = 4;
+
+	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	{	 		
+		if (((*it).first).compare(channel_name) == 0)
+		{
+			//ss << ":" << ((*it).second->getNickname()) << "!" << ((*it).second->getNickname()) << "@42-Queenz.fr.42 JOIN #" << channel_name << "\r\n";
+			ss << ((*it).second->getNickUserHost()) << " " << command << " #" << channel_name << "\r\n";
+			this->_command_message = ss.str();
+			this->receiver_fd = (*it).second->getFd();//i
+
+			user->write();
+		}
+	}
+		
+	this->reply_state = false;
+	ss << "@" << HOSTNAME << " 332 " << user->getNickname() << " #" << channel_name << " :A timey wimey channel (this should be channelName->getTopic()" << "\r\n";
+	this->_command_message = ss.str();
+
+
+	//4a) RPL_NAMREPLY, users currently in channel: "bar.example.org"(what is this?) << " 353 " << nick_sender << " #" << channel_name << " :" << @user1(@means is an op) << " " << user2 << " " user_sender 
+	ss << "@" << HOSTNAME << " 353 " << user->getNickname() << " = #" << channel_name << " :" << return_string_all_users_in_channel(channel_name) << "\r\n";//
+	this->_command_message = ss.str();
+	//here some bug, check it
+	//std::cout << "@" << HOSTNAME << " 353 " << user->getNickname() << " #" << channel_name << " " << return_string_all_users_in_channel(channel_name, server, user) << std::endl;
+
+	//4b) RPL_ENDOFNAMES: "bar.example.org" << " 366 " << nick_sender << " #" << channel_name << " :End of NAMES list"
+	ss << "@" << HOSTNAME << " 366 " << user->getNickname() << " #" << channel_name << " End of /NAMES list" << "\r\n";
+	this->_command_message = ss.str();
+			
+	this->receiver_fd = user->getFd();//(return_user_in_server((*it).second->getNickname())->getFd());//i
+
+	//user->write();
+
+	Log::printStringCol(CRITICAL, msg);
+
+	std::cout <<  "------------------------------------------------------------------\n";
+	std::cout <<  "------------------------------------------------------------------\n";
+	std::cout <<  "------------------------------------------------------------------\n";
+
+
+	/*check numbers of Chicago by JOIN Replies Command*/
+
 	//2)Reply to all users in channel + reply to sender user; 
 	//all receives: UserNickHostSender << "JOIN" << " #" << Channel_name; 
 
 	//this->receiver_fd = return_channel_in_server(nick_receiver)->getFd();fix
 
-
-	// this->reply_state = true;
-	// this->command_state = false;
 	//ALL USERS of Channel "channelname" in vector this->channels replies; here replies (2a, 2b, 2c)
 	// for (std::vector<User*>::iterator it = channels_replies.begin(); it != channels_replies.end(); it++)
 	// {
@@ -551,54 +525,8 @@ void Command::sendJoin(User* user, const std::string msg, Server* server)
 	// 	this->_command_message = ss.str();
 
 	// }
-	std::multimap<std::string, User*> map_temp = _server->_channel_users;
-	std::multimap<std::string, User*>::iterator it;
-	int i = 10;
-	for(; ;)
-	{
-		it = map_temp.find(channel_name);
-		if (it !=  map_temp.end())
-		{	
-			std::cout << "------" << "CH-LOOP-1" << "++++++++\n";
-			
-			
-			std::stringstream ss;
-			ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
-			this->_command_message = ss.str();
-			this->receiver_fd = (return_user_in_server((*it).second->getNickname())->getFd());
 
-			//3) Reply RPL_TOPIC to sender: "bar.example.org"(what is this?) << " 332 " << nick_sender << " #" << channel_name << " :" << channel.getTopic(); 
-			ss << "@" << HOSTNAME << " 332 " << user->getNickname() << " #" << channel_name << " :A timey wimey channel (this should be channelName->getTopic()" << "\r\n";
-			this->_command_message = ss.str();
-
-
-			//4a) RPL_NAMREPLY, users currently in channel: "bar.example.org"(what is this?) << " 353 " << nick_sender << " #" << channel_name << " :" << @user1(@means is an op) << " " << user2 << " " user_sender 
-			ss << "@" << HOSTNAME << " 353 " << user->getNickname() << " = #" << channel_name << " :" << return_string_all_users_in_channel(channel_name, server, user) << "\r\n";
-			this->_command_message = ss.str();
-			//here some bug, check it
-			//std::cout << "@" << HOSTNAME << " 353 " << user->getNickname() << " #" << channel_name << " " << return_string_all_users_in_channel(channel_name, server, user) << std::endl;
-
-			//4b) RPL_ENDOFNAMES: "bar.example.org" << " 366 " << nick_sender << " #" << channel_name << " :End of NAMES list"
-			ss << "@" << HOSTNAME << " 366 " << user->getNickname() << " #" << channel_name << " End of /NAMES list" << "\r\n";
-			this->_command_message = ss.str();
-			user->write();
-			map_temp.erase(it);
-		
-			std::cout << "------" << "CH-LOOP-2" << "++++++++\n";
-			if (i++ > 10)
-				break ;
-			continue;
-		}
-		break ;
-	}	
-	std::cout <<  "------------------------------------------------------------------\n";
-	std::cout <<  "------------------------------------------------------------------\n";
-	std::cout <<  "------------------------------------------------------------------\n";
-	//std::cout << "------" << "2.5.5--ERROR2" << "++++++++\n";
-
-	Log::printStringCol(CRITICAL, msg);
-
-};
+}
 
 //	formatierung: /msg #channel_name message
 void Command::sendChannelMsg(User* user, std::string text, std::string channel_name)
