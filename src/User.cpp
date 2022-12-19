@@ -123,10 +123,12 @@ void User::invoke(void)
 void User::write(void)
 {
 	for (std::vector<Command*>::iterator iter = command_function.begin(); iter != command_function.end(); iter++)
-	{
+	{ 
+		std::cout << "---------------TEST 0-----------------\n";
+
 		if ((*iter)->getCommandState() == true)
 		{
-			//std::cout << "------" << (*iter)->getCommandMessage().c_str() <<  "++++++++" << std::endl;
+			std::cout << "------" << (*iter)->getCommandMessage().c_str() <<  "++++++++" << std::endl;
 			if (send((*iter)->receiver_fd, (*iter)->getCommandMessage().c_str(), (*iter)->getCommandMessage().length(), 0) < 0)
 				Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE FROM USER FAILED.");
 		}

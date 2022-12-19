@@ -63,9 +63,8 @@ class Server
 		/*Channel related*/
 		//std::map<int, Channel*> _channels; //all channels->create getChannels and put me private, dont be lazy :D
 		/*typedef*/ std::vector<Channel*>	_channels; //all channels
-		 std::vector<std::string>			_channels_by_name;//as up, but by name
+		std::vector<std::string>			_channels_by_name;//->cancel, not needed !as up, but by name
 		std::multimap<std::string, User*> 	_channel_users;//pair channel/user, with multimap can use key channel multiple times
-		//std::vector<_channels> d;
 
 	private:
 		void setNewSocket(void);

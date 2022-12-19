@@ -18,6 +18,10 @@ class Channel
 private:
 	std::string _name;
 	std::string	_topic;
+ 	//static int i;
+	//static int j;
+	//static int k;
+
 
 
 	/*User status*/
@@ -29,11 +33,11 @@ private:
 	// std::vector<User *> invited;
 
 
-	// std::string mode;
+	std::string mode;
 
-	std::map<int, User*> _channel_members; 	//list of members in channel
-	std::map<int, User*> _channel_operators; // channel operators can perform
-	std::map<int, User*> _channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator
+	// std::map<int, User*> _channel_members; 	//list of members in channel-> key[i]
+	// std::map<int, User*> _channel_operators; // channel operators can perform-> key[j]
+	// std::map<int, User*> _channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator -> key[k]
 
 public:
 	Channel();
@@ -45,6 +49,10 @@ public:
 	std::string getName() const;
 	int			getUserStatus();
 
+	std::map<int, User*>  getChannelMembers();
+	std::map<int, User*>  getChannelOperators();
+	std::map<int, User*>  getChannelCreator();
+
 	// void 		setTopic(const std::string topic);
 	// std::string getTopic() const;
 	// void 		changeTopic(const std::string newTopic);
@@ -54,11 +62,12 @@ public:
 
 	void		deleteChannel();
 	//void setMode(const std::string mode, const User &user1, const User &user2);
+	//void print_vector(std::vector<std::string> vctr);
 
 
 
-	// void setMode(const std::string mode);
-	// std::string getMode() const;
+	//void setMode(const std::string mode, User *user_op,  User *user_not_op);
+	//std::string getMode() const;
 	//void changeMode(const std::string mode);
 	//lists all available modes and returns the valid one or an error
 	//void selectNewMode();
@@ -76,8 +85,10 @@ public:
 	// void topic();
 
 
-	// void giveOpPrivileges(const User& name);
-	// void giveCreatPrivileges(const User& name);
+	void giveOpPrivileges(User *user_not_op, std::string nickname_user_op);
+	bool returnPrivilegesStatus(std::string user_nickname);
+
+	//void giveCreatPrivileges(const User& name);
 	// //channel creator becomes channel operator (except for +channels)
 
 
@@ -96,3 +107,6 @@ public:
 };
 
 #endif
+
+
+
