@@ -22,7 +22,7 @@ Command::Command(User* user, Server* server, std::string message)
 	else if (this->user_command == "CAP")
 		register_cap();
 	else if (this->user_command == "NICK")
-		register_nickname();
+		register_nickname(query);
 	else if (this->user_command == "USER")
 		register_username();
 	else if (this->user_command == "PING")
@@ -88,7 +88,7 @@ void Command::register_cap(void)
 /* ======================================================================================== */
 /* --------------------------------- REGISTER NICKNAME -----------------------------------  */
 /* Register the user's nickname */
-void Command::register_nickname(void)
+void Command::register_nickname(std::string msg)
 {
 	// size_t param_size = this->_args.size();
 	std::stringstream ss;
@@ -98,9 +98,16 @@ void Command::register_nickname(void)
 	// 	err_command(ERR_NONICKNAMEGIVEN);
 	// 	return ;
 	// }
-
-	this->sender_nickname = this->_args[1];
-
+	if (this->_user->_first_nick==false)
+	{
+		this->sender_nickname = this->_args[1];
+		this->_user->_first_nick = true;
+	}
+	else
+	{
+		int index_of_first_space = msg.find_first_of(" ");
+		this->sender_nickname = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+	}
 	// if (!param_size)
 	// 	return ;
 	// if (Utils::check_characters(this->_args[1]) < 0)
@@ -118,7 +125,7 @@ void Command::register_nickname(void)
 
 	this->_user->setNickname(this->sender_nickname);
 	this->_user->setNickUserHost();//needed here ^^
-
+	//std::cout << "--------" << this->_user->getNickname << "-----" this->_user->getNickUserHost << "\n";
 	this->_reply_message = getWelcomeReply(this->_user);
 	this->reply_state = true;								//send reply to all users in channel when user is in chat
 	this->command_state = false;
@@ -439,28 +446,6 @@ void Command::sendJoin(User* user, const std::string msg)
 	std::stringstream ss;
 	//int i = 4;
 	std::cout << "--------------- TEST 1 ---------------\n";
-	//CODE 1 (Alternative to CODE 2, just delete i and place the right vars instead)
-	// for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	// {	 		
-	// 	std::cout << "--------------- TEST 2 ---------------\n";
-
-	// 		std::cout << "--------------- TEST 3 ---------------\n";
-
-    //         if (i < 6 && (*it).second->getNickname() == _server->getUser(i)->getNickname())
-    //         { 
-	// 			std::cout << "--------------- TEST 4 ---------------\n";
-
-    //             this->receiver_fd = i;
-    //         	ss << ((*it).second->getNickUserHost()) << " " << command << " #" << channel_name << "\r\n";
-    //             this->_command_message = ss.str();
-	// 			std::cout <<  this->receiver_fd << "---------------" << this->_command_message;
-
-    //        		user->write();
-	// 			std::cout << "\n--------------- TEST 5 ---------------\n";
-				
-    //         }
-    //          i++;
-	//}//CODE 2
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 	{	 		
 		if (((*it).first).compare(channel_name) == 0)
@@ -472,20 +457,20 @@ void Command::sendJoin(User* user, const std::string msg)
 
 			user->write();
 		}
-	}
+	}//try nickuserhost statt HOSTNAME
 	this->reply_state = false;
-	ss << "@" << HOSTNAME << " 332 " << user->getNickname() << " #" << channel_name << " :A timey wimey channel (this should be channelName->getTopic()" << "\r\n";
+	ss << ":" << HOSTNAME << " 332 " << user->getNickname() << " #" << channel_name << " :A timey wimey channel (this should be channelName->getTopic()" << "\r\n";
 	this->_command_message = ss.str();
 
 
 	//4a) RPL_NAMREPLY, users currently in channel: "bar.example.org"(what is this?) << " 353 " << nick_sender << " #" << channel_name << " :" << @user1(@means is an op) << " " << user2 << " " user_sender 
-	ss << "@" << HOSTNAME << " 353 " << user->getNickname() << " = #" << channel_name << " :" << return_string_all_users_in_channel(channel_name) << "\r\n";//
+	ss << ":" << HOSTNAME << " 353 " << user->getNickname() << " = #" << channel_name << " :" << return_string_all_users_in_channel(channel_name) << "\r\n";//
 	this->_command_message = ss.str();
 	//here some bug, check it
 	//std::cout << "@" << HOSTNAME << " 353 " << user->getNickname() << " #" << channel_name << " " << return_string_all_users_in_channel(channel_name, server, user) << std::endl;
 
 	//4b) RPL_ENDOFNAMES: "bar.example.org" << " 366 " << nick_sender << " #" << channel_name << " :End of NAMES list"
-	ss << "@" << HOSTNAME << " 366 " << user->getNickname() << " #" << channel_name << " End of /NAMES list" << "\r\n";
+	ss << ":" << HOSTNAME << " 366 " << user->getNickname() << " #" << channel_name << " End of NAMES list" << "\r\n";
 	this->_command_message = ss.str();
 
 	this->receiver_fd = user->getFd();//(return_user_in_server((*it).second->getNickname())->getFd());//i

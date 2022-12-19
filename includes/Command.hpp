@@ -50,7 +50,6 @@ private:
 		std::vector<User*> channels_replies;
 		bool _state;							//ready to send data or not
 
-
 		bool stop;
 		std::string getReplies(int code, std::string arg1);
 
@@ -106,7 +105,7 @@ public:
 		bool set_vars(const std::string& message);
 		// int check_characters(std::string str);
 		bool check_free_nickname(const std::string& nickname);
-		void register_nickname(void);
+		void register_nickname(std::string msg);
 		void err_command(std::string err_num, std::string cmd, std::string code);
 		bool parse_command(std::string message);
 		bool getReplyState(void) const;

@@ -10,7 +10,7 @@ User::User(int fd, sockaddr_in u_address, Server* server)			//not sure if needed
 		_username(), _nickname(), _fullname(), _nick_user_host(),
 		_password(), authentified(false),
 		_buffer(), _dataToSend(),
-		command_function() {}
+		command_function(), _first_nick(false) {}
 
 
 int 		User::getFd() { return this->_fd; }

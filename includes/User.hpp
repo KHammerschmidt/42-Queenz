@@ -35,6 +35,7 @@ class User
 		time_t					_last_ping;
 		int						_state;
 
+
 		/* user identifier vars */
 		std::string 			_username;		//usually set automatically by client
 		std::string 			_nickname;
@@ -52,6 +53,8 @@ class User
 		/*user state in channel*/
 		std::string				_userStatusInChannel;
 	public:
+		bool					_first_nick;//make private and getter
+
 		User(int fd, sockaddr_in u_address, Server* server);
 		~User();
 
