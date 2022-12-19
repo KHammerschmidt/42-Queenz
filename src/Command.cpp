@@ -9,7 +9,6 @@ std::string Command::getUserCommand() const { return this->user_command; }
 std::vector<std::string> Command::getParameters() { return this->_args; }
 std::string Command::getQuery() { return this->query; }
 
-
 /* ======================================================================================== */
 /* -------------------------------- CONSTRUCTOR MAIN LOOP  -------------------------------  */
 Command::Command(User* user, Server* server, std::string message)
@@ -50,7 +49,6 @@ Command::Command(User* user, Server* server, std::string message)
 	this->_args.clear();
 }
 
-
 /* ======================================================================================== */
 /* --------------------------------- REGISTER PASSWORD -----------------------------------  */
 void Command::register_pass(void)
@@ -86,7 +84,6 @@ void Command::register_cap(void)
 	this->_args.clear();
 	return ;
 }
-
 
 /* ======================================================================================== */
 /* --------------------------------- REGISTER NICKNAME -----------------------------------  */
@@ -296,24 +293,25 @@ void Command::print_vector(std::vector<std::string> vctr)
 
 User	*Command::return_user_in_server(const std::string nickname_receiver)
 {
-	std::vector<User*> user_temp = this->_server->getUsers(); 
+	std::vector<User*> temp = this->_server->getUsers();
 
-	for (std::vector<User*>::iterator iter = user_temp.begin(); iter != user_temp.end(); iter++)
+	for (std::vector<User*>::iterator iter = temp.begin(); iter != temp.end(); iter++)
 	{
 		if ((*iter)->getNickname() == nickname_receiver)
 			return (*iter);
 	}
 	return NULL;
-	//throw error
 }
 
-/*NOTICE behaviour:
-like PRIVMSG,but:
+/*NOTICE behaviour: like PRIVMSG,but:
 if query not opened, 
 	print message in server;
 otherwise p
 	rint it in query.
 */
+
+/* ======================================================================================== */
+/* --------------------------------- PRIVATE MESSAGES COMMAND--------------------------  */
 void Command::sendPrivMsgUser(User* user, std::string msg)		
 {				
     int index_of_first_space;
@@ -322,45 +320,31 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
 	if (command.compare("PRIVMSG") != 0 && command.compare("NOTICE") != 0)
-		return ;//write error and return 
+		return ;//print error
 
-	//find  first space to have lenght of nick
 	index_of_first_space = command_arg.find_first_of(" ");
 	if (!index_of_first_space)
 		return ;
 	std::string nick_receiver = command_arg.substr(0, index_of_first_space);
-	//text to print
    	std::string text = command_arg.substr(index_of_first_space + 1, command_arg.length() - index_of_first_space);
 
-	//check if is a Channel related messaged
 	if (nick_receiver.substr(0, 1).compare("#") == 0)
-	{
-		//check if channel name is valid (voraussetzt get_users function was called and channels->replied is not empty)
-		//if (this->channels_replies.size() > 0)
-		sendChannelMsg(user, text, nick_receiver);
-		//std::cout << "------" << "2.5--size= " << this->channels_replies.size() << "++++++++\n";
-		
-		//else
-			//print error, channel doesnt exist
-		return ;
-	}
+		sendChannelMsg(text, nick_receiver);		
 
 	if (return_user_in_server(nick_receiver) == NULL)
 		return ;
 
-
-
 	std::stringstream ss;
 	this->command_state = true;
-	//std::cout << user->getNickUserHost() << "-------";//test
 	ss << user->getNickUserHost() << " " << command << " " << nick_receiver << " " << text << "\r\n";
 	this->_command_message = ss.str();
 	this->receiver_fd = return_user_in_server(nick_receiver)->getFd();
 
 	Log::printStringCol(CRITICAL, msg);
-
 }
 
+/* ======================================================================================== */
+/* --------------------------------- UTILITY--------- -----------------------------------  */
 //create a string with all nicknames of users of this channel
 std::string Command::return_string_all_users_in_channel(const std::string channel_name)
 {//353
@@ -398,8 +382,6 @@ bool Command::joinInputFormatCheck(std::string command, std::string channel_name
 		return true;
 
 	//test channel_name errors	
-			std::cout << channel_name << "---------------TEST 2 -----------------\n";
-
 	if (channel_name.find(" ") != (unsigned long) -1 || channel_name.find(":") != (unsigned long) -1 || channel_name.find(",") != (unsigned long) -1)
 		return true;
 
@@ -409,7 +391,6 @@ bool Command::joinInputFormatCheck(std::string command, std::string channel_name
 
 
 bool Command::handleDoubleUserError(std::string channel_name)
-
 {
 	//bool error= = false;
 
@@ -419,12 +400,13 @@ bool Command::handleDoubleUserError(std::string channel_name)
 	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)	 		
 		if (((*it).first).compare(channel_name) == 0 && (((*it).second->getNickname()).compare(_user->getNickname()) == 0))
 			return true;
-		std::cout << "---------------TEST 3 -----------------\n";
 
 	return false;
 
 }
 
+/* ======================================================================================== */
+/* --------------------------------- JOIN COMMAND -----------------------------------  */
 void Command::sendJoin(User* user, const std::string msg)
 {
 	/*create function format msg, bis the resize part*/
@@ -456,7 +438,29 @@ void Command::sendJoin(User* user, const std::string msg)
 	this->command_state = true;
 	std::stringstream ss;
 	//int i = 4;
+	std::cout << "--------------- TEST 1 ---------------\n";
+	//CODE 1 (Alternative to CODE 2, just delete i and place the right vars instead)
+	// for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	// {	 		
+	// 	std::cout << "--------------- TEST 2 ---------------\n";
 
+	// 		std::cout << "--------------- TEST 3 ---------------\n";
+
+    //         if (i < 6 && (*it).second->getNickname() == _server->getUser(i)->getNickname())
+    //         { 
+	// 			std::cout << "--------------- TEST 4 ---------------\n";
+
+    //             this->receiver_fd = i;
+    //         	ss << ((*it).second->getNickUserHost()) << " " << command << " #" << channel_name << "\r\n";
+    //             this->_command_message = ss.str();
+	// 			std::cout <<  this->receiver_fd << "---------------" << this->_command_message;
+
+    //        		user->write();
+	// 			std::cout << "\n--------------- TEST 5 ---------------\n";
+				
+    //         }
+    //          i++;
+	//}//CODE 2
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 	{	 		
 		if (((*it).first).compare(channel_name) == 0)
@@ -469,7 +473,6 @@ void Command::sendJoin(User* user, const std::string msg)
 			user->write();
 		}
 	}
-		
 	this->reply_state = false;
 	ss << "@" << HOSTNAME << " 332 " << user->getNickname() << " #" << channel_name << " :A timey wimey channel (this should be channelName->getTopic()" << "\r\n";
 	this->_command_message = ss.str();
@@ -484,7 +487,7 @@ void Command::sendJoin(User* user, const std::string msg)
 	//4b) RPL_ENDOFNAMES: "bar.example.org" << " 366 " << nick_sender << " #" << channel_name << " :End of NAMES list"
 	ss << "@" << HOSTNAME << " 366 " << user->getNickname() << " #" << channel_name << " End of /NAMES list" << "\r\n";
 	this->_command_message = ss.str();
-			
+
 	this->receiver_fd = user->getFd();//(return_user_in_server((*it).second->getNickname())->getFd());//i
 
 	//user->write();
@@ -528,71 +531,42 @@ void Command::sendJoin(User* user, const std::string msg)
 
 }
 
-//	formatierung: /msg #channel_name message
-void Command::sendChannelMsg(User* user, std::string text, std::string channel_name)
+
+bool Command::valid_channel(std::string channel_name)
 {
-			std::cout << "------" << "3" << "++++++++\n";
+	bool valid_channel = false;
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)		
+		if (((*it).first).compare(channel_name) == 0)
+			valid_channel = true;
+
+	return valid_channel;
+}
+
+/* ======================================================================================== */
+/* --------------------------------- CHANNEL MESSAGE COMMAND --------------------------  */
+void Command::sendChannelMsg(std::string text, std::string channel_name)
+{	
+	if (valid_channel(channel_name) == false)
+		return ; //print error channel not exist
 
 	std::stringstream ss;
 	this->command_state = true;
-	//std::cout << user->getNickUserHost() << "-------";//test
-	ss << user->getNickUserHost() << " " << "PRIVMSG" << " #" << channel_name << " " << text << "\r\n";
-	this->_command_message = ss.str();
-	// for (std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it !=  _server->_channel_users.end(); it++)
-	// {
-	// 	this->receiver_fd = return_user_in_server((*it)->getNickname())->getFd();//not sure is right function
-	// 	user->write();
-	// }
-	std::multimap<std::string, User*> map_temp = _server->_channel_users;
-	std::multimap<std::string, User*>::iterator it;
-		std::cout << "------" << "4" << "++++++++\n";
-
-
-	//change here channels replies with somethin stored in server where u canhave access to users of a channel
-	//for (std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	for(; ;)
-	{
-		it = map_temp.find(channel_name);
-		if (it !=  map_temp.end())
-		{		std::cout << "------" << "5" << "++++++++\n";
-
-			std::stringstream ss;
-			this->command_state = true;
-			//std::cout << user->getNickUserHost() << "-------";//test
-			ss << user->getNickUserHost() << " PRIVMSG #" << channel_name << text << "\r\n";//: before text?
-			this->_command_message = ss.str();
-			this->receiver_fd = (return_user_in_server((*it).second->getNickname()))->getFd();
-			user->write();
-			map_temp.erase(it);
-					std::cout << "------" << "6" << "++++++++\n";
-
-		}
-		break ;
-	}	
-
-
-
-	// for (;;)
-	// {					
-	// 	std::cout << "------" << "5" << "++++++++\n";
-	// 	it = map_temp.find(channel_name);
-	// 	if (it !=  map_temp.end())
-	// 	{
-	// 		std::cout << "------" << "++++++++\n";
-	// 		this->receiver_fd = return_user_in_server((*it).second->getNickname())->getFd();
-	// 		user->write();
-	// 		map_temp.erase(it);
-	// 		continue;
-	// 	}
-	// 	break;
-	// }
-	this->command_state = false;
 	this->reply_state = false;
-
-	//Log::printStringCol(CRITICAL, text);
+	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	{	 		
+		if (((*it).first).compare(channel_name) == 0)
+		{
+			ss << ":" << ((*it).second->getNickUserHost()) << " PRIVMSG #" << channel_name << text << "\r\n";
+            this->_command_message = ss.str();
+			this->receiver_fd = (*it).second->getFd();
+			_user->write();
+		}	
+	}
+	Log::printStringCol(CRITICAL, text);
 }
 
-
+/* ======================================================================================== */
+/* --------------------------------- QUIT COMMAND -----------------------------------  */
 void Command::sendQuit(User* user)
 {
 	close(user->getFd());

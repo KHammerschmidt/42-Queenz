@@ -44,7 +44,6 @@ class Server
 		std::vector<pollfd> 			_pollfds;
 
 		int			authentified;
-		std::map<int, User*>			_users;
 		
 
 
@@ -58,13 +57,12 @@ class Server
 
 	//RUS-> ich habe _channels vector und  _channel_users map implementiert, die muessen hier deleted werde.
 
-		std::vector<User*> getUsers() const;
+		std::map<int, User*>			_users;
 
-		/*Channel related*/
-		//std::map<int, Channel*> _channels; //all channels->create getChannels and put me private, dont be lazy :D
-		/*typedef*/ std::vector<Channel*>	_channels; //all channels
-		std::vector<std::string>			_channels_by_name;//->cancel, not needed !as up, but by name
-		std::multimap<std::string, User*> 	_channel_users;//pair channel/user, with multimap can use key channel multiple times
+		std::vector<User*> getUsers() const; //1) vector all users
+		std::vector<Channel*>	_channels; //2) vector all channels
+		std::multimap<std::string, User*> 	_channel_users;//3) mappair channel/user, with multimap can use key channel multiple times
+		std::vector<std::string>			_channels_by_name;//->cancel, not needed 
 
 	private:
 		void setNewSocket(void);
