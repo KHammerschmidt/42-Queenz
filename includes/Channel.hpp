@@ -9,18 +9,15 @@
 class User;
 class Server;
 
- //enum channels_operators {channel_creator = 1, channel_operator = 2, channel_member = 3};
-
-
 class Channel
 {
 
-private:
-	std::string _name;
-	std::string	_topic;
- 	//static int i;
-	//static int j;
-	//static int k;
+	private:
+		std::string _name;
+		std::string	_topic;
+		//static int i;
+		//static int j;
+		//static int k;
 
 
 
