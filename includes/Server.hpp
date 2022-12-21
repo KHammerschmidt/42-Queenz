@@ -22,7 +22,6 @@
 #include "Log.hpp"
 
 #define HOSTNAME "42-Queenz.fr.42"
-#define BUFFER_SIZE 510
 
 class User;
 class Channel;

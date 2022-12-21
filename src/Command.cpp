@@ -37,7 +37,10 @@ Command::Command(User* user, Server* server, std::string message)
 		err_command("421", message, ERR_UNKNOWNCOMMAND);
 
 	if (this->_user->isRegistered() == true && this->_user->getState() != ONLINE)
+	{
 		getWelcomeReply(this->_user);
+		this->_user->setState(ONLINE);
+	}
 
 	this->_args.clear();
 }
@@ -69,7 +72,6 @@ void Command::register_pass(void)
 
 void Command::register_cap(void)
 {
-	this->_args.clear();
 	return ;
 }
 
@@ -256,7 +258,7 @@ otherwise print it in query.
 */
 
 /* ======================================================================================== */
-/* --------------------------------- PRIVATE MESSAGES COMMAND--------------------------  */
+/* --------------------------------- PRIVATE MESSAGES COMMAND ----------------------------  */
 void Command::sendPrivMsgUser(User* user, std::string msg)		
 {				
     int index_of_first_space;
@@ -289,7 +291,7 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 }
 
 /* ======================================================================================== */
-/* --------------------------------- UTILITY--------- -----------------------------------  */
+/* --------------------------------- UTILITY ---------------------------------------------  */
 //create a string with all nicknames of users of this channel
 std::string Command::return_string_all_users_in_channel(const std::string channel_name)
 {//353
@@ -351,7 +353,7 @@ bool Command::handleDoubleUserError(std::string channel_name)
 }
 
 /* ======================================================================================== */
-/* --------------------------------- JOIN COMMAND -----------------------------------  */
+/* --------------------------------- JOIN COMMAND ----------------------------------------  */
 void Command::sendJoin(User* user, const std::string msg)
 {
 	/*create function format msg, bis the resize part*/

@@ -12,8 +12,8 @@
 #include "Channel.hpp"
 #include "Command.hpp"
 
-# define BUFFER_SIZE 510
-# define MSG_END "\n"			// "\r\n"
+# define BUFFER_SIZE 512
+# define MSG_END "\r\n"			// "\r\n"
 
 enum USER_STATE { CONNECTED, REGISTERED, ONLINE, DELETE };
 
@@ -31,7 +31,6 @@ class User
 		/* user connection related vars */
 		struct sockaddr_in		_user_address;
 		int						_fd;
-		time_t					_last_ping;
 		int						_state;
 
 		/* user identifier vars */
@@ -40,7 +39,6 @@ class User
 		std::string				_fullname;
 		std::string				_nick_user_host;
 		std::string				_password;
-		bool 					authentified;
 
 		/* command related vars */
 		std::string							_buffer;
@@ -69,14 +67,13 @@ class User
 		void registerNewUser();
 		bool isRegistered();
 
-		int			getFd() const;
-		int 		getState() const;
-		time_t		getLastPing() const;
+		int	getFd() const;
+		int getState() const;
 		std::string getNickname() const;
 		std::string getUsername() const;
 		std::string getFullname() const;
-		std::string getNickUserHost() const;
 		std::string getPassword() const;
+		std::string getNickUserHost() const;
 		std::string getUserChannelStatus() const;
 
 	  	void setNickUserHost();
