@@ -16,8 +16,11 @@ Server::Server(char** argv)
 	this->_pollfds.push_back(server_fd);
 }
 
+//deleting everything that is in server class but content of the objects itself within their destructor
 Server::~Server()
 {
+	//delete user from server class & delete users from within channel
+	//delete channels
 	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
 		deleteUser((*iter).second);
 	
@@ -230,24 +233,6 @@ void Server::serverError(int code)
 }
 
 /* ======================================================================================== */
-/* ------------------------------------- OTHERS ------------------------------------------  */
-/* Server sends Ping to users to see if connection is still intact. */
-void Server::sendPing()
-{
-	time_t current_time = std::time(0);
-
-	for (std::map<int, User*>::iterator iter = _users.begin(); iter != _users.end(); iter++)
-	{
-		if (current_time - ((*iter).second->getLastPing()) >= static_cast<int>(this->_timeout))
-			serverError(5);																//disconnect user / delete user / etc.
-		// else if ((*iter).second->getState() == true)									//online
-		// 	(*iter).second->write("PING " + (*iter).second->getNickname());				//user has then to answer with pong to server
-		std::cout << " SERVER SENDS PING TO USER!" << std::endl;
-	}
-}
-
-
-/* ======================================================================================== */
 /* -------------------------- DELETION OF USERS / CHANNEL ---------------------------------  */
 //delete and disconnect
 void Server::deleteUser(User* user)
@@ -281,142 +266,3 @@ void Server::deleteChannel(Channel* channel)
 // 	}
 // 	return -1;
 // }
-
-/* Function prints User credentials: nickname, username, fullname fd */
-// void Server::printUser()
-// {
-// 	for (std::map<int, User*>::iterator iter = users.begin(); iter != users.end(); iter++)
-// 	{
-// 		std::cout << "nickname: " << iter.getNickname() << " | username: " << iter->getUsername() << " | fullname: " << iter->getFullName();
-// 		std::cout << " | port: " << iter.getFD() << std::endl;
-// 	}
-// }
-
-
-
-
-
-
-/* This structure is filled in with the address of the peer socket, as
-known to the communications layer. The exact format of the address returned addr is determined by the sockets address
-family (see socket(2) and the respective protocol man pages). When addr is NULL, nothing is filled in; in this case, addrlen is
-not used, and should also be NULL. */
-
-
-
-// if (pfds_iterator->revents != POLLIN)		//e.g. POLLHUP (in explanations.txt) when POLLHUP then disconnect and break
-// {
-// 	setServerStatus(false);
-// 	// Log::printStringCol(RED, "Error: unexpected result. Nothing to read. Connection will be disabled.");
-// 	break ;
-// }
-
-
-///jeder user hat einen msg string bei dem die neue Nachricht appended wird (
-// \r\n heisst ende der Nachricht danach
-
-
-
-// ip vom server
-
-
-// HOW TO CONNECT SO WEECHAT, du brauchst 2 Terminals (cd 42-Queenz)
-// Terminal 1: $ weechat
-// 			$ /server add irc local-ip/port
-// Terminal 2: $ make re
-// 			$ ./ircserv port pw (ich habs immer auf port 8080 gemacht)
-// Terminal 1: $ /connect irc -password=pw
-// 			$ /connect irc (um User zu registrieren)
-// Dann bekommst du angezeigt dass der neue User registriert wurde aber keine Daten eingelesen wurden.
-
-
-// link server client
-// /server add irc(servername) interne ip 10.11.27/420
-// dann terminal
-// nc -l 420
-// /connect irc -password=pw
-// mit nc -C und localer ip addresse einen neuen user connecten(?)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	// Max:
-	// client ist ein pair client <pollfd, User*> keine Map
-	// ip rausholen () --> als integer kommt der und der muss umgewandelt werden in (1. byte )
-	// int umwandeln zum string ip addresse (1. byte rechts ist die linke Zahl bei IP addresse)
-	// create a new User with
-
-
-// NOT SURE ABOUT LOOP
-// OLD VERSION:
-// if (this->pfds_iterator->revents == POLLIN)
-// {
-// 	// when POLLIN on other pollfd.fd than [0] it means a command (PRIVMSG, etc..) has been send.
-// 	for (std::vector<pollfd>::iterator iter_poll = _pollfds.begin(); iter_poll != _pollfds.end(); iter_poll++)
-// 	{
-// 		if (iter_poll->revents == POLLIN)
-// 			this->_users[iter_poll->fd]->receiveData();		// receive(this)	// implement receive Funktion in User
-// 	}
-// }
-
-// // _pollfds[0] stellt das erste pollfd struct dar in dem die server socket gespeichert ist. Nur über diese socket können sich neue User registrieren.
-// if ((this->_pollfds[0].revents & POLLIN) == POLLIN)		// oder (this->_pollfds... & POLLIN)
-// {
-// 	// Log::printStringCol(LOG, "A new user is being connected to server");
-// 	connectNewUser();
-// 	// Log::printStringCol(LOG, "--- Done. User connected to server");
-// 	break ;
-// }
-
-// if ((this->pfds_iterator->revents & POLLIN) == POLLIN)
-// {
-// 	// // when POLLIN on other pollfd.fd than [0] it means a command (PRIVMSG, etc..) has been send.
-// 	// for (std::vector<pollfd>::iterator iter_poll = _pollfds.begin(); iter_poll != _pollfds.end(); iter_poll++)
-// 	// {
-// 	// 	if (iter_poll->revents == POLLIN)
-// 	this->_users[iter_poll->fd]->receiveData(this);		// receive(this)	// implement receive Funktion in User
-// 	// }
-// 	// break ;
-// 	// Log::printStringCol(LOG, "User receive Data loop --- end");
-// }
-// else
-// {
-// 	// wenn kein POLLIN dann error Nachricht und rausbrechen
-// 	std::cout << " (this->pfds_iterator->revents != POLLIN)" << std::endl;
-// 	std::cout << "error msg and disconnect Server" << std::endl;
-// 	this->setServerStatus(false);
-// 	break ;
-// }
-
-
-
-
-
-
-
-
-// PING
-// if (std::time(0) - last_ping >= ping)
-
-// if (getUser(pfds_iterator->fd).getLastPing() + >= this->_timeout)
-// 	this->sendPing();
-// 	this->_users[pfds_iterator->fd]->send
-// 	command->getUser().sendTo(command->getUser(), "PONG :" + command->getParameters()[0]);

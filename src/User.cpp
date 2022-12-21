@@ -2,8 +2,8 @@
 #include "../includes/Command.hpp"
 
 User::~User() {}
-User::User(int fd, sockaddr_in u_address, Server* server)			//not sure if needed?
-	:	_server(server), _hostname(HOSTNAME), 						//_hostaddr(inet_ntoa(server->getAddr().sin_addr)),
+User::User(int fd, sockaddr_in u_address, Server* server)
+	:	_server(server), _hostname(HOSTNAME),
 		_port(ntohs(server->getAddr().sin_port)),
 		_user_address(u_address),
 		_fd(fd), _last_ping(std::time(0)), _state(CONNECTED),
@@ -12,33 +12,40 @@ User::User(int fd, sockaddr_in u_address, Server* server)			//not sure if needed
 		_buffer(), _dataToSend(),
 		command_function(), _first_nick(false) {}
 
-
-int 		User::getFd() { return this->_fd; }
-void 		User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
+int 		User::getFd() const{ return this->_fd; }
+int 		User::getState() const { return this->_state; }
 std::string	User::getNickUserHost() const{ return this->_nick_user_host; }
 std::string	User::getFullname() const { return this->_fullname; }
-void		User::setAuth(int num) { this->authentified += num; }
-int			User::getAuth() const { return this->authentified; }
-void 		User::setState(int new_state) { this->_state = new_state; }
-void 		User::setNickname(const std::string& nick){this->_nickname = nick; }
-void		User::setUsername(const std::string& username) { this->_username = username; }
-void		User::setFullname(std::string fullname) { this->_fullname = fullname; }
-void		User::setPassword(std::string pw) { this->_password = pw; }
-void 		User::setUserChannelStatus(const std::string &status) {this->_userStatusInChannel = status;}
-int 		User::getState() { return this->_state; }
-time_t 		User::getLastPing() const { return this->_last_ping; }
-std::string	User::getUsername() { return this->_username; }
-std::string User::getNickname() { return this->_nickname; }
+std::string	User::getUsername() const { return this->_username; }
+std::string User::getNickname() const { return this->_nickname; }
 std::string User::getPassword() const { return this->_password; }
-std::string User::getUserChannelStatus() { return this->_userStatusInChannel; }
+std::string User::getUserChannelStatus() const { return this->_userStatusInChannel; }
 
+void User::setLastPing(time_t last_ping) { this->_last_ping = last_ping; }
+void User::setState(int new_state) { this->_state = new_state; }
+void User::setUsername(const std::string& username) { this->_username = username; }
+void User::setFullname(std::string fullname) { this->_fullname = fullname; }
+void User::setPassword(std::string pw) { this->_password = pw; }
+void User::setUserChannelStatus(const std::string &status) {this->_userStatusInChannel = status;}
 
-bool User::isRegistered() const
+void User::setNickname(const std::string& nick)
 {
-	if (!this->_nickname.length() || !this->_username.length())
-		return false;
+	this->_nickname = nick;
+	this->setNickUserHost();
+}
 
-	return true;
+bool User::isRegistered()
+{
+	if (this->_nickname.length() != 0 && this->_username.length() != 0 && this->_password.length() != 0)
+	{
+		if (this->_password == this->_server->getPassword())
+		{
+			this->setState(ONLINE);
+			return true;
+		}
+	}
+
+	return false;
 }
 
 /* Function gets called when there is data to receive for the user. */
@@ -74,21 +81,8 @@ void User::receive(void)
 	}
 	else
 	{
-		//if messages longer than BUFFER_SIZE they are being truncated.
-		// if (size >= 510)
-		// {
-		// 	recv_buffer[511] = "\r";
-		// 	recv_buffer[512] = "\n";
-		// 	recv_buffer[513] = 0;
-		// }
-		// else
 		recv_buffer[size] = 0;
 		this->_buffer.append(recv_buffer);
-	}
-
-	if (this->_state == DELETE)
-	{
-		std::cout << "WARNING: DELETING USER" << std::endl;
 	}
 }
 
@@ -147,14 +141,23 @@ void User::clearCommandFunction(void)
 	command_function.clear();
 }
 
-void	User::setNickUserHost() {
-	this->_nick_user_host.clear();
-	this->_nick_user_host.append(":");
-	this->_nick_user_host.append(this->getNickname());
-	this->_nick_user_host.append("!");
-	this->_nick_user_host.append(this->getNickname());
-	this->_nick_user_host.append("@");
-	this->_nick_user_host.append(HOSTNAME);
+void	User::setNickUserHost()
+{
+	std::stringstream ss;
+
+	ss << ":" << this->getNickname() << "!" << this->getNickname() << "@" << HOSTNAME;
+	this->_nick_user_host = ss.str();
+
+	std::cout << "nick user host: " << this->_nick_user_host << std::endl;
+
+	
+	// this->_nick_user_host.clear();
+	// this->_nick_user_host.append(":");
+	// this->_nick_user_host.append(this->getNickname());
+	// this->_nick_user_host.append("!");
+	// this->_nick_user_host.append(this->getNickname());
+	// this->_nick_user_host.append("@");
+	// this->_nick_user_host.append(HOSTNAME);
 }
 
 

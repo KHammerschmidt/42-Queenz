@@ -2,12 +2,12 @@
 
 /* ======================================================================================== */
 /* ---------------------------------- GETTERS/SETTERS ------------------------------------  */
-bool Command::getCommandState(void) const { return this->command_state; }
 bool Command::getReplyState(void) const { return this->reply_state; }
+bool Command::getCommandState(void) const { return this->command_state; }
+std::string Command::getQuery() { return this->query; }
 std::string Command::getPrefix() const { return this->prefix; }
 std::string Command::getUserCommand() const { return this->user_command; }
 std::vector<std::string> Command::getParameters() { return this->_args; }
-std::string Command::getQuery() { return this->query; }
 
 /* ======================================================================================== */
 /* -------------------------------- CONSTRUCTOR MAIN LOOP  -------------------------------  */
@@ -22,7 +22,7 @@ Command::Command(User* user, Server* server, std::string message)
 	else if (this->user_command == "CAP")
 		register_cap();
 	else if (this->user_command == "NICK")
-		register_nickname(query);
+		register_nickname();
 	else if (this->user_command == "USER")
 		register_username();
 	else if (this->user_command == "PING")
@@ -36,15 +36,8 @@ Command::Command(User* user, Server* server, std::string message)
 	else
 		err_command("421", message, ERR_UNKNOWNCOMMAND);
 
-	// if (DBUG MSG) 	// {
-		// if (this->user_command.find(":") == 0)
-		// {
-		// 	  std::cout << ("No command but a reply! No action needed by user.") << std::endl;
-		// 	  return ;
-		// }
-		// if (this->user_command.find("/") != 0)	// how to check if first character is a /
-		// 	err_command(ERR_UNKNOWNCOMMAND_CMD);
-	// }
+	if (this->_user->isRegistered() == true && this->_user->getState() != ONLINE)
+		getWelcomeReply(this->_user);
 
 	this->_args.clear();
 }
@@ -72,11 +65,6 @@ void Command::register_pass(void)
 	}
 
 	this->_user->setPassword(this->_args[1]);
-	if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
-	{
-		getWelcomeReply(this->_user);
-		this->_user->setState(REGISTERED);
-	}
 }
 
 void Command::register_cap(void)
@@ -88,28 +76,23 @@ void Command::register_cap(void)
 /* ======================================================================================== */
 /* --------------------------------- REGISTER NICKNAME -----------------------------------  */
 /* Register the user's nickname */
-void Command::register_nickname(std::string msg)
+void Command::register_nickname(void)	//RUSLAN: std::string msg
 {
-	// size_t param_size = this->_args.size();
 	std::stringstream ss;
 
-	// if (param_size == 1)
+
+	//RUSLAN
+	// if (this->_user->_first_nick==false)
 	// {
-	// 	err_command(ERR_NONICKNAMEGIVEN);
-	// 	return ;
+	// 	this->sender_nickname = this->_args[1];
+	// 	this->_user->_first_nick = true;
 	// }
-	if (this->_user->_first_nick==false)
-	{
-		this->sender_nickname = this->_args[1];
-		this->_user->_first_nick = true;
-	}
-	else
-	{
-		int index_of_first_space = msg.find_first_of(" ");
-		this->sender_nickname = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
-	}
-	// if (!param_size)
-	// 	return ;
+	// else
+	// {
+	// 	int index_of_first_space = msg.find_first_of(" ");
+	// 	this->sender_nickname = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+	// }
+
 	// if (Utils::check_characters(this->_args[1]) < 0)
 	// {
 	// 	err_command(ERR_ERRONEUSNICKNAME);
@@ -124,24 +107,14 @@ void Command::register_nickname(std::string msg)
 	// }
 
 	this->_user->setNickname(this->sender_nickname);
-	this->_user->setNickUserHost();//needed here ^^
+	this->_user->setNickUserHost();//needed here ^^		--> Kathi: added to setNickname() in user (that way it gets updated everytime the user changes his nickname :) )
+
 	//std::cout << "--------" << this->_user->getNickname << "-----" this->_user->getNickUserHost << "\n";
-	this->_reply_message = getWelcomeReply(this->_user);
-	this->reply_state = true;								//send reply to all users in channel when user is in chat
-	this->command_state = false;
-	if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
-	{
-		getWelcomeReply(this->_user);
-		this->_user->setState(REGISTERED);
-	}
 
-	// if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
-	// {
-	// 	getWelcomeReply(this->_user);
-	// 	this->_user->setState(REGISTERED);
-	// }
+	// this->_reply_message = getWelcomeReply(this->_user);
+	// this->reply_state = true;								//send reply to all users in channel when user is in chat
+	// this->command_state = false;
 
-	// this->_user->setState(REGISTERED);					//send reply to all users in channel when user is in chat
 	this->_args.clear();
 }
 
@@ -159,21 +132,20 @@ bool Command::check_free_nickname(const std::string& nickname)
 	return true;
 }
 
-std::string Command::getWelcomeReply(User* user)
+void Command::getWelcomeReply(User* user)
 {
 	std::stringstream ss;
 	ss << ":" << HOSTNAME << " 001 " << user->getNickname() << " :Welcome to the 42-Queenz.42.fr network " << user->getNickUserHost() << "\r\n";
-	return ss.str();
+
+	this->_reply_message = ss.str();
+	this->reply_state = true;
+	this->command_state = false;
 }
 
 /* ======================================================================================== */
 /* --------------------------------- REGISTER USERNAME -----------------------------------  */
 void Command::register_username(void)
 {
-	//  Command: USER
-  	//	Parameters: <username> 0 * <realname>
-	// COMMAND <username> 0 * <realname>
-
 	//question Kathi: can two users have the same username? weechat greps username automatically
 	// if (Utils::check_characters(this->_args[1]) < 0)
 	// {
@@ -181,40 +153,8 @@ void Command::register_username(void)
 	// 	return ;
 	// }
 
-	// this->_user->setUsername(this->_args[1]);
-
- 	//  this->_args.clear();
-
-
-
-	// if (this->_args[3] != "*" || this->_args[4] != "*")
-	// {
-	// 	std::cout << "ERROR: INVALID SYNTAX: USAGE </USER> <nickname> <* *> <:Fullname>";
-	// 	return ;
-	// }
-
-	// std::stringstream ss;
-	// for (size_t i = 0; i < this->_args.size(); i++)
-	// 	ss << this->_args[i];
-
-	// this->_user->setFullname(ss.str());
-
 	this->_user->setUsername(this->_args[2]);
 	this->_user->setFullname(this->_args[3]);
-	if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
-	{
-		getWelcomeReply(this->_user);
-		this->_user->setState(REGISTERED);
-	}
-
-	// if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
-	// {
-	// 	getWelcomeReply(this->_user);
-	// 	this->_user->setState(REGISTERED);
-	// }
-	// this->_reply_message = getWelcomeReply(this->_user);
-
-	// this->_user.setUsername()
 }
 
 
@@ -235,7 +175,6 @@ void Command::send_pong(void)
 /* Parse incoming string and extract command & nickname sender. */
 bool Command::parse_command(std::string message)
 {
-	//how to check how many params a command needs?		--> gibt es einen command bei dem nur ein PARAM ausreicht???
 	if (message.find(" ") == std::string::npos)
 	{
 		this->_reply_message = put_reply_cmd(this->_user, "461", message, ERR_NEEDMOREPARAMS);
@@ -313,8 +252,7 @@ User	*Command::return_user_in_server(const std::string nickname_receiver)
 /*NOTICE behaviour: like PRIVMSG,but:
 if query not opened, 
 	print message in server;
-otherwise p
-	rint it in query.
+otherwise print it in query.
 */
 
 /* ======================================================================================== */
