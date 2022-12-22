@@ -83,39 +83,35 @@ void		Channel::addUser(User *user){//, Server *server){
 
 bool    Channel::returnPrivilegesStatus(std::string user_nickname)
 {
-    user_nickname = " ";
-    return true;//to let it compile :)
+    for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
+    {
+        if ((*it)->getNickname() == user_nickname)
+            return true;
+    }
 
-    // for (std::map<int,User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
-    // {
-    //     if ((*it).second->getNickname() == user_nickname)
-    //         return true;
-    // }
-
-    //     for (std::map<int,User*>::iterator it = this->_channel_creator.begin(); it != this->_channel_creator.end(); it++)
-    // {
-    //     if ((*it).second->getNickname() == user_nickname)
-    //         return true;
-    // }
-    // return false;
+    //just creator can make operators or also operators?
+    for (std::vector<User*>::iterator it = this->_channel_creator.begin(); it != this->_channel_creator.end(); it++)
+    {
+        if ((*it)->getNickname() == user_nickname)
+            return true;
+    }
+    return false;
 }
 
-//need 2 users as input? or reicht nickname of einen?
-void    Channel::giveOpPrivileges( User *user_not_op, std::string nickname_user_op){
-    user_not_op->getNickname();/*to let it compile :)*/
-    nickname_user_op = " ";
-    // int key;
-
-    // if (returnPrivilegesStatus(nickname_user_op) == true)
-    // {
-    //     _channel_operators.insert(std::make_pair<int, User*>(++j, user_not_op)); //put in creator map
-    //     for (std::map<int,User*>::iterator it = this->_channel_members.begin(); it != this->_channel_members.end(); it++)
-    //     {
-    //         key = (*it).first;
-    //         if ((*it).second->getNickname() == user_not_op->getNickname())
-    //             _channel_operators.erase(key);
-    //     }
-    // }
+//by mode="-o" => both users are OP (user_not_op is the one should be processed)
+void    Channel::giveTakeOpPrivileges( User *user_not_op, std::string nickname_user_op, std::string mode){
+    
+    if ( mode == "+o" && returnPrivilegesStatus(nickname_user_op) == true)
+        _channel_operators.push_back(user_not_op);
+    else if (mode == "-o" && returnPrivilegesStatus(user_not_op->getNickname()) == true
+                            && returnPrivilegesStatus(nickname_user_op) == true)
+    {
+        	
+        	for (std::vector<User*>::iterator it = _channel_operators.begin(); it != _channel_operators.end(); it++)
+        		if ((*it)->getNickname().compare(user_not_op->getNickname()) == 0) 
+                    _channel_operators.erase(it);
+    }
+    //implement before in  command before command executed: check is is op looping over Channel::returnPrivilegesStatus; if true, set @before Nickname
 }
 
 

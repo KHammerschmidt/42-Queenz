@@ -418,6 +418,7 @@ bool Command::handleDoubleUserError(std::string channel_name)
 
 }
 
+//check again, now users dont see each other in channel
 /* ======================================================================================== */
 /* --------------------------------- JOIN COMMAND -----------------------------------  */
 void Command::sendJoin(User* user, const std::string msg)
@@ -568,7 +569,7 @@ void Command::sendPart(std::string msg)
 }
 
 
-//implement for KICK
+//implement Kick separat
 bool Command::find_user_in_channel(std::string channel_name, std::string nickname)
 {
 	if (_server->_channel_users.size() == 0)
@@ -582,15 +583,24 @@ bool Command::find_user_in_channel(std::string channel_name, std::string nicknam
 
 }
 
+//valid channel and return _channel are same, just one returns bool and other channel
+Channel *Command::return_channel(std::string channel_name)
+{
+		for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)	 		
+			if ((*it)->getName().compare(channel_name) == 0)
+				return (*it);
+		return NULL;
+}
+
 //continue MODE
 void Command::setMode(std::string mode, std::string channel_name, std::string nickname){
 
-	mode = " ";
-	channel_name = " ";
-	nickname = " ";
-	// if (mode == "+o")
-	
-	// else if (mode == "-o")
+	// mode = " ";
+	// channel_name = " ";
+	// nickname = " ";
+
+	if (mode == "+o" || mode == "-o")										//change userop OBJ, usernotop STRING
+		return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_server(nickname), _user->getNickname(), mode);
 
 	// else if (mode == "+b")
 
