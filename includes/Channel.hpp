@@ -54,7 +54,7 @@ public:
 	// void 		changeTopic(const std::string newTopic);
 
 	void		addUser(User *user);//, Server *server);
-	// void		deleteUser(User *user);
+	void		deleteUser(User *user);
 
 	void		deleteChannel();
 	//void setMode(const std::string mode, const User &user1, const User &user2);

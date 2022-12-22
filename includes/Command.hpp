@@ -112,6 +112,7 @@ public:
 
 
 
+
 		// ------------ KATHI
 		bool set_vars(const std::string& message);
 		// int check_characters(std::string str);

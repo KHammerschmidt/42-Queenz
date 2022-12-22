@@ -476,7 +476,7 @@ void Command::sendJoin(User* user, const std::string msg)
 	
 	ss << ":" << HOSTNAME << " 332 " << user->getNickname() << " #" << channel_name << " :A timey wimey channel" << "\r\n";
 	this->_command_message = ss.str();
-	ss << ":" << HOSTNAME << " 353 " << user->getNickname() << " = #@" << channel_name << " :" << return_string_all_users_in_channel(channel_name) << "\r\n";//
+	ss << ":" << HOSTNAME << " 353 " << user->getNickname() << " = #" << channel_name << " :" << return_string_all_users_in_channel(channel_name) << "\r\n";//
 	this->_command_message = ss.str();
 	ss << ":" << HOSTNAME << " 366 " << user->getNickname() << " #" << channel_name << " End of NAMES list" << "\r\n";
 	this->_command_message = ss.str();
@@ -489,7 +489,7 @@ void Command::sendJoin(User* user, const std::string msg)
 	std::cout <<  "------------------------------------------------------------------\n";
 	std::cout <<  "------------------------------------------------------------------\n";
 	std::cout <<  "------------------------------------------------------------------\n";
-}
+}//implement @ for OPERATORS USERS
 
 
 bool Command::valid_channel(std::string channel_name)
@@ -602,9 +602,10 @@ void Command::setMode(std::string mode, std::string channel_name, std::string ni
 	if (mode == "+o" || mode == "-o")										//change userop OBJ, usernotop STRING
 		return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_server(nickname), _user->getNickname(), mode);
 
-	// else if (mode == "+b")
-
-	// else if (mode == "-b")
+	else if (mode == "+b")
+		return_channel(channel_name)->deleteUser(return_user_in_server(nickname));
+	else if (mode == "-b")
+		return_channel(channel_name)->addUser(return_user_in_server(nickname));
 
 
 

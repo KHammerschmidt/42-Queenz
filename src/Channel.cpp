@@ -43,43 +43,28 @@ void		Channel::addUser(User *user){//, Server *server){
 }
 
 
-// void		Channel::deleteUser(User *user){
-//      for (std::map<int, User*>::iterator it = _channel_members.begin(); it != _channel_members.end(); i++t)
-//         if (*it->second->getNickname() == user->getNickname())
-//             _channel_members.erase(it);
+void		Channel::deleteUser(User *user){
+    //make var server and delete also from struct in server
+    //  for (std::multimap<std::string, User*>::iterator it = server->_channel_users.begin(); it != _channel_members.end(); i++t)
+    //     if (*it->second->getNickname() == user->getNickname())
+    //         _channel_members.erase(it);
     
-//     deleteChannel();
-
-// }
-
-
-// void Channel::setMode(const std::string mode, User *user_op,  User *user_not_op) { 
+    for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
+    {
+        if ((*it)->getNickname() == user->getNickname())
+            _channel_operators.erase(it);
+    }
+    for (std::vector<User*>::iterator it = this->_channel_members.begin(); it != this->_channel_members.end(); it++)
+    {
+        if ((*it)->getNickname() == user->getNickname())
+            _channel_members.erase(it);
+    }
+    //deleteChannel();
     
-//     if (returnPrivilegesStatus(user_op->getNickname()) != true)
-//         return ;
+    
+}
 
-//     // O - give "channel creator" status;
-//     if (mode == 'O')
-//     {
-//         if (user1->creator == true)
-//             user2->creator ==true;
-//     }
-//     // Ban (+b)
-//     if (mode == 'b')
-//         deleteUser(user2);
-//     // INVITE  - Invite a client to an invite-only channel (mode +i)
-//     if (mode == 'i')
-//         addUser(user2);
-//     //     o - give/take channel operator privilege;
-//     if (mode == 'o')
-//     {
-//         if (user2->op == true)
-//             user2->op == false;
-//         else
-//             user2->flag == true;
-//     }
 
-// }
 
 bool    Channel::returnPrivilegesStatus(std::string user_nickname)
 {
