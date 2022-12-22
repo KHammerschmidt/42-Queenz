@@ -8,9 +8,9 @@ Channel::Channel(std::string channel_name) {setName(channel_name); }//i = 0; j =
 Channel::~Channel() {}
 
 void        Channel::setName(const std::string channel_name){this->_name = channel_name;}
-//void		Channel::setUserStatus(int status) {this->_user_status = status;}
+void		Channel::setUserStatus(int status) {this->_user_status = status;}
 std::string Channel::getName() const {return this->_name;}
-//int         Channel::getUserStatus() {return this->_user_status;}
+int         Channel::getUserStatus() {return this->_user_status;}
 // std::map<int, User*>  Channel::getChannelMembers(){return this->_channel_members;}
 // std::map<int, User*>  Channel::getChannelOperators(){return this->_channel_operators;}
 // std::map<int, User*>  Channel::getChannelCreator(){return this->_channel_creator;}
@@ -35,17 +35,11 @@ void        Channel::deleteChannel()
 
 void		Channel::addUser(User *user){//, Server *server){
 
-    user->getNickname();//to let it compile :)
-    // if (_channel_members.size() == 0)
-    //     _channel_creator.insert(std::make_pair<int, User*>(++i, user)); //put in creator map
-    
-    // _channel_members.insert(std::make_pair<int, User*>(++j, user)); //add in member map
+    if (_channel_members.size() == 0)
+        _channel_creator.push_back(user); //put in creator map
+    else
+        _channel_members.push_back(user); //add in member map
 
-    //server->_channels<
-    // for (std::map<int, User*>::iterator it= this->_users.begin(); it != this->_users.end(); it++)
-    // {
-
-    // }
 }
 
 

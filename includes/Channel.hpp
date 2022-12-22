@@ -18,14 +18,10 @@ class Channel
 private:
 	std::string _name;
 	std::string	_topic;
- 	//static int i;
-	//static int j;
-	//static int k;
-
 
 
 	/*User status*/
-	//int	_user_status; //c->creator, o->operator, u->normal user
+	int	_user_status; //c->creator, o->operator, u->normal user
 	
 	
 	// std::string _mode;
@@ -35,9 +31,9 @@ private:
 
 	std::string mode;
 
-	// std::map<int, User*> _channel_members; 	//list of members in channel-> key[i]
-	// std::map<int, User*> _channel_operators; // channel operators can perform-> key[j]
-	// std::map<int, User*> _channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator -> key[k]
+	std::vector<User*> _channel_members; 	//list of members in channel-> key[i]
+	std::vector<User*> _channel_operators; // channel operators can perform-> key[j]
+	std::vector<User*> _channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator -> key[k]
 
 public:
 	Channel();

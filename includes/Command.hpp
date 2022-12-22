@@ -79,8 +79,9 @@ public:
 
 
 		std::string return_string_all_users_in_channel(const std::string channel_name);//, Server *server, User *user);
+		bool find_user_in_channel(std::string channel_name, std::string nickname);
 
-			Command(User* user, Server* server, std::string message);
+		Command(User* user, Server* server, std::string message);
 		// std::vector<std::string> split(std::string str, std::string delimiter);
 
 		std::string getPrefix() const;
@@ -100,6 +101,9 @@ public:
 		void sendChannelMsg(std::string text, std::string channel_name);
 		void sendQuit(User* user);
 		void sendPart(std::string msg);
+		void sendMode(std::string msg);
+		void setMode(std::string mode, std::string channel_name, std::string nickname);
+
 
 
 
