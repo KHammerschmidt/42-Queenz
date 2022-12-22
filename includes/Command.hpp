@@ -99,6 +99,8 @@ public:
 		void sendJoin(User* user, std::string message);
 		void sendChannelMsg(std::string text, std::string channel_name);
 		void sendQuit(User* user);
+		void sendPart(std::string msg);
+
 
 
 		// ------------ KATHI
