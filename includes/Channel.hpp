@@ -81,7 +81,7 @@ public:
 	// void topic();
 
 
-	void giveOpPrivileges(User *user_not_op, std::string nickname_user_op);
+	void giveTakeOpPrivileges(User *user_not_op, std::string nickname_user_op, std::string mode);
 	bool returnPrivilegesStatus(std::string user_nickname);
 
 	//void giveCreatPrivileges(const User& name);
