@@ -601,7 +601,6 @@ void Command::setMode(std::string mode, std::string channel_name, std::string ni
 
 	if (mode == "+o" || mode == "-o")										//change userop OBJ, usernotop STRING
 		return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_server(nickname), _user->getNickname(), mode);
-
 	else if (mode == "+b")
 		return_channel(channel_name)->deleteUser(return_user_in_server(nickname));
 	else if (mode == "-b")
