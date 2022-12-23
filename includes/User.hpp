@@ -92,3 +92,77 @@ class User
 };
 
 #endif
+
+
+
+// switch (poll(fds, _users.size(), SERVER_TIMEOUT))
+// {
+//     case -1:
+//         irc_log(error, "poll error: ", "");
+//         break ;
+//     case 0:
+//         irc_log(error, "poll timeout: ", "");
+//         break ;
+//     default:
+// 	{
+//         accept_connections();
+//         for (Users::iterator user_it = _users.begin(); user_it < _users.end(); user_it++)
+//         {
+//             ++user_it->socket.revents;
+//             if (user_it == _users.begin() || user_it->socket.revents == 0)                  // we don't want to get input from server and recently accepted users before polling them
+//                 continue ;
+//             char buffer[BUFFER_SIZE];
+//             std::memset(&buffer, 0, sizeof(buffer));
+//             int err = recv(user_it->socket.fd, &buffer, sizeof(buffer), 0);                 // err < 0 -> nothing to receive!
+//             if (err == 0)
+//             {                                                                 // rc == 0 -> connection closed by User
+//                 irc_log(trace, "closing user: ", user_it->socket.fd);
+//                 user_it->part_all_channels(_channels);
+//                 close(user_it->socket.fd);
+//                 _users.erase(user_it);
+//             }
+//             else
+//             {
+//                 parse_cmd(user_it, buffer);
+//             }
+//         } /* End of existing connection is readable */
+// 	}
+// } /* End of switch */
+/*
+#include <csignal>
+#include <iostream>
+#include <cstdlib>
+ 
+class Tester {
+public:
+    Tester()  { std::cout << "Tester ctor\n"; }
+    ~Tester() { std::cout << "Tester dtor\n"; }
+};
+ 
+Tester static_tester; // Destructor not called
+ 
+void signal_handler(int signal) 
+{
+    if (signal == SIGABRT) {
+        std::cerr << "SIGABRT received\n";
+    } else {
+        std::cerr << "Unexpected signal " << signal << " received\n";
+    }
+    std::_Exit(EXIT_FAILURE);
+}
+ 
+int main()
+{
+    Tester automatic_tester; // Destructor not called
+ 
+    // Setup handler
+    auto previous_handler = std::signal(SIGABRT, signal_handler);
+    if (previous_handler == SIG_ERR) {
+        std::cerr << "Setup failed\n";
+        return EXIT_FAILURE;
+    }
+ 
+    std::abort();  // Raise SIGABRT
+    std::cout << "This code is unreachable\n";
+}*/
+

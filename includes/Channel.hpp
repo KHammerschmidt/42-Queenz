@@ -12,17 +12,14 @@ class Server;
 class Channel
 {
 
-	private:
-		std::string _name;
-		std::string	_topic;
-		//static int i;
-		//static int j;
-		//static int k;
+private:
+	std::string _name;
+	std::string	_topic;
 
 
 
 	/*User status*/
-	//int	_user_status; //c->creator, o->operator, u->normal user
+	int	_user_status; //c->creator, o->operator, u->normal user
 	
 	
 	// std::string _mode;
@@ -32,9 +29,9 @@ class Channel
 
 	std::string mode;
 
-	// std::map<int, User*> _channel_members; 	//list of members in channel-> key[i]
-	// std::map<int, User*> _channel_operators; // channel operators can perform-> key[j]
-	// std::map<int, User*> _channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator -> key[k]
+	std::vector<User*> _channel_members; 	//list of members in channel-> key[i]
+	std::vector<User*> _channel_operators; // channel operators can perform-> key[j]
+	std::vector<User*> _channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator -> key[k]
 
 public:
 	Channel();
@@ -55,7 +52,7 @@ public:
 	// void 		changeTopic(const std::string newTopic);
 
 	void		addUser(User *user);//, Server *server);
-	// void		deleteUser(User *user);
+	void		deleteUser(User *user);
 
 	void		deleteChannel();
 	//void setMode(const std::string mode, const User &user1, const User &user2);
@@ -82,7 +79,7 @@ public:
 	// void topic();
 
 
-	void giveOpPrivileges(User *user_not_op, std::string nickname_user_op);
+	void giveTakeOpPrivileges(User *user_not_op, std::string nickname_user_op, std::string mode);
 	bool returnPrivilegesStatus(std::string user_nickname);
 
 	//void giveCreatPrivileges(const User& name);

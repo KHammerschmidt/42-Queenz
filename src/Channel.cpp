@@ -8,9 +8,9 @@ Channel::Channel(std::string channel_name) {setName(channel_name); }//i = 0; j =
 Channel::~Channel() {}
 
 void        Channel::setName(const std::string channel_name){this->_name = channel_name;}
-//void		Channel::setUserStatus(int status) {this->_user_status = status;}
+void		Channel::setUserStatus(int status) {this->_user_status = status;}
 std::string Channel::getName() const {return this->_name;}
-//int         Channel::getUserStatus() {return this->_user_status;}
+int         Channel::getUserStatus() {return this->_user_status;}
 // std::map<int, User*>  Channel::getChannelMembers(){return this->_channel_members;}
 // std::map<int, User*>  Channel::getChannelOperators(){return this->_channel_operators;}
 // std::map<int, User*>  Channel::getChannelCreator(){return this->_channel_creator;}
@@ -35,93 +35,68 @@ void        Channel::deleteChannel()
 
 void		Channel::addUser(User *user){//, Server *server){
 
-    user->getNickname();//to let it compile :)
-    // if (_channel_members.size() == 0)
-    //     _channel_creator.insert(std::make_pair<int, User*>(++i, user)); //put in creator map
-    
-    // _channel_members.insert(std::make_pair<int, User*>(++j, user)); //add in member map
+    if (_channel_members.size() == 0)
+        _channel_creator.push_back(user); //put in creator map
+    else
+        _channel_members.push_back(user); //add in member map
 
-    //server->_channels<
-    // for (std::map<int, User*>::iterator it= this->_users.begin(); it != this->_users.end(); it++)
-    // {
-
-    // }
 }
 
 
-// void		Channel::deleteUser(User *user){
-//      for (std::map<int, User*>::iterator it = _channel_members.begin(); it != _channel_members.end(); i++t)
-//         if (*it->second->getNickname() == user->getNickname())
-//             _channel_members.erase(it);
+void		Channel::deleteUser(User *user){
+    //make var server and delete also from struct in server
+    //  for (std::multimap<std::string, User*>::iterator it = server->_channel_users.begin(); it != _channel_members.end(); i++t)
+    //     if (*it->second->getNickname() == user->getNickname())
+    //         _channel_members.erase(it);
     
-//     deleteChannel();
-
-// }
-
-
-// void Channel::setMode(const std::string mode, User *user_op,  User *user_not_op) { 
+    for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
+    {
+        if ((*it)->getNickname() == user->getNickname())
+            _channel_operators.erase(it);
+    }
+    for (std::vector<User*>::iterator it = this->_channel_members.begin(); it != this->_channel_members.end(); it++)
+    {
+        if ((*it)->getNickname() == user->getNickname())
+            _channel_members.erase(it);
+    }
+    //deleteChannel();
     
-//     if (returnPrivilegesStatus(user_op->getNickname()) != true)
-//         return ;
+    
+}
 
-//     // O - give "channel creator" status;
-//     if (mode == 'O')
-//     {
-//         if (user1->creator == true)
-//             user2->creator ==true;
-//     }
-//     // Ban (+b)
-//     if (mode == 'b')
-//         deleteUser(user2);
-//     // INVITE  - Invite a client to an invite-only channel (mode +i)
-//     if (mode == 'i')
-//         addUser(user2);
-//     //     o - give/take channel operator privilege;
-//     if (mode == 'o')
-//     {
-//         if (user2->op == true)
-//             user2->op == false;
-//         else
-//             user2->flag == true;
-//     }
 
-// }
 
 bool    Channel::returnPrivilegesStatus(std::string user_nickname)
 {
-    user_nickname = " ";
-    return true;//to let it compile :)
+    for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
+    {
+        if ((*it)->getNickname() == user_nickname)
+            return true;
+    }
 
-    // for (std::map<int,User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
-    // {
-    //     if ((*it).second->getNickname() == user_nickname)
-    //         return true;
-    // }
-
-    //     for (std::map<int,User*>::iterator it = this->_channel_creator.begin(); it != this->_channel_creator.end(); it++)
-    // {
-    //     if ((*it).second->getNickname() == user_nickname)
-    //         return true;
-    // }
-    // return false;
+    //just creator can make operators or also operators?
+    for (std::vector<User*>::iterator it = this->_channel_creator.begin(); it != this->_channel_creator.end(); it++)
+    {
+        if ((*it)->getNickname() == user_nickname)
+            return true;
+    }
+    return false;
 }
 
-//need 2 users as input? or reicht nickname of einen?
-void    Channel::giveOpPrivileges( User *user_not_op, std::string nickname_user_op){
-    user_not_op->getNickname();/*to let it compile :)*/
-    nickname_user_op = " ";
-    // int key;
-
-    // if (returnPrivilegesStatus(nickname_user_op) == true)
-    // {
-    //     _channel_operators.insert(std::make_pair<int, User*>(++j, user_not_op)); //put in creator map
-    //     for (std::map<int,User*>::iterator it = this->_channel_members.begin(); it != this->_channel_members.end(); it++)
-    //     {
-    //         key = (*it).first;
-    //         if ((*it).second->getNickname() == user_not_op->getNickname())
-    //             _channel_operators.erase(key);
-    //     }
-    // }
+//by mode="-o" => both users are OP (user_not_op is the one should be processed)
+void    Channel::giveTakeOpPrivileges( User *user_not_op, std::string nickname_user_op, std::string mode){
+    
+    if ( mode == "+o" && returnPrivilegesStatus(nickname_user_op) == true)
+        _channel_operators.push_back(user_not_op);
+    else if (mode == "-o" && returnPrivilegesStatus(user_not_op->getNickname()) == true
+                            && returnPrivilegesStatus(nickname_user_op) == true)
+    {
+        	
+        	for (std::vector<User*>::iterator it = _channel_operators.begin(); it != _channel_operators.end(); it++)
+        		if ((*it)->getNickname().compare(user_not_op->getNickname()) == 0) 
+                    _channel_operators.erase(it);
+    }
+    //implement before in  command before command executed: check is is op looping over Channel::returnPrivilegesStatus; if true, set @before Nickname
 }
 
 

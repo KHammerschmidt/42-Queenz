@@ -31,7 +31,11 @@ Command::Command(User* user, Server* server, std::string message)
 		sendPrivMsgUser(_user, query);
 	else if (this->user_command == "JOIN")
 		sendJoin(_user, query);
-	else if (this->user_command == "PING")
+	else if (this->user_command == "PART")
+		sendPart(query);
+	else if (this->user_command == "MODE")
+		sendPart(query);
+	else if (this->user_command == "QUIT")
 		sendQuit(_user);
 	else
 		err_command("421", message, ERR_UNKNOWNCOMMAND);
@@ -264,13 +268,15 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
     int index_of_first_space;
 
 	index_of_first_space = msg.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ;
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
 	if (command.compare("PRIVMSG") != 0 && command.compare("NOTICE") != 0)
 		return ;//print error
 
 	index_of_first_space = command_arg.find_first_of(" ");
-	if (!index_of_first_space)
+	if (index_of_first_space == -1)
 		return ;
 	std::string nick_receiver = command_arg.substr(0, index_of_first_space);
    	std::string text = command_arg.substr(index_of_first_space + 1, command_arg.length() - index_of_first_space);
@@ -352,6 +358,7 @@ bool Command::handleDoubleUserError(std::string channel_name)
 
 }
 
+//check again, now users dont see each other in channel
 /* ======================================================================================== */
 /* --------------------------------- JOIN COMMAND ----------------------------------------  */
 void Command::sendJoin(User* user, const std::string msg)
@@ -360,6 +367,8 @@ void Command::sendJoin(User* user, const std::string msg)
 	int index_of_first_space;
 
 	index_of_first_space = msg.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ;
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string channel_name = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);
 	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
@@ -379,82 +388,48 @@ void Command::sendJoin(User* user, const std::string msg)
 	{
 		Channel* new_channel = new Channel(channel_name);
 		_server->_channels.push_back(new_channel);
+		//_user->setNickname(_user->getNickname().insert(0, "@")); where put @ for ops?
 	}
 
 	this->reply_state = true;
 	this->command_state = true;
 	std::stringstream ss;
-	//int i = 4;
-	std::cout << "--------------- TEST 1 ---------------\n";
+	//int len;
+
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 	{	 		
 		if (((*it).first).compare(channel_name) == 0)
 		{
-			//ss << ":" << ((*it).second->getNickname()) << "!" << ((*it).second->getNickname()) << "@42-Queenz.fr.42 JOIN #" << channel_name << "\r\n";
-			ss << ((*it).second->getNickUserHost()) << " " << command << " #" << channel_name << "\r\n";
-			this->_command_message = ss.str();
-			this->receiver_fd = (*it).second->getFd();//i
+			ss.str(std::string());
+			ss.clear();
+			ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
+			this->_command_message = ss.str().substr(1, ss.str().length() - 1);
 
+			this->receiver_fd = (*it).second->getFd();
+			std::cout << "FD: " << this->receiver_fd << " MESSAGE: " << this->_command_message << "----------\n";
 			user->write();
 		}
-	}//try nickuserhost statt HOSTNAME
+	}
 	this->reply_state = false;
-	ss << ":" << HOSTNAME << " 332 " << user->getNickname() << " #" << channel_name << " :A timey wimey channel (this should be channelName->getTopic()" << "\r\n";
+	// ss.str(std::string());	//I should clear the stream, but if I do it here-> weechat doesnt open a channel correctly
+	// ss.clear();
+	
+	ss << ":" << HOSTNAME << " 332 " << user->getNickname() << " #" << channel_name << " :A timey wimey channel" << "\r\n";
 	this->_command_message = ss.str();
-
-
-	//4a) RPL_NAMREPLY, users currently in channel: "bar.example.org"(what is this?) << " 353 " << nick_sender << " #" << channel_name << " :" << @user1(@means is an op) << " " << user2 << " " user_sender 
 	ss << ":" << HOSTNAME << " 353 " << user->getNickname() << " = #" << channel_name << " :" << return_string_all_users_in_channel(channel_name) << "\r\n";//
 	this->_command_message = ss.str();
-	//here some bug, check it
-	//std::cout << "@" << HOSTNAME << " 353 " << user->getNickname() << " #" << channel_name << " " << return_string_all_users_in_channel(channel_name, server, user) << std::endl;
-
-	//4b) RPL_ENDOFNAMES: "bar.example.org" << " 366 " << nick_sender << " #" << channel_name << " :End of NAMES list"
 	ss << ":" << HOSTNAME << " 366 " << user->getNickname() << " #" << channel_name << " End of NAMES list" << "\r\n";
 	this->_command_message = ss.str();
 
-	this->receiver_fd = user->getFd();//(return_user_in_server((*it).second->getNickname())->getFd());//i
-
+	this->receiver_fd = user->getFd();
 	//user->write();
-
+	std::cout << "COMMAND MESSAGE: " << this->_command_message;
 	Log::printStringCol(CRITICAL, msg);
 
 	std::cout <<  "------------------------------------------------------------------\n";
 	std::cout <<  "------------------------------------------------------------------\n";
 	std::cout <<  "------------------------------------------------------------------\n";
-
-
-	/*check numbers of Chicago by JOIN Replies Command*/
-
-	//2)Reply to all users in channel + reply to sender user; 
-	//all receives: UserNickHostSender << "JOIN" << " #" << Channel_name; 
-
-	//this->receiver_fd = return_channel_in_server(nick_receiver)->getFd();fix
-
-	//ALL USERS of Channel "channelname" in vector this->channels replies; here replies (2a, 2b, 2c)
-	// for (std::vector<User*>::iterator it = channels_replies.begin(); it != channels_replies.end(); it++)
-	// {
-
-	// 	this->receiver_fd = (return_user_in_server((*it)->getNickname())->getFd());
-
-	// 	//3) Reply RPL_TOPIC to sender: "bar.example.org"(what is this?) << " 332 " << nick_sender << " #" << channel_name << " :" << channel.getTopic(); 
-	// 	ss << "@" << HOSTNAME << " 332 " << user->getNickname() << " #" << channel_name << " :A timey wimey channel (this should be channelName->getTopic()" << "\r\n";
-	// 	this->_command_message = ss.str();
-	
-	
-	// 	//4a) RPL_NAMREPLY, users currently in channel: "bar.example.org"(what is this?) << " 353 " << nick_sender << " #" << channel_name << " :" << @user1(@means is an op) << " " << user2 << " " user_sender 
-	// 	ss << "@" << HOSTNAME << " 353 " << user->getNickname() << " #" << channel_name << " " << return_string_all_users_in_channel(channel_name, server, user) << "\r\n";
-	// 	this->_command_message = ss.str();
-	// 	//here some bug, check it
-	// 	//std::cout << "@" << HOSTNAME << " 353 " << user->getNickname() << " #" << channel_name << " " << return_string_all_users_in_channel(channel_name, server, user) << std::endl;
-		
-	// 	//4b) RPL_ENDOFNAMES: "bar.example.org" << " 366 " << nick_sender << " #" << channel_name << " :End of NAMES list"
-	// 	ss << "@" << HOSTNAME << " 366 " << user->getNickname() << " #" << channel_name << " End of /NAMES list" << "\r\n";
-	// 	this->_command_message = ss.str();
-
-	// }
-
-}
+}//implement @ for OPERATORS USERS
 
 
 bool Command::valid_channel(std::string channel_name)
@@ -466,7 +441,6 @@ bool Command::valid_channel(std::string channel_name)
 
 	return valid_channel;
 }
-
 /* ======================================================================================== */
 /* --------------------------------- CHANNEL MESSAGE COMMAND --------------------------  */
 void Command::sendChannelMsg(std::string text, std::string channel_name)
@@ -481,7 +455,7 @@ void Command::sendChannelMsg(std::string text, std::string channel_name)
 	{	 		
 		if (((*it).first).compare(channel_name) == 0)
 		{
-			ss << ":" << ((*it).second->getNickUserHost()) << " PRIVMSG #" << channel_name << text << "\r\n";
+			ss << ":" << _user->getNickUserHost() << " PRIVMSG #" << channel_name << text << "\r\n";
             this->_command_message = ss.str();
 			this->receiver_fd = (*it).second->getFd();
 			_user->write();
@@ -490,12 +464,136 @@ void Command::sendChannelMsg(std::string text, std::string channel_name)
 	Log::printStringCol(CRITICAL, text);
 }
 
+
+/* ======================================================================================== */
+/* --------------------------------- PART / LEAVE CHANNEL --------------------------  */
+void Command::sendPart(std::string msg)
+{
+	int index_of_first_space;
+	std::string text;
+
+	index_of_first_space = msg.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+	std::string command = msg.substr(0, index_of_first_space);
+	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
+	std::string channel_name = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);
+	
+	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)		
+	 	return ;	//print error and exit
+
+	index_of_first_space = channel_name.find_first_of(" ");
+	if (index_of_first_space == -1)
+		 text = "user " + _user->getNickname() + " left the channel " + channel_name;
+	else
+		 text = channel_name.substr(index_of_first_space + 1, channel_name.length() - index_of_first_space);
+	
+
+
+	this->_command_message = true;
+	this->reply_state = false;
+	std::stringstream ss;
+	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	{	 		
+		if (((*it).first).compare(channel_name) == 0 && ((*it).second->getNickname()).compare(_user->getNickname()) != 0)
+		{
+			ss.str(std::string());
+			ss.clear();
+			ss << ":" << _user->getNickUserHost() << " PART #" << channel_name << text << "\r\n";//: vor text?
+        	this->_command_message = ss.str();
+			this->receiver_fd = (*it).second->getFd();
+			_user->write();
+		}	
+	}
+
+}
+
+
+//implement Kick separat
+bool Command::find_user_in_channel(std::string channel_name, std::string nickname)
+{
+	if (_server->_channel_users.size() == 0)
+		return false;
+
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)	 		
+		if (((*it).first).compare(channel_name) == 0 && (((*it).second->getNickname()).compare(nickname) == 0))
+			return true;
+
+	return false;
+
+}
+
+//valid channel and return _channel are same, just one returns bool and other channel
+Channel *Command::return_channel(std::string channel_name)
+{
+		for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)	 		
+			if ((*it)->getName().compare(channel_name) == 0)
+				return (*it);
+		return NULL;
+}
+
+//continue MODE
+void Command::setMode(std::string mode, std::string channel_name, std::string nickname){
+
+	// mode = " ";
+	// channel_name = " ";
+	// nickname = " ";
+
+	if (mode == "+o" || mode == "-o")										//change userop OBJ, usernotop STRING
+		return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_server(nickname), _user->getNickname(), mode);
+	else if (mode == "+b")
+		return_channel(channel_name)->deleteUser(return_user_in_server(nickname));
+	else if (mode == "-b")
+		return_channel(channel_name)->addUser(return_user_in_server(nickname));
+
+
+
+	
+}
+
+ //MODE #channel [PARAM] [+/-o nickname (OP) /  +b/-b nickname (BAN)]
+//command channelname	  mode nickname
+void Command::sendMode(std::string msg){
+	int index_of_first_space;
+	std::string mode;
+	std::string nickname;
+
+	index_of_first_space = msg.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+	std::string command = msg.substr(0, index_of_first_space);
+	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
+	std::string channel_name = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);//chnage and test
+	
+	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)		
+	 	return ;	//print error and exit
+
+	index_of_first_space = channel_name.find_first_of(" ");
+	mode = channel_name.substr(index_of_first_space + 1, channel_name.length() - index_of_first_space);
+	index_of_first_space = text.find_first_of(" ");
+	nickname = mode.substr(index_of_first_space + 1, mode.length() - index_of_first_space);
+	if (find_user_in_channel(channel_name, nickname) == false)
+		return; //error
+
+	if (mode.substr(0,2).compare("+o") == 0 || text.substr(0,2).compare("-o") == 0)
+		setMode(mode, channel_name, nickname); //OP
+	else if (mode.substr(0,2).compare("+b") == 0 || mode.substr(0,2).compare("-b") == 0 )
+		setMode(mode, channel_name, nickname); //ban
+	else
+		return ; //error
+
+}
+
+
+//	/kick  nickname [reason] (KICK)
+
 /* ======================================================================================== */
 /* --------------------------------- QUIT COMMAND -----------------------------------  */
 void Command::sendQuit(User* user)
 {
 	close(user->getFd());
+	user->getNickname();
 	//close the socket but let the fd still on listening modus
 	//https://stackoverflow.com/questions/27798419/closing-client-socket-and-keeping-server-socket-active
 	//Log::printStringCol(CRITICAL, message);
-};
+}
