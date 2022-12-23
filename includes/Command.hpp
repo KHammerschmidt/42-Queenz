@@ -17,9 +17,8 @@
 #define ERR_UNKNOWNCOMMAND 		"Unknown command\r\n"
 #define ERR_NEEDMOREPARAMS		"Not enough parameters\r\n"
 
-#define ERR_NONICKNAMEGIVEN 	"431 :Nickname not given\r\n"
-#define ERR_ERRONEUSNICKNAME 	"432: Erroneus nickname\r\n"
-#define ERR_NICKNAMEINUSE 		"433 :Nickname is already in use\r\n"
+#define ERR_ERRONEUSNICKNAME 	"Erroneus nickname\r\n"
+#define ERR_NICKNAMEINUSE 		"Nickname is already in use\r\n"
 
 #define ERR_PASSWDMISMATCH 		"Password incorrect\r\n"
 #define ERR_ALREADYREGISTERED 	"You may not reregister\r\n"
@@ -114,10 +113,8 @@ public:
 
 
 		// ------------ KATHI
-		bool set_vars(const std::string& message);
-		// int check_characters(std::string str);
 		bool check_free_nickname(const std::string& nickname);
-		void register_nickname(std::string msg);
+		void register_nickname(void);
 		void err_command(std::string err_num, std::string cmd, std::string code);
 		bool parse_command(std::string message);
 		bool getReplyState(void) const;
@@ -125,7 +122,7 @@ public:
 		std::string getUserCommand() const;
 
 		void register_username(void);
-		std::string getWelcomeReply(User* user);
+		void getWelcomeReply(User* user);
 		void register_pass(void);
 		void register_cap(void);
 
@@ -134,80 +131,4 @@ public:
 		std::string put_reply_cmd(User* user, std::string err_num, std::string cmd, std::string code);
 };
 
-
-/* Some commands: prefix before command & command parameter */
-/* Prefix: leading : */
-// prefix is used to incicate origin of message
-// PRIVMSG #: 	:user!user@hostname PRIVMSG #channelname :message
-
-
-//reply: replies are used to acknowledge that a command was processed correctly, indacte errors,
-// provide information when command performs server query (asking for list of users/channels)
-
-// reply msg format: always includes a prefix: command with 3 digits, full list of replies +
-// first parameter = target, nickname
-
-
 #endif
-
-
-
-
-
-
-// // enum CommandState{ NICK, USER, PING, JOIN, PRIVMSG_CH, PRIVMSG_U };
-
-// // class User;
-
-// class Command
-// {
-// 	private:
-// 		Server* _server;
-// 		User* _user;
-
-// 		std::string prefix;
-// 		std::vector<std::string> parameters;
-// 		std::string query;
-
-// 		bool stop;
-// 		std::string getReplies(int code, std::string arg1);
-
-// 	public:
-// 		Command(User* user, Server* server, std::string message);
-
-// 		std::string getPrefix();
-// 		std::vector<std::string> getParameters;
-// 		std::string getQuery();
-
-// 		void setStop(bool new_stop) { stop = new_stop; }
-// 		bool getStop();
-
-// 		void reply(User& user, int code, std::string arg1 = "");
-// 		void reply(int code, std::string arg1 = "");
-
-// 	public:
-// 		Command(Server* server);
-// 		~Command();
-
-// 		// void invokeMessage(User* user);
-
-// 		void execute(User* user, const std::string& msg);
-// 		void execute_command(User* user, std::vector<std::string> cmds_to_exec);
-// 		int extract_command(const std::string& msg);
-
-// 		void print_cmds_to_exec(std::vector<std::string> cmds_to_exec);
-
-// 		// void sendPrivMsgChannel(User *user, const std::string& msg);
-// 		// void sendPrivMsgUser(User* user, const std::string& msg);
-// 		// void sendPing(User* user, const std::string& msg);
-
-// 		void sendNickname(User* user, std::string message);
-// 		void sendUsername(User* user, std::string message);
-// 		void sendPong(User* user, std::string message);
-// 		void sendJoin(User* user, std::string message);
-// 		void sendPrivMsgChannel(User* user, std::string message);
-// 		void sendPrivMsgUser(User* user, std::string message);
-
-// };
-
-// #endif

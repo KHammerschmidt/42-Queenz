@@ -22,13 +22,9 @@
 #include "Log.hpp"
 
 #define HOSTNAME "42-Queenz.fr.42"
-#define BUFFER_SIZE 510
 
 class User;
 class Channel;
-
-//static Server pointer
-// gucken ob server initialisiert ist, ansonsten neue Instanz vom Constructor
 
 class Server
 {
@@ -45,9 +41,6 @@ class Server
 
 		int			authentified;
 		
-
-
-
 		// time_t							_last_ping;
 
 	public:
@@ -101,64 +94,3 @@ class Server
 };
 
 #endif
-
-
-
-
-/* NOT IMPLEMENTED YET | needed?
-
---> USER
-	// tba User* getUser(const std::string name) const;	//nickname or username?
-	// tba void deleteUser();
-
---> CHANNEL
-	// tba bool isChannel(std::string const& name);
-	// tba Channel& getChannel(std::string name) const;
-	// tba void deleteChannel(Channel channel);
-	// tba Channel* createChannel(const std::string& name, const std::string& password, const User* user);
-	// tba std::vector<Channel *> getChannels() const;
- */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	// other useful functions?
-	// void onClientDisconnect(int fd);
-	// void onClientConnect();
-	// void onClientMessage(int fd);
-
-	// std::string readMessage(int fd);
-	// Config &getConfig();
-	// std::string getUpTime();
-
-	// void displayUsers();
-	// void displayChannels();
