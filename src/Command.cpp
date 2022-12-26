@@ -8,7 +8,7 @@ std::string Command::getPrefix() const { return this->prefix; }
 std::string Command::getUserCommand() const { return this->user_command; }
 std::vector<std::string> Command::getParameters() { return this->_args; }
 std::string Command::getQuery() { return this->query; }
-
+//test
 /* ======================================================================================== */
 /* -------------------------------- CONSTRUCTOR MAIN LOOP  -------------------------------  */
 Command::Command(User* user, Server* server, std::string message)
