@@ -120,6 +120,7 @@ void User::invoke(void)
 //  (*iter)->getCommandMessage() + static_cast<std::string>(MSG_END);	//do we have to append "\r\n"???
 /* Loop over vector and execute commands that are ready to send. */
 //  (*iter)->getCommandMessage() + static_cast<std::string>(MSG_END);	//do we have to append "\r\n"???
+
 void User::write(void)
 {
 	for (std::vector<Command*>::iterator iter = command_function.begin(); iter != command_function.end(); iter++)
@@ -129,15 +130,39 @@ void User::write(void)
 			//std::cout << "------" << (*iter)->getCommandMessage().c_str() <<  "++++++++" << std::endl;
 			if (send((*iter)->receiver_fd, (*iter)->getCommandMessage().c_str(), (*iter)->getCommandMessage().length(), 0) < 0)
 				Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE FROM USER FAILED.");
+			else
+				Log::printStringCol(LOG, "LOG: SENDING COMMAND SUCCESSFULLY");
 		}
 
 		if ((*iter)->getReplyState() == true)
 		{
 			if (send(this->_fd, (*iter)->getReply().c_str(), (*iter)->getReply().length(), 0) < 0)
-				Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAIELD.");
+				Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAILED.");
+			else 
+				Log::printStringCol(LOG, "LOG: SENDING REPLY SUCCESSFULLY");
 		}
 	}
 }
+
+
+// void User::write(void)
+// {
+// 	for (std::vector<Command*>::iterator iter = command_function.begin(); iter != command_function.end(); iter++)
+// 	{ 
+// 		if ((*iter)->getCommandState() == true)
+// 		{
+// 			//std::cout << "------" << (*iter)->getCommandMessage().c_str() <<  "++++++++" << std::endl;
+// 			if (send((*iter)->receiver_fd, (*iter)->getCommandMessage().c_str(), (*iter)->getCommandMessage().length(), 0) < 0)
+// 				Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE FROM USER FAILED.");
+// 		}
+
+// 		if ((*iter)->getReplyState() == true)
+// 		{
+// 			if (send(this->_fd, (*iter)->getReply().c_str(), (*iter)->getReply().length(), 0) < 0)
+// 				Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAIELD.");
+// 		}
+// 	}
+// }
 
 void User::clearCommandFunction(void)
 {
