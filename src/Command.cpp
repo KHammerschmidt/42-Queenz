@@ -168,12 +168,23 @@ void Command::register_username(void)
 /* ------------------------------ PING / PONG FUNCTIONS  ---------------------------------  */
 void Command::send_pong(void)
 {
-	std::cout << " PING RECEIVED " << std::endl;
+	std::stringstream ss;
+	ss << this->_user->getNickUserHost() << " PONG :" << this->_args[1];
+
 	this->receiver_fd = this->_server->getServerFd();
-	this->_command_message = this->_args[1];
-	this->command_state = true;
-	this->reply_state = false;
+	this->_reply_message = ss.str();
+	this->reply_state = true;
+	this->command_state = false;
 }
+
+// void Command::send_pong(void)
+// {
+// 	std::cout << " PING RECEIVED " << std::endl;
+// 	this->receiver_fd = this->_server->getServerFd();
+// 	this->_command_message = this->_args[1];
+// 	this->command_state = true;
+// 	this->reply_state = false;
+// }
 
 
 /* ======================================================================================== */
@@ -396,6 +407,8 @@ void Command::sendJoin(User* user, const std::string msg)
 	std::stringstream ss;
 	//int len;
 
+	
+
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 	{	 		
 		if (((*it).first).compare(channel_name) == 0)
@@ -403,14 +416,37 @@ void Command::sendJoin(User* user, const std::string msg)
 			ss.str(std::string());
 			ss.clear();
 			ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
-			this->_command_message = ss.str().substr(1, ss.str().length() - 1);
-
-			this->receiver_fd = (*it).second->getFd();
-			std::cout << "FD: " << this->receiver_fd << " MESSAGE: " << this->_command_message << "----------\n";
-			user->write();
+			int fd = (*it).second->getFd();
+			std::string a = ss.str().substr(1, ss.str().length() - 1);
+			std::cout << "FD: " << fd << " MESSAGE: " << a << "----------\n";
+			if (send(fd, a.c_str(), a.length(), 0) < 0)
+				Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAIELD.");
+			else
+				std::cout << a << "++++++++++++++++++++++\n";
 		}
 	}
+
+
+
+	// for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	// {	 		
+	// 	if (((*it).first).compare(channel_name) == 0)
+	// 	{
+	// 		ss.str(std::string());
+	// 		ss.clear();
+	// 		ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
+	// 		this->_command_message = ss.str().substr(1, ss.str().length() - 1);
+
+	// 		this->receiver_fd = (*it).second->getFd();
+	// 		//std::cout << "FD: " << this->receiver_fd << " MESSAGE: " << this->_command_message << "----------\n";
+	// 		user->write();
+	// 		//send((*it).second->getFd(), this->_command_message.c_str(), this->_command_message.length(), 0);
+
+	// 	}
+	// }
 	this->reply_state = false;
+
+
 	// ss.str(std::string());	//I should clear the stream, but if I do it here-> weechat doesnt open a channel correctly
 	// ss.clear();
 	
@@ -597,3 +633,34 @@ void Command::sendQuit(User* user)
 	//https://stackoverflow.com/questions/27798419/closing-client-socket-and-keeping-server-socket-active
 	//Log::printStringCol(CRITICAL, message);
 }
+
+
+
+
+/*
+Second possibility
+	this->reply_state = true;
+	this->command_state = false;
+	std::stringstream ss;
+	//int len;
+
+	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	{	 		
+		if (((*it).first).compare(channel_name) == 0)
+		{
+			ss.str(std::string());
+			ss.clear();
+			ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
+			this->_reply_message = ss.str().substr(1, ss.str().length() - 1);
+
+			//this->receiver_fd = (*it).second->getFd();
+			//std::cout << "FD: " << this->receiver_fd << " MESSAGE: " << this->_command_message << "----------\n";
+			user->write();
+			//send((*it).second->getFd(), this->_command_message.c_str(), this->_command_message.length(), 0);
+
+		}
+	}
+	this->reply_state = false;
+	this->command_state = true;
+
+*/
