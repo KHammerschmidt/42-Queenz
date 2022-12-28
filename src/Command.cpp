@@ -467,24 +467,37 @@ void Command::sendJoin(User* user, const std::string msg)
 	std::stringstream ss;
 	//int len;
 
+	//int i = 1;
 	
+	ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
+	std::string a = ss.str(); //.substr(1, ss.str().length() - 1);
+
 
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 	{	 		
 		if (((*it).first).compare(channel_name) == 0)
 		{
-			ss.str(std::string());
-			ss.clear();
-			ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
+			// ss.str(std::string());
+			// ss.clear();
+
 			int fd = (*it).second->getFd();
-			std::string a = ss.str().substr(1, ss.str().length() - 1);
+			
+			// std::string a = user->getNickUserHost().substr(1, user->getNickUserHost().length() -1);
+			// a.append(" ");
+			// a.append(command);
+			// a.append(" #");
+			// a.append(channel_name);
+			// a.append("\r\n");
+
 			std::cout << "FD: " << fd << " MESSAGE: " << a << "----------\n";
 			if (send(fd, a.c_str(), a.length(), 0) < 0)
 				Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAIELD.");
 			else
 				std::cout << a << "++++++++++++++++++++++\n";
+			//a.clear();
 		}
 	}
+
 
 
 
