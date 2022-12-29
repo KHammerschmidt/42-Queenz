@@ -2,8 +2,8 @@
 #include <iostream>
 #include "includes/Server.hpp"
 
-bool running = true;
-void handler(int) { running = false; }
+bool running = false;
+void handler(int) { running = true; }
 
 int parse(int argc, char** argv)
 {
@@ -25,8 +25,11 @@ int main(int argc, char** argv)
 
 	signal(SIGINT, handler);
 
-	// while (running)
-	server->run();
+	while (!running)
+		server->run();
 
+	std::cout << " EVERYTHING IS CLOSED" << std::endl;
+	system("leaks ircserv");
+	std::cout << " After leaks" << std::endl;
 	return 0;
 }

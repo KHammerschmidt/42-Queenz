@@ -57,7 +57,7 @@ class User
 		~User();
 
 		void onUser();
-		void receive();
+		bool receive();
 		void split();
 		void invoke();
 		void write();

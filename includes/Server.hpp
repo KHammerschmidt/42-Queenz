@@ -45,16 +45,17 @@ class Server
 	public:
 		std::vector<Channel*>				_channels; 			//2) vector all channels
 		std::multimap<std::string, User*> 	_channel_users;		//3) mappair channel/user, with multimap can use key channel multiple times
-		std::vector<std::string>			_channels_by_name;	//->cancel, not needed
+
+		// std::vector<std::string>			_channels_by_name;	//->cancel, not needed
 
 	public:
 		std::vector<pollfd>::iterator 	pfds_iterator;
 		std::map<int, User*>::iterator 	user_iterator;
-		std::map<std::string, Channel*>	channel_iterator;
+		std::vector<Channel*>::iterator	channel_iterator;
 
 	private:
 		void connectNewUser();
-		void disconnectUser(int fd);
+		void disconnectUser(int fd, bool state);
 		void serverError(int code);
 		void deleteUser(int fd);
 		void deleteChannel(Channel* channel);

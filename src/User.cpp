@@ -68,7 +68,9 @@ void	User::setNickUserHost() {
 /* Function gets called when there is data to receive for the user. */
 void User::onUser(void)
 {
-	receive();
+	if (receive() == false)
+		return ;
+
 	split();
 	invoke();
 	write();
@@ -78,31 +80,26 @@ void User::onUser(void)
 /* ======================================================================================== */
 /* ---------------------- RECEIVE / PARSE / INVOKE / SEND MESSAGES -----------------------  */
 /* User receives data with recv() and saves the read bytes within buffer string. */
-void User::receive(void)
+bool User::receive(void)
 {
 	char recv_buffer[BUFFER_SIZE + 1];
 	memset(&recv_buffer, 0, sizeof(BUFFER_SIZE + 1));
 
 	size_t size = recv(this->_fd, &recv_buffer, BUFFER_SIZE, 0);
+
+	Log::printTrace(recv_buffer);
+
 	if (size < 0)
-	{
-		// search for NICK UND USER DANN REGISTER otherwise delete user
-		Log::printStringCol(WARNING, "No data received by user.");
-		return ;
-	}
+		return false;
 	else if (size == 0)
 	{
-		// could be eof or 0 bytes received
-		// aus channel rausschmeißen
-		//channel kick (jeder user bekommt nachricht, und ganz rechts neue liste an usern (wie bei knuddels))
-		Log::printStringCol(CRITICAL, "status == delete");		//status == Delete;	// delete user?
-		this->_state = DELETE; 									// user logt sich aus und muss disconnected werden und dann gelöscht
+		setState(DELETE);
+		return false;
 	}
-	else
-	{
-		recv_buffer[size] = 0;
-		this->_buffer.append(recv_buffer);
-	}
+
+	recv_buffer[size] = 0;
+	this->_buffer.append(recv_buffer);
+	return true;
 }
 
 /* Splits messages when separated by END_MSG ("\r\n"). */
@@ -155,7 +152,6 @@ void User::write(void)
 
 /* ======================================================================================== */
 /* --------------------------------------- CLEAR -----------------------------------------  */
-
 void User::clearCommandFunction(void)
 {
 	for (std::vector<Command *>::iterator iter = command_function.begin(); iter != command_function.end(); iter++)
