@@ -591,6 +591,22 @@ void Command::sendPart(std::string msg)
 	}
 	this->command_state = false;
 	this->reply_state = false;
+	//delete channel/user from multimap
+	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	{	 		
+		if ((*it).first.compare(channel_name) == 0  && (*it).second->getNickname().compare(_user->getNickname()) == 0 )
+		{
+			_server->_channel_users.erase(it);
+			break ;
+		}	
+	}
+	//delete channel members/operators from channel
+	for(std::vector<Channel*>::iterator it= _server->_channels.begin(); it != _server->_channels.end(); it++)
+	{	 		
+		if ((*it)->getName().compare(channel_name) == 0 )
+			(*it)->deleteUser(_user);
+	}
+
 }
 
 
@@ -617,19 +633,34 @@ Channel *Command::return_channel(std::string channel_name)
 		return NULL;
 }
 
+
+User *Command::return_user_in_multimap(std::string channel_name, std::string nickname)
+{
+	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	{	 		
+		if (((*it).first).compare(channel_name) == 0 && (*it).second->getNickname().compare(nickname) == 0)
+			return (it)->second;
+	}
+	return NULL;
+}
+
 //continue MODE
+//? how to update @ in channel? maybe change Nick
 void Command::setMode(std::string mode, std::string channel_name, std::string nickname){
 
 	// mode = " ";
 	// channel_name = " ";
 	// nickname = " ";
+	std::cout << "--------------TEST-------------3\n";
 
-	if (mode == "+o" || mode == "-o")										//change userop OBJ, usernotop STRING
-		return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_server(nickname), _user->getNickname(), mode);
+	if (mode == "+o" || mode == "-o")			
+	{	return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_multimap(channel_name, nickname), return_user_in_multimap(channel_name, _user->getNickname()), mode);						//change userop OBJ, usernotop STRING
+	//privilege schon getestet in function davor->	//return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_server(nickname), _user->getNickname(), mode);
+	std::cout << "--------------TEST-------------6\n";}
 	else if (mode == "+b")
 		return_channel(channel_name)->deleteUser(return_user_in_server(nickname));
-	else if (mode == "-b")
-		return_channel(channel_name)->addUser(return_user_in_server(nickname));
+	// else if (mode == "-b")
+	// 	return_channel(channel_name)->addUser(return_user_in_server(nickname));
 
 
 
@@ -644,16 +675,48 @@ void Command::sendMode(std::string msg){
 	int index_of_first_space;
 	std::string mode;
 	std::string nickname;
-	std::string channel_name = "12";
 
 
 	std::cout << "--------------TEST-------------1\n";
-		// test user is op
+	// test user is op
+	
+
+	index_of_first_space = msg.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+	std::string command = msg.substr(0, index_of_first_space);
+	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
+	std::string temp = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);//chnage and test
+	index_of_first_space = temp.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+	std::string channel_name = temp.substr(0, temp.length() - (temp.length() - index_of_first_space));
+	temp = temp.substr(index_of_first_space + 1, temp.length() - (channel_name).length() - 1); /*mode + nick*/	
+	index_of_first_space = temp.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+	mode = temp.substr(0, index_of_first_space);
+	nickname = temp.substr(index_of_first_space + 1, temp.length() - mode.length() - 1);//chnage and test
+	//std::cout << "command: " << command << "\n-----prefix: " << prefix_channel << "\n--------channel_name: " << channel_name << "\n--------mode: " << mode << "\n------nickname: " << nickname << "\n--------------TEST-------------n\n";
+
+
+	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)		
+		return ;	//print error and exit
+
+	//check nickname is in channel
+	if (find_user_in_channel(channel_name, nickname) == false)
+		return; //error
+
+
+	//check if user this is an operator -> can just check getNickOP==true
 	bool user_op = false;
 	for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
 	{
+
 		if ((*it)->getName().compare(channel_name) == 0)
 		{
+			// for(std::vector<User*>::iterator it2 = (*it)->_channel_operators.begin(); it2 != (*it)->_channel_operators.end(); it2++)
+			// 	std::cout << (*it2)->getNickname();
 			for(std::vector<User*>::iterator it2 = (*it)->_channel_operators.begin(); it2 != (*it)->_channel_operators.end(); it2++)
 			{
 				if ((*it2)->getNickname().compare(_user->getNickname()) == 0)
@@ -662,45 +725,21 @@ void Command::sendMode(std::string msg){
 					break;
 				}
 			}
+			if (user_op == false)
+			{
+				std::cout << "User is not an Operator\n";	
+				return;
+			}
+			break;
 		}
 	}
-	if (user_op == false)
-	{std::cout << "User is not an Operator\n";	return;}
-	std::cout << "--------------TEST-------------2\n";
-
-	index_of_first_space = msg.find_first_of(" ");
-	if (index_of_first_space == -1)
-		return ; //print error and exit
-	std::string command = msg.substr(0, index_of_first_space);
-	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
-	channel_name = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);//chnage and test
-	
-	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)		
-		return ;	//print error and exit
-	std::cout << "--------------TEST-------------2\n";
-
-	index_of_first_space = channel_name.find_first_of(" ");
-	mode = channel_name.substr(index_of_first_space + 1, channel_name.length() - index_of_first_space);
-	index_of_first_space = text.find_first_of(" ");
-	nickname = mode.substr(index_of_first_space + 1, mode.length() - index_of_first_space);
-	if (find_user_in_channel(channel_name, nickname) == false)
-		return; //error
-	std::cout << "--------------TEST-------------3\n";
-
-
-
-	// if (user_op == false)
-	// 	ss << ((*it).second->getNickname()) << " ";
-	// user_op = false;
-		std::cout << "--------------TEST-------------4\n";
-
-		
 	
 
+	std::cout << "--------------TEST-------------2\n";
 
-	//check if user is op
 
-	if (mode.substr(0,2).compare("+o") == 0 || text.substr(0,2).compare("-o") == 0)
+	//check if mode is legit
+	if (mode.substr(0,2).compare("+o") == 0 || mode.substr(0,2).compare("-o") == 0)
 		setMode(mode, channel_name, nickname); //OP
 	else if (mode.substr(0,2).compare("+b") == 0 || mode.substr(0,2).compare("-b") == 0 )
 		setMode(mode, channel_name, nickname); //ban
