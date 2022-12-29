@@ -470,9 +470,6 @@ void Command::sendJoin(User* user, const std::string msg)
 	this->reply_state = true;
 	this->command_state = true;
 	std::stringstream ss;
-	//int len;
-
-	//int i = 1;
 	
 	ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
 	std::string a = ss.str();
@@ -497,7 +494,6 @@ void Command::sendJoin(User* user, const std::string msg)
 	this->_command_message = ss.str();
 
 	this->receiver_fd = user->getFd();
-	//user->write();
 	std::cout << "COMMAND MESSAGE: " << this->_command_message;
 	Log::printStringCol(CRITICAL, msg);
 
