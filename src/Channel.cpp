@@ -3,7 +3,7 @@
 
 // to create a channel -> in USER: if (user parse tipes #join) -> Channel:createChannel (with static method); if doesnt work, delete createChannel and in User do new Channel()
 
-Channel::Channel() {};
+Channel::Channel() {};    //Kathi: I don't think a default constructor makes sense for Channels
 Channel::Channel(std::string channel_name) {setName(channel_name); }//i = 0; j = 0; k = 0;}
 Channel::~Channel() {}
 
@@ -28,7 +28,7 @@ void        Channel::deleteChannel()
 // std::string Channel::getTopic() const{return this->_topic;}
 
 // void Channel::changeTopic(const std::string newTopic) {
-//     setTopic(newTopic); 
+//     setTopic(newTopic);
 //     std::cout << "The topic of the channel was updatet!" << std::endl;
 // }
 
@@ -50,7 +50,7 @@ void		Channel::deleteUser(User *user){
     //  for (std::multimap<std::string, User*>::iterator it = server->_channel_users.begin(); it != _channel_members.end(); i++t)
     //     if (*it->second->getNickname() == user->getNickname())
     //         _channel_members.erase(it);
-    
+
     for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
     {
         if ((*it)->getNickname() == user->getNickname())
@@ -61,8 +61,9 @@ void		Channel::deleteUser(User *user){
         if ((*it)->getNickname() == user->getNickname())
             _channel_members.erase(it);
     }
-    //deleteChannel();
-    
+    // if (this->_channel.members.size() == 0)
+        // delete *this;
+
 }
 
 
@@ -97,6 +98,7 @@ void    Channel::giveTakeOpPrivileges( User *user_not_op,User *user_op, std::str
             }
         }  	
         this->_channel_operators.push_back(user_not_op);
+
     }
     else if (mode == "-o")
     {   

@@ -3,7 +3,7 @@
 /* ======================================================================================== */
 /* ----------------------------- CONSTRUCTOR/DESTRUCTOR ----------------------------------  */
 Server::Server(char** argv)
-	: _serv_address(), _users(), _channels(), _channels_by_name()
+	: _serv_address(), _users(), _channels()		//, _channels_by_name()
 {
 	setPort(argv[1]);
 	this->_password = argv[2];
@@ -16,27 +16,41 @@ Server::Server(char** argv)
 	this->_pollfds.push_back(server_fd);
 }
 
+
 Server::~Server()
 {
-	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
-		deleteUser((*iter).second);
-	
-	for (std::map<std::string, User*>::iterator iter = this->_channel_users.begin(); iter != this->_channel_users.end(); iter++)
-		deleteUser((*iter).second);
+	for (user_iterator = _users.begin(); user_iterator != _users.end(); user_iterator++)
+		std::cout << (*user_iterator).first << "  " << (*user_iterator).second->getNickname() << std::endl;
 
-	for (std::vector<Channel*>::iterator iter = this->_channels.begin(); iter != this->_channels.end(); iter++)
-		deleteChannel(*iter);
-	
+	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
+	{
+		Log::printStringCol(WARNING, "DISCONNECTING AND DELETING USER IN DESTRUCTOR");
+		disconnectUser((*iter).second->getFd(), false);
+		delete ((*iter).second);
+	}
+
+	this->_users.clear();
+
+
+
+	// for (std::map<std::string, User*>::iterator iter = this->_channel_users.begin(); iter != this->_channel_users.end(); iter++)
+	// 	deleteUser((*iter).second);
+
+	// for (std::vector<Channel*>::iterator iter = this->_channels.begin(); iter != this->_channels.end(); iter++)
+	// 	deleteChannel(*iter);
+
 
 	// for (std::map<std::string, Channel*>::iterator iter = this->_channels.begin(); iter != _channels.end(); iter++)
 	// 	deleteChannel((*iter).second);
 
-	this->_users.clear();
 	this->_channel_users.clear();
 	this->_channels.clear();
-	this->_channels_by_name.clear();
 	this->_channel_users.clear();
 	delete this;
+
+
+	// this->_channels_by_name.clear();
+
 }
 
 /* ======================================================================================== */
@@ -48,17 +62,22 @@ void Server::run()
 {
 	while (this->getServerStatus() == true)
 	{
-		// // Log::printStringCol(REGULAR, SERV_LISTENING);
+		Log::printStringCol(REGULAR, SERV_LISTENING);
 
 		if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)
 			serverError(2);
-		for (pfds_iterator = this->_pollfds.begin(); pfds_iterator != this->_pollfds.end(); pfds_iterator++)
+		for (pfds_iterator = this->_pollfds.begin(); pfds_iterator < this->_pollfds.end(); pfds_iterator++)
 		{
 			if (pfds_iterator->revents == 0)
 				continue;
 
-			if ((pfds_iterator->revents & POLLHUP) == POLLHUP)		//could be a problem when a user quits??
-				serverError(7);
+			//POLLHUP will signal that the connection was closed from both sides (server & client)
+			// if ((pfds_iterator->revents & POLLHUP) == POLLHUP)
+			// {
+			// 	std::cout << "DISCONNECT USER AFTER POLLHUP" << std::endl;
+			// 	disconnectUser(pfds_iterator->fd, false);
+			// 	break ;
+			// }
 
 			if ((pfds_iterator->revents & POLLIN) == POLLIN)
 			{
@@ -69,6 +88,9 @@ void Server::run()
 				}
 
 				this->_users[pfds_iterator->fd]->onUser();
+
+				if (this->_users[pfds_iterator->fd]->getState() == DELETE)
+					disconnectUser(pfds_iterator->fd, false);
 			}
 		}
 	}
@@ -85,21 +107,14 @@ void Server::connectNewUser()
 
 	new_fd = accept(this->_sockfd,(sockaddr *) &s_address, &(s_size));
 	if (new_fd < 0)
-		serverError(3);
-	// else
-	// 	// Log::printStringCol(LOG, NEW_CONNECTION);
+		return ;
+	else
+		Log::printStringCol(LOG, NEW_CONNECTION);
 
 	pollfd user_pollfd = {new_fd, POLLIN, -1};
 	this->_pollfds.push_back(user_pollfd);
 
 	User* new_user = new User(new_fd, s_address, this);
-
-	// if (new_user->getState() != 0)				//this means != CONNECTED
-	// {
-	// 	// Log::printStringCol(REGULAR, ERR_USER_REGISTRY);
-	// 	deleteUser(new_user);
-	// 	return ;
-	// }
 
 	this->_users.insert(std::make_pair(new_fd, new_user));
 
@@ -107,40 +122,55 @@ void Server::connectNewUser()
 	std::cout << ":" << ntohs(s_address.sin_port) << " (" << new_fd << ")" << std::endl;
 }
 
-/* Erases file descriptor from vector _users and _pollfds.
-   Maybe also delete user from channel? how to check internal? */
-void Server::disconnectUser(User* user)
+/* Makes user leave all channels and erases the user and its file descriptor from server. */
+void Server::disconnectUser(int fd, bool state)
 {
-	if (!user)
-		return ;
-		// Log::printStringCol(LOG, "DISCONNECTING USER");
+	Log::printStringCol(LOG, "LOG: DISCONNECTING USER");
 
-	// // maybe in try / catch in case of fd cannot be find/invalid fd?
-	// // User* user = this->_users.at(fd);
-	// int user_fd = getUserfd(user);
-	// if (user_fd < 0)
-	// {
-	// 	// Log::printStringCol(RED, "Error: no user found.");
-	// 	serverError(4);
-	// }
+	try
+	{
+		User* tmp_user = this->_users.at(fd);
+		//erase user from all channels he joined (1-select channel to be searched, 2-check if user is a member in channel, 3-deleteUser with channel object)
+		std::cout << "channel name: " << _channels[0]->getName() << std::endl;
 
-	// user->leave();		// leave channels
-	// // erase this user from std::map by its fd
-	// this->_users.erase(user_fd);
+		for(channel_iterator = _channels.begin(); channel_iterator != _channels.end(); channel_iterator++)
+		{
+			std::cout << " I AM HERE 1" << std::endl;
+			Channel* tmp_channel = *channel_iterator;
+			std::cout << tmp_channel->getName() << std::endl;
+			for (std::vector<User*>::iterator iter = tmp_channel->_channel_members.begin(); iter != tmp_channel->_channel_members.end(); iter++)
+			{
+				std::cout << " I AM HERE 2" << std::endl;
+				if ((*iter)->getNickname() == tmp_user->getNickname())
+				{
+					std::cout << "CHANNEL: " << tmp_channel->getName() << " will be deleted" << std::endl;
+					tmp_channel->deleteUser(tmp_user);
+				}
+			}
+		}
 
-	// // erase user from pollfds
-	// for (pfds_iterator = _pollfds.begin(); pfds_iterator != _pollfds.end(); pfds_iterator++)
-	// {
-	// 	if (pfds_iterator->fd == user_fd)
-	// 	{
-	// 		this->_pollfds.erase(pfds_iterator);
-	// 		close(user_fd);
-	// 		break ;
-	// 	}
-	// }
-	// delete user;
-	// deleteUser();
+		std::vector<pollfd>::iterator iter;
+		for (iter = _pollfds.begin(); iter != _pollfds.end(); iter++)
+		{
+			if (iter->fd == fd)
+			{
+				this->_pollfds.erase(iter);
+				close(fd);
+				break ;
+			}
+		}
+
+		//delete allocated user memory and delete from this->_users map
+		if (state == false)
+		{
+			delete this->_users.at(fd);
+			this->_users.erase(fd);
+		}
+	}
+	catch(const std::out_of_range& e) 	{
+	}
 }
+
 
 /* ======================================================================================== */
 /* -------------------------------------- GETTERS ----------------------------------------  */
@@ -149,6 +179,7 @@ int 		Server::getTimeout() const { return this->_timeout; }
 int 		Server::getServerFd(void) { return (this->_sockfd); }
 bool 		Server::getServerStatus() const { return this->_serverRunningStatus; }
 std::string Server::getPassword() const { return this->_password; }
+sockaddr_in	Server::getAddr() const { return this->_serv_address; }
 
 User* Server::getUser(int fd)
 {
@@ -170,7 +201,6 @@ std::vector<User*> Server::getUsers() const
 
 	return users_temp;
 }
-
 
 /* ======================================================================================== */
 /* -------------------------------------- SETTERS ----------------------------------------  */
@@ -214,46 +244,38 @@ void Server::serverError(int code)
 {
 	switch(code)
 	{
-		case 1: break; // Log::printStringCol(CRITICAL, ERR_SOCKET_CONNECTION); break;
-		case 2: break; // Log::printStringCol(CRITICAL, ERR_POLL); break;
-		case 3: break; // Log::printStringCol(CRITICAL, ERR_ACCEPT); break;
-		case 4: break; // Log::printStringCol(CRITICAL, ERR_USER_CREDENTIALS); break;
-		case 5: break; // Log::printStringCol(CRITICAL, ERR_PING_TIMEOUT); break;
-		case 6: break; // Log::printStringCol(CRITICAL, ERR_SEND); break;
-		case 7: break; // Log::printStringCol(WARNING, ERR_POLLIN); break;
-		default: break;// Log::printStringCol(CRITICAL, ERR_ANY_OTHER_ERR); break;
+		case 1:
+			Log::printStringCol(CRITICAL, ERR_SOCKET_CONNECTION);
+			break;
+		case 3:
+			Log::printStringCol(CRITICAL, ERR_ACCEPT);
+			break;
+		case 4:
+			Log::printStringCol(CRITICAL, ERR_USER_CREDENTIALS);
+			break;
+		case 5:
+			Log::printStringCol(CRITICAL, ERR_PING_TIMEOUT);
+			break;
+		case 6:
+			Log::printStringCol(CRITICAL, ERR_SEND);
+			break;
+		default:
+			Log::printStringCol(CRITICAL, "SERVER IS SHUTTING DOWN...");
+			break;
 	}
 
 	close(this->_sockfd);
 	setServerStatus(false);
-	exit(-1);
-}
-
-/* ======================================================================================== */
-/* ------------------------------------- OTHERS ------------------------------------------  */
-/* Server sends Ping to users to see if connection is still intact. */
-void Server::sendPing()
-{
-	time_t current_time = std::time(0);
-
-	for (std::map<int, User*>::iterator iter = _users.begin(); iter != _users.end(); iter++)
-	{
-		if (current_time - ((*iter).second->getLastPing()) >= static_cast<int>(this->_timeout))
-			serverError(5);																//disconnect user / delete user / etc.
-		// else if ((*iter).second->getState() == true)									//online
-		// 	(*iter).second->write("PING " + (*iter).second->getNickname());				//user has then to answer with pong to server
-		std::cout << " SERVER SENDS PING TO USER!" << std::endl;
-	}
 }
 
 
 /* ======================================================================================== */
 /* -------------------------- DELETION OF USERS / CHANNEL ---------------------------------  */
 //delete and disconnect
-void Server::deleteUser(User* user)
+void Server::deleteUser(int fd)
 {
 	std::cout << "HERE DELETE USER " << std::endl;
-	delete user;
+	delete getUser(fd);
 }
 
 //delete in channel class as well & user
@@ -262,161 +284,3 @@ void Server::deleteChannel(Channel* channel)
 	std::cout << "HERE DELETE CHANNEL" << std::endl;
 	delete channel;
 }
-
-
-
-
-
-
-
-
-
-// int Server::getUserfd(User* user)
-// {
-// 	int fd;
-// 	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
-// 	{
-// 		if (*iter->second == user)
-// 			return user->getFd();
-// 	}
-// 	return -1;
-// }
-
-/* Function prints User credentials: nickname, username, fullname fd */
-// void Server::printUser()
-// {
-// 	for (std::map<int, User*>::iterator iter = users.begin(); iter != users.end(); iter++)
-// 	{
-// 		std::cout << "nickname: " << iter.getNickname() << " | username: " << iter->getUsername() << " | fullname: " << iter->getFullName();
-// 		std::cout << " | port: " << iter.getFD() << std::endl;
-// 	}
-// }
-
-
-
-
-
-
-/* This structure is filled in with the address of the peer socket, as
-known to the communications layer. The exact format of the address returned addr is determined by the sockets address
-family (see socket(2) and the respective protocol man pages). When addr is NULL, nothing is filled in; in this case, addrlen is
-not used, and should also be NULL. */
-
-
-
-// if (pfds_iterator->revents != POLLIN)		//e.g. POLLHUP (in explanations.txt) when POLLHUP then disconnect and break
-// {
-// 	setServerStatus(false);
-// 	// Log::printStringCol(RED, "Error: unexpected result. Nothing to read. Connection will be disabled.");
-// 	break ;
-// }
-
-
-///jeder user hat einen msg string bei dem die neue Nachricht appended wird (
-// \r\n heisst ende der Nachricht danach
-
-
-
-// ip vom server
-
-
-// HOW TO CONNECT SO WEECHAT, du brauchst 2 Terminals (cd 42-Queenz)
-// Terminal 1: $ weechat
-// 			$ /server add irc local-ip/port
-// Terminal 2: $ make re
-// 			$ ./ircserv port pw (ich habs immer auf port 8080 gemacht)
-// Terminal 1: $ /connect irc -password=pw
-// 			$ /connect irc (um User zu registrieren)
-// Dann bekommst du angezeigt dass der neue User registriert wurde aber keine Daten eingelesen wurden.
-
-
-// link server client
-// /server add irc(servername) interne ip 10.11.27/420
-// dann terminal
-// nc -l 420
-// /connect irc -password=pw
-// mit nc -C und localer ip addresse einen neuen user connecten(?)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	// Max:
-	// client ist ein pair client <pollfd, User*> keine Map
-	// ip rausholen () --> als integer kommt der und der muss umgewandelt werden in (1. byte )
-	// int umwandeln zum string ip addresse (1. byte rechts ist die linke Zahl bei IP addresse)
-	// create a new User with
-
-
-// NOT SURE ABOUT LOOP
-// OLD VERSION:
-// if (this->pfds_iterator->revents == POLLIN)
-// {
-// 	// when POLLIN on other pollfd.fd than [0] it means a command (PRIVMSG, etc..) has been send.
-// 	for (std::vector<pollfd>::iterator iter_poll = _pollfds.begin(); iter_poll != _pollfds.end(); iter_poll++)
-// 	{
-// 		if (iter_poll->revents == POLLIN)
-// 			this->_users[iter_poll->fd]->receiveData();		// receive(this)	// implement receive Funktion in User
-// 	}
-// }
-
-// // _pollfds[0] stellt das erste pollfd struct dar in dem die server socket gespeichert ist. Nur über diese socket können sich neue User registrieren.
-// if ((this->_pollfds[0].revents & POLLIN) == POLLIN)		// oder (this->_pollfds... & POLLIN)
-// {
-// 	// Log::printStringCol(LOG, "A new user is being connected to server");
-// 	connectNewUser();
-// 	// Log::printStringCol(LOG, "--- Done. User connected to server");
-// 	break ;
-// }
-
-// if ((this->pfds_iterator->revents & POLLIN) == POLLIN)
-// {
-// 	// // when POLLIN on other pollfd.fd than [0] it means a command (PRIVMSG, etc..) has been send.
-// 	// for (std::vector<pollfd>::iterator iter_poll = _pollfds.begin(); iter_poll != _pollfds.end(); iter_poll++)
-// 	// {
-// 	// 	if (iter_poll->revents == POLLIN)
-// 	this->_users[iter_poll->fd]->receiveData(this);		// receive(this)	// implement receive Funktion in User
-// 	// }
-// 	// break ;
-// 	// Log::printStringCol(LOG, "User receive Data loop --- end");
-// }
-// else
-// {
-// 	// wenn kein POLLIN dann error Nachricht und rausbrechen
-// 	std::cout << " (this->pfds_iterator->revents != POLLIN)" << std::endl;
-// 	std::cout << "error msg and disconnect Server" << std::endl;
-// 	this->setServerStatus(false);
-// 	break ;
-// }
-
-
-
-
-
-
-
-
-// PING
-// if (std::time(0) - last_ping >= ping)
-
-// if (getUser(pfds_iterator->fd).getLastPing() + >= this->_timeout)
-// 	this->sendPing();
-// 	this->_users[pfds_iterator->fd]->send
-// 	command->getUser().sendTo(command->getUser(), "PONG :" + command->getParameters()[0]);
