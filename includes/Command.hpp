@@ -96,6 +96,7 @@ public:
 		void err_command(std::string err_num, std::string cmd, std::string code);
 
 		void getWelcomeReply(User* user);
+		void send_replies_to_channel();
 		std::string put_reply(User* user, std::string err_num, std::string code);
 		std::string put_reply_cmd(User* user, std::string err_num, std::string cmd, std::string code);
 

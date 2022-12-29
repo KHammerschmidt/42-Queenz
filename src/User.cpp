@@ -86,9 +86,7 @@ bool User::receive(void)
 	memset(&recv_buffer, 0, sizeof(BUFFER_SIZE + 1));
 
 	size_t size = recv(this->_fd, &recv_buffer, BUFFER_SIZE, 0);
-
 	Log::printTrace(recv_buffer);
-
 	if (size < 0)
 		return false;
 	else if (size == 0)

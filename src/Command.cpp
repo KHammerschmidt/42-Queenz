@@ -130,48 +130,50 @@ void Command::register_nickname(void)
 		return ;
 	}
 
-	if (check_free_nickname(this->_args[1]) == false && this->_user->getState() == ONLINE)
+	if (check_free_nickname(this->_args[1]) == false)
 	{
 		err_command("433", this->_user->getNickname(), ERR_NICKNAMEINUSE);
 		return ;
 	}
-
-	// if (this->_user->getState() == ONLINE)
-	// {
-	// 	std::cout << "USER IS ONLINE: WITHIN NICK CHANGE" << std::endl;
-	// 	//send this to all users in channel
-	// }
-
-	// std::stringstream ss;
-
-	// ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
-	// std::string a = ss.str();
-	// for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	// {
-	// 	if (((*it).first).compare(channel_name) == 0)
-	// 	{
-	// 		int fd = (*it).second->getFd();
-	// 		//std::cout << "FD: " << fd << " MESSAGE: " << a << "----------\n";
-	// 		if (send(fd, a.c_str(), a.length(), 0) < 0)
-	// 			Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAIELD.");
-	// 	}
-	// }
-
 
 	std::stringstream ss;
 	std::string old_nick = this->_user->getNickname();
 	this->_user->setNickname(this->sender_nickname);
 
 	if (old_nick.length() == 0)
-		ss << ":" << "*" << " NICK " << this->_user->getNickname() << " changed his nickname to " << sender_nickname << ".\r\n";			//send this to other users?
+		ss << ":" << "*" << " NICK " << _user->getNickname() << " changed his nickname to " << sender_nickname << ".\r\n";
 	else
-		ss << ":" << old_nick << " NICK " << this->_user->getNickname() << " changed his nickname to " << sender_nickname << ".\r\n";		//send this to other users?
+		ss << ":" << old_nick << " NICK " << _user->getNickname() << " changed his nickname to " << sender_nickname << ".\r\n";
 
 	this->_reply_message = ss.str();
 	this->reply_state = true;
 	this->command_state = false;
+
+	send_replies_to_channel();
 }
 
+/* Sends a specified string to all members of all channels to which the current user belongs. */
+void Command::send_replies_to_channel(void)
+{
+	std::vector<Channel*>::iterator it;
+	for (it = _server->_channels.begin(); it != _server->_channels.end(); it++)
+	{
+		Channel* tmp_channel = *it;
+		std::cout << tmp_channel->getName() << std::endl;
+
+		for(std::multimap<std::string, User*>::iterator iter =_server->_channel_users.begin(); iter != _server->_channel_users.end(); iter++)
+		{
+			if (((*iter).first).compare(tmp_channel->getName()) == 0)
+			{
+				int fd = (*iter).second->getFd();
+				if (send(fd, _reply_message.c_str(), _reply_message.length(), 0) < 0)
+					Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAILED.");
+				else
+					Log::printStringCol(LOG, "LOG: SENDING REPLY SUCCESSFUL.");
+			}
+		}
+	}
+}
 
 /* Loop through existing users and check if nickname is already taken. */
 bool Command::check_free_nickname(const std::string& nickname)
@@ -628,10 +630,12 @@ void Command::sendMode(std::string msg){
 /* --------------------------------- QUIT COMMAND -----------------------------------  */
 void Command::sendQuit(User* user)
 {
-	std::cout << " HERE QUIT" << std::endl;
+	//makes the user disconnect from the server
 	user->setState(DELETE);
 
-	// close(user->getFd());
+	//reply msg to channel members?
+
+
 	// user->getNickname();
 	//close the socket but let the fd still on listening modus
 	//https://stackoverflow.com/questions/27798419/closing-client-socket-and-keeping-server-socket-active

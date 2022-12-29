@@ -63,14 +63,11 @@ void Server::run()
 	while (this->getServerStatus() == true)
 	{
 		Log::printStringCol(REGULAR, SERV_LISTENING);
-		std::cout << RED << BOLD << "POLLFD SIZE: " << _pollfds.size() << std::endl;
 
 		if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)
 			serverError(2);
 		for (pfds_iterator = this->_pollfds.begin(); pfds_iterator < this->_pollfds.end(); pfds_iterator++)
 		{
-			Log::printStringCol(WARNING, "WARNING: IN POLL FOR LOOP");
-
 			if (pfds_iterator->revents == 0)
 				continue;
 
@@ -133,16 +130,17 @@ void Server::disconnectUser(int fd, bool state)
 	try
 	{
 		User* tmp_user = this->_users.at(fd);
-
-		//user->leaveChannel(); --> function that makes the user leave all channels
 		//erase user from all channels he joined (1-select channel to be searched, 2-check if user is a member in channel, 3-deleteUser with channel object)
+		std::cout << "channel name: " << _channels[0]->getName() << std::endl;
+
 		for(channel_iterator = _channels.begin(); channel_iterator != _channels.end(); channel_iterator++)
 		{
+			std::cout << " I AM HERE 1" << std::endl;
 			Channel* tmp_channel = *channel_iterator;
 			std::cout << tmp_channel->getName() << std::endl;
 			for (std::vector<User*>::iterator iter = tmp_channel->_channel_members.begin(); iter != tmp_channel->_channel_members.end(); iter++)
 			{
-				std::cout << " I AM HERE" << std::endl;
+				std::cout << " I AM HERE 2" << std::endl;
 				if ((*iter)->getNickname() == tmp_user->getNickname())
 				{
 					std::cout << "CHANNEL: " << tmp_channel->getName() << " will be deleted" << std::endl;

@@ -30,7 +30,7 @@ void Log::printStringNoNewline(std::string msg)
 
 void Log::printTrace(std::string msg)
 {
-	std::cout << YELLOW << BOLD << msg << std::endl;
+	std::cout << YELLOW << BOLD << "TRACE: " << msg;
 }
 
 template <typename T>
