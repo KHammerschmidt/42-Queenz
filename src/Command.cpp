@@ -37,6 +37,8 @@ Command::Command(User* user, Server* server, std::string message)
 		sendMode(query);
 	else if (this->user_command == "TOPIC")
 		sendTopic(query);
+	else if (this->user_command == "INVITE")
+		sendInvite(query);
 	else if (this->user_command == "KICK")
 		sendKick(query);
 	else if (this->user_command == "QUIT")
@@ -913,6 +915,96 @@ void Command::sendKick(std::string msg)
 
 }
 
+// :Angel!wings@irc.org INVITE Wiz #Dust
+//      Command: INVITE <nickname> <channel>
+
+void Command::sendInvite(std::string msg)
+{
+	int index_of_first_space;
+	std::string nickname;
+	std::stringstream ss;
+
+
+	std::cout << "--------------TEST-------------1\n";
+	// test user is op
+	
+
+	index_of_first_space = msg.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+	std::string command = msg.substr(0, index_of_first_space);
+	std::string temp = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);//chnage and test
+	index_of_first_space = temp.find_first_of(" ");
+	
+	
+	
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+	nickname = temp.substr(0, temp.length() - (temp.length() - index_of_first_space));
+	index_of_first_space = temp.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+	temp = temp.substr(index_of_first_space + 1, temp.length() - (nickname).length() - 1); /*mode + nick*/	
+	std::string prefix_channel = temp.substr(0, 1);
+	std::string channel_name = temp.substr(1, index_of_first_space);
+	
+	std::cout << "command: " << command << "\n-----nickname: " << nickname << "\n--------channel_name: " << channel_name <<  "\n--------------TEST-------------n\n";
+
+
+	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)		
+		return ;	//print error and exit
+
+	//check nickname is in channel
+	if (find_user_in_channel(channel_name, _user->getNickname()) == false)
+		return; //error
+
+
+
+
+
+	//check if user this is an operator -> can just check getNickOP==true
+	bool user_op = false;
+	for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
+	{
+
+		if ((*it)->getName().compare(channel_name) == 0)
+		{
+			// for(std::vector<User*>::iterator it2 = (*it)->_channel_operators.begin(); it2 != (*it)->_channel_operators.end(); it2++)
+			// 	std::cout << (*it2)->getNickname();
+			for(std::vector<User*>::iterator it2 = (*it)->_channel_operators.begin(); it2 != (*it)->_channel_operators.end(); it2++)
+			{
+				if ((*it2)->getNickname().compare(_user->getNickname()) == 0)
+				{
+					user_op = true;
+					break;
+				}
+			}
+			if (user_op == false)
+			{
+				std::cout << "User is not an Operator\n";	
+				return;
+			}
+			break;
+		}
+	}
+// :Angel!wings@irc.org INVITE Wiz #Dust
+
+	ss << _user->getNickUserHost() << " INVITE " << nickname << " #" << channel_name << "\r\n";
+	std::string a = ss.str();
+
+	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	{	 		
+		if (((*it).first).compare(channel_name) == 0 && ((*it).second->getNickname().compare(nickname) || (*it).second->getNickname().compare(_user->getNickname())) )
+		{
+				int fd = (*it).second->getFd();
+				if (send(fd, a.c_str(), a.length(), 0) < 0)
+					Log::printStringCol(CRITICAL, "ERROR: SENDING INVITE TO CHANNEL FAIELD.");
+		}
+	}
+	
+
+
+}
 
 
 /* ======================================================================================== */
@@ -925,30 +1017,3 @@ void Command::sendQuit(User* user)
 	//https://stackoverflow.com/questions/27798419/closing-client-socket-and-keeping-server-socket-active
 	//Log::printStringCol(CRITICAL, message);
 }
-
-
-
-
-
-
-
-	// for reply for loop in join, if needed op 
-	// for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)	
-	// {
-	// 	if (((*it).first).compare(channel_name) == 0)
-	// 	{
-	// 		for(std::vector<User*>::iterator it2 = _server->_channels._channel_operators.begin(); it2 != _server->_channels._channel_operators.end(); it2++)
-	// 		{
-	// 			//fai da nantra part
-	// 			if ((*it2)->getNickname().compare(_user->getNickname() == 0)
-	// 			{
-	// 				ss << ((*it2)->getNicknameOP()) << " ";
-	// 				user_op = true;
-	// 				break ;
-	// 			}
-	// 		}
-	// 		if (user_op == false)
-	// 			ss << ((*it).second->getNickname()) << " ";
-	// 		user_op = false;
-	// 	}
-	// }

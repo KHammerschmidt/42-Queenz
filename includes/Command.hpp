@@ -111,6 +111,8 @@ public:
 		void setMode(std::string mode, std::string channel_name, std::string nickname);
 		void sendTopic(std::string msg);
 		void sendKick(std::string msg);
+		void sendInvite(std::string msg);
+
 
 
 

@@ -86,7 +86,6 @@ bool    Channel::returnPrivilegesStatus(std::string user_nickname)
 
 //user_op: user that typed the command
 void    Channel::giveTakeOpPrivileges( User *user_not_op,User *user_op, std::string mode){
-std::cout << "--------------FOUND XXX1-------------6\n";
     if ( mode == "+o")
     {
         for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
