@@ -33,8 +33,8 @@ Command::Command(User* user, Server* server, std::string message)
 		sendJoin(_user, query);
 	else if (this->user_command == "PART")
 		sendPart(query);
-	else if (this->user_command == "MODE")
-		sendPart(query);
+	// else if (this->user_command == "MODE")
+	// 	sendPart(query);
 	else if (this->user_command == "QUIT")
 		sendQuit(_user);
 	else
@@ -352,8 +352,13 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 	std::string nick_receiver = command_arg.substr(0, index_of_first_space);
    	std::string text = command_arg.substr(index_of_first_space + 1, command_arg.length() - index_of_first_space);
 
+	std::cout << "-----------TEST---------0\n";
 	if (nick_receiver.substr(0, 1).compare("#") == 0)
-		sendChannelMsg(text, nick_receiver);		
+	{
+		sendChannelMsg(text, nick_receiver.substr(1, nick_receiver.length() -1));		
+		return ;
+	}
+	std::cout << "-----------TEST---------2\n";
 
 	if (return_user_in_server(nick_receiver) == NULL)
 		return ;
@@ -470,58 +475,19 @@ void Command::sendJoin(User* user, const std::string msg)
 	//int i = 1;
 	
 	ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
-	std::string a = ss.str(); //.substr(1, ss.str().length() - 1);
-
-
+	std::string a = ss.str();
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 	{	 		
 		if (((*it).first).compare(channel_name) == 0)
 		{
-			// ss.str(std::string());
-			// ss.clear();
-
 			int fd = (*it).second->getFd();
-			
-			// std::string a = user->getNickUserHost().substr(1, user->getNickUserHost().length() -1);
-			// a.append(" ");
-			// a.append(command);
-			// a.append(" #");
-			// a.append(channel_name);
-			// a.append("\r\n");
-
-			std::cout << "FD: " << fd << " MESSAGE: " << a << "----------\n";
+			//std::cout << "FD: " << fd << " MESSAGE: " << a << "----------\n";
 			if (send(fd, a.c_str(), a.length(), 0) < 0)
 				Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAIELD.");
-			else
-				std::cout << a << "++++++++++++++++++++++\n";
-			//a.clear();
 		}
 	}
 
-
-
-
-	// for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	// {	 		
-	// 	if (((*it).first).compare(channel_name) == 0)
-	// 	{
-	// 		ss.str(std::string());
-	// 		ss.clear();
-	// 		ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
-	// 		this->_command_message = ss.str().substr(1, ss.str().length() - 1);
-
-	// 		this->receiver_fd = (*it).second->getFd();
-	// 		//std::cout << "FD: " << this->receiver_fd << " MESSAGE: " << this->_command_message << "----------\n";
-	// 		user->write();
-	// 		//send((*it).second->getFd(), this->_command_message.c_str(), this->_command_message.length(), 0);
-
-	// 	}
-	// }
 	this->reply_state = false;
-
-
-	// ss.str(std::string());	//I should clear the stream, but if I do it here-> weechat doesnt open a channel correctly
-	// ss.clear();
 	
 	ss << ":" << HOSTNAME << " 332 " << user->getNickname() << " #" << channel_name << " :A timey wimey channel" << "\r\n";
 	this->_command_message = ss.str();
@@ -545,31 +511,41 @@ bool Command::valid_channel(std::string channel_name)
 {
 	bool valid_channel = false;
 	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)		
-		if (((*it).first).compare(channel_name) == 0)
+	{
+		if (((*it).first) == (channel_name))
+		{	
 			valid_channel = true;
-
+			break ;
+		}
+	}
 	return valid_channel;
 }
 /* ======================================================================================== */
 /* --------------------------------- CHANNEL MESSAGE COMMAND --------------------------  */
 void Command::sendChannelMsg(std::string text, std::string channel_name)
-{	
+{
 	if (valid_channel(channel_name) == false)
-		return ; //print error channel not exist
+		return ; //print error channel not exist //bug, if channel already opened by connecting to server, first user cannot write msg to server since channel is not known by every new connection from server side
+
 
 	std::stringstream ss;
-	this->command_state = true;
-	this->reply_state = false;
+	ss << _user->getNickUserHost() << " PRIVMSG #" << channel_name << " " << text << "\r\n";
+	std::string a = ss.str();
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 	{	 		
-		if (((*it).first).compare(channel_name) == 0)
+		if (((*it).first).compare(channel_name) == 0 && ((*it).second->getNickname().compare(_user->getNickname()) != 0))
 		{
-			ss << ":" << _user->getNickUserHost() << " PRIVMSG #" << channel_name << text << "\r\n";
-            this->_command_message = ss.str();
-			this->receiver_fd = (*it).second->getFd();
-			_user->write();
+			
+           	// this->_command_message = ss.str();
+			//this->receiver_fd = (*it).second->getFd();
+			int fd = (*it).second->getFd();
+			std::cout << "FD: " << fd << " MESSAGE: " << a << "----------\n";
+			if (send(fd, a.c_str(), a.length(), 0) < 0)
+				Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE TO CHANNEL FAIELD.");
 		}	
 	}
+	this->command_state = false;
+	this->reply_state = false;
 	Log::printStringCol(CRITICAL, text);
 }
 
@@ -577,44 +553,36 @@ void Command::sendChannelMsg(std::string text, std::string channel_name)
 /* ======================================================================================== */
 /* --------------------------------- PART / LEAVE CHANNEL --------------------------  */
 void Command::sendPart(std::string msg)
-{
+{	
 	int index_of_first_space;
-	std::string text;
 
 	index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
 		return ; //print error and exit
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
-	std::string channel_name = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);
-	
+	std::string temp = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);
+	index_of_first_space = temp.find_first_of(" ");
+	std::string text = temp.substr(index_of_first_space + 1, temp.length() - index_of_first_space);
+	std::string channel_name = temp.substr(0, temp.length() - text.length() - 1);
+
 	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)		
 	 	return ;	//print error and exit
-
-	index_of_first_space = channel_name.find_first_of(" ");
-	if (index_of_first_space == -1)
-		 text = "user " + _user->getNickname() + " left the channel " + channel_name;
-	else
-		 text = channel_name.substr(index_of_first_space + 1, channel_name.length() - index_of_first_space);
 	
-
-
-	this->_command_message = true;
-	this->reply_state = false;
 	std::stringstream ss;
+	ss << _user->getNickUserHost() << " PART #" << channel_name << " " << text << "\r\n";
+	std::string a = ss.str();
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 	{	 		
-		if (((*it).first).compare(channel_name) == 0 && ((*it).second->getNickname()).compare(_user->getNickname()) != 0)
+		if (((*it).first).compare(channel_name) == 0 )
 		{
-			ss.str(std::string());
-			ss.clear();
-			ss << ":" << _user->getNickUserHost() << " PART #" << channel_name << text << "\r\n";//: vor text?
-        	this->_command_message = ss.str();
-			this->receiver_fd = (*it).second->getFd();
-			_user->write();
+			int fd = (*it).second->getFd();
+			if (send(fd, a.c_str(), a.length(), 0) < 0)
+				Log::printStringCol(CRITICAL, "ERROR: LEAVING CHANNEL MESSAGE TO CHANNEL FAIELD.");
 		}	
 	}
-
+	this->command_state = false;
+	this->reply_state = false;
 }
 
 
