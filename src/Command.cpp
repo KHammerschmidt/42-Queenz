@@ -1,18 +1,16 @@
 #include "../includes/Command.hpp"
 
+Command::~Command(void) {}
 /* ======================================================================================== */
 /* ---------------------------------- GETTERS/SETTERS ------------------------------------  */
 bool Command::getCommandState(void) const { return this->command_state; }
 bool Command::getReplyState(void) const { return this->reply_state; }
-std::string Command::getPrefix() const { return this->prefix; }
-std::string Command::getUserCommand() const { return this->user_command; }
-std::vector<std::string> Command::getParameters() { return this->_args; }
-std::string Command::getQuery() { return this->query; }
-//test
+int Command::getReceiverFd(void) const { return this->receiver_fd; }
+
 /* ======================================================================================== */
 /* -------------------------------- CONSTRUCTOR MAIN LOOP  -------------------------------  */
 Command::Command(User* user, Server* server, std::string message)
-	: _user(user), _server(server), query(message), authenticated(false), command_state(false),	reply_state(false), user_command(""), channels_replies()
+	: _user(user), _server(server), query(message), command_state(false), reply_state(false), user_command(""), channels_replies()
 {
 	if (!parse_command(message))
 		return ;
@@ -22,7 +20,7 @@ Command::Command(User* user, Server* server, std::string message)
 	else if (this->user_command == "CAP")
 		register_cap();
 	else if (this->user_command == "NICK")
-		register_nickname(query);
+		register_nickname();
 	else if (this->user_command == "USER")
 		register_username();
 	else if (this->user_command == "PING")
@@ -40,217 +38,20 @@ Command::Command(User* user, Server* server, std::string message)
 	else
 		err_command("421", message, ERR_UNKNOWNCOMMAND);
 
-	// if (DBUG MSG) 	// {
-		// if (this->user_command.find(":") == 0)
-		// {
-		// 	  std::cout << ("No command but a reply! No action needed by user.") << std::endl;
-		// 	  return ;
-		// }
-		// if (this->user_command.find("/") != 0)	// how to check if first character is a /
-		// 	err_command(ERR_UNKNOWNCOMMAND_CMD);
-	// }
+	if (this->_user->isRegistered() == true && this->_user->getState() != ONLINE)
+	{
+		getWelcomeReply(this->_user);
+		this->_user->setState(ONLINE);
+	}
 
 	this->_args.clear();
 }
 
 /* ======================================================================================== */
-/* --------------------------------- REGISTER PASSWORD -----------------------------------  */
-void Command::register_pass(void)
-{
-	if (this->_user->getPassword().length() != 0)
-	{
-		err_command("462", user_command, ERR_ALREADYREGISTERED);
-		return ;
-	}
-
-	if (this->_args[0].length() == 0)
-	{
-		err_command("461", user_command, ERR_NEEDMOREPARAMS);
-		return ;
-	}
-
-	if (this->_server->getPassword().compare(this->_args[1]))
-	{
-		err_command("464", user_command, ERR_PASSWDMISMATCH);
-		return ;
-	}
-
-	this->_user->setPassword(this->_args[1]);
-	if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
-	{
-		getWelcomeReply(this->_user);
-		this->_user->setState(REGISTERED);
-	}
-}
-
-void Command::register_cap(void)
-{
-	this->_args.clear();
-	return ;
-}
-
-/* ======================================================================================== */
-/* --------------------------------- REGISTER NICKNAME -----------------------------------  */
-/* Register the user's nickname */
-void Command::register_nickname(std::string msg)
-{
-	// size_t param_size = this->_args.size();
-	std::stringstream ss;
-
-	// if (param_size == 1)
-	// {
-	// 	err_command(ERR_NONICKNAMEGIVEN);
-	// 	return ;
-	// }
-	if (this->_user->_first_nick==false)
-	{
-		this->sender_nickname = this->_args[1];
-		this->_user->_first_nick = true;
-	}
-	else
-	{
-		int index_of_first_space = msg.find_first_of(" ");
-		this->sender_nickname = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
-	}
-	// if (!param_size)
-	// 	return ;
-	// if (Utils::check_characters(this->_args[1]) < 0)
-	// {
-	// 	err_command(ERR_ERRONEUSNICKNAME);
-	// 	return ;
-	// }
-
-	//once we can connect 2 users I can check this! -->check if another user is already using this nickname
-	// if (check_free_nickname(this->_args[1]) == false)
-	// {
-	// 	err_command(ERR_NICKNAMEINUSE);
-	// 	return ;
-	// }
-
-	this->_user->setNickname(this->sender_nickname);
-	this->_user->setNickUserHost();//needed here ^^
-	//std::cout << "--------" << this->_user->getNickname << "-----" this->_user->getNickUserHost << "\n";
-	this->_reply_message = getWelcomeReply(this->_user);
-	this->reply_state = true;								//send reply to all users in channel when user is in chat
-	this->command_state = false;
-	if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
-	{
-		getWelcomeReply(this->_user);
-		this->_user->setState(REGISTERED);
-	}
-
-	// if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
-	// {
-	// 	getWelcomeReply(this->_user);
-	// 	this->_user->setState(REGISTERED);
-	// }
-
-	// this->_user->setState(REGISTERED);					//send reply to all users in channel when user is in chat
-	this->_args.clear();
-}
-
-
-/* Loop through existing users and check if nickname is already taken. */
-bool Command::check_free_nickname(const std::string& nickname)
-{
-	std::vector<User*> user_temp = this->_server->getUsers();
-
-	for (std::vector<User*>::iterator iter = user_temp.begin(); iter != user_temp.end(); iter++)
-	{
-		if ((*iter)->getNickname() == nickname)
-			return false;
-	}
-	return true;
-}
-
-std::string Command::getWelcomeReply(User* user)
-{
-	std::stringstream ss;
-	ss << ":" << HOSTNAME << " 001 " << user->getNickname() << " :Welcome to the 42-Queenz.42.fr network " << user->getNickUserHost() << "\r\n";
-	return ss.str();
-}
-
-/* ======================================================================================== */
-/* --------------------------------- REGISTER USERNAME -----------------------------------  */
-void Command::register_username(void)
-{
-	//  Command: USER
-  	//	Parameters: <username> 0 * <realname>
-	// COMMAND <username> 0 * <realname>
-
-	//question Kathi: can two users have the same username? weechat greps username automatically
-	// if (Utils::check_characters(this->_args[1]) < 0)
-	// {
-	// 	err_command(ERR_ERRONEUSNICKNAME);
-	// 	return ;
-	// }
-
-	// this->_user->setUsername(this->_args[1]);
-
- 	//  this->_args.clear();
-
-
-
-	// if (this->_args[3] != "*" || this->_args[4] != "*")
-	// {
-	// 	std::cout << "ERROR: INVALID SYNTAX: USAGE </USER> <nickname> <* *> <:Fullname>";
-	// 	return ;
-	// }
-
-	// std::stringstream ss;
-	// for (size_t i = 0; i < this->_args.size(); i++)
-	// 	ss << this->_args[i];
-
-	// this->_user->setFullname(ss.str());
-
-	this->_user->setUsername(this->_args[2]);
-	this->_user->setFullname(this->_args[3]);
-	if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
-	{
-		getWelcomeReply(this->_user);
-		this->_user->setState(REGISTERED);
-	}
-
-	// if (this->_user->getNickname().length() != 0 && this->_user->getUsername().length() != 0 && this->_user->getPassword().length() != 0)
-	// {
-	// 	getWelcomeReply(this->_user);
-	// 	this->_user->setState(REGISTERED);
-	// }
-	// this->_reply_message = getWelcomeReply(this->_user);
-
-	// this->_user.setUsername()
-}
-
-
-/* ======================================================================================== */
-/* ------------------------------ PING / PONG FUNCTIONS  ---------------------------------  */
-void Command::send_pong(void)
-{
-	std::stringstream ss;
-	ss << this->_user->getNickUserHost() << " PONG :" << this->_args[1];
-
-	this->receiver_fd = this->_server->getServerFd();
-	this->_reply_message = ss.str();
-	this->reply_state = true;
-	this->command_state = false;
-}
-
-// void Command::send_pong(void)
-// {
-// 	std::cout << " PING RECEIVED " << std::endl;
-// 	this->receiver_fd = this->_server->getServerFd();
-// 	this->_command_message = this->_args[1];
-// 	this->command_state = true;
-// 	this->reply_state = false;
-// }
-
-
-/* ======================================================================================== */
-/* -------------------------------- HELPER FUNCTIONS  ------------------------------------  */
+/* -------------------------------------- PARSING  ---------------------------------------  */
 /* Parse incoming string and extract command & nickname sender. */
 bool Command::parse_command(std::string message)
 {
-	//how to check how many params a command needs?		--> gibt es einen command bei dem nur ein PARAM ausreicht???
 	if (message.find(" ") == std::string::npos)
 	{
 		this->_reply_message = put_reply_cmd(this->_user, "461", message, ERR_NEEDMOREPARAMS);
@@ -277,42 +78,132 @@ bool Command::parse_command(std::string message)
 	return true;
 }
 
-
-std::string Command::put_reply_cmd(User* user, std::string err_num, std::string cmd, std::string code)
+/* ======================================================================================== */
+/* --------------------------------- REGISTER PASSWORD -----------------------------------  */
+void Command::register_pass(void)
 {
-	std::stringstream ss;
-	ss << err_num << " " << user->getNickname() << cmd << " :" << code;
-	return ss.str();
+	if (this->_user->getPassword().length() != 0)
+	{
+		err_command("462", user_command, ERR_ALREADYREGISTERED);
+		return ;
+	}
+
+	if (this->_args[0].length() == 0)
+	{
+		err_command("461", user_command, ERR_NEEDMOREPARAMS);
+		return ;
+	}
+
+	if (this->_server->getPassword().compare(this->_args[1]))
+	{
+		err_command("464", user_command, ERR_PASSWDMISMATCH);
+		return ;
+	}
+
+	this->_user->setPassword(this->_args[1]);
 }
 
-std::string Command::put_reply(User* user, std::string err_num, std::string code)
+void Command::register_cap(void)
 {
-	std::stringstream ss;
-	ss << err_num << " " << user->getNickname() << " :" << code;
-	return ss.str();
+	return ;
 }
 
-
-/* In case of an error does not send command to destination, but replies back to user with error string. */
-void Command::err_command(std::string err_num, std::string cmd, std::string code)
+/* ======================================================================================== */
+/* --------------------------------- REGISTER NICKNAME -----------------------------------  */
+/* Register the user's nickname */
+void Command::register_nickname(void)
 {
-	if (cmd.length() == 0)
-		this->_reply_message = put_reply(this->_user, err_num, code);
+	if (this->_user->_first_nick==false)
+	{
+		this->sender_nickname = this->_args[1];
+		this->_user->_first_nick = true;
+	}
 	else
-		this->_reply_message = put_reply_cmd(this->_user, err_num, cmd, code);
+	{
+		int index_of_first_space = query.find_first_of(" ");
+		this->sender_nickname = query.substr(index_of_first_space + 1, query.length() - index_of_first_space);	//anstatt msg query
+	}
 
-	this->command_state = false;
-	this->reply_state = true;
+	if (Utils::check_characters(this->_args[1]) < 0)
+	{
+		err_command("432", this->_user->getNickname(), ERR_ERRONEUSNICKNAME);
+		return ;
+	}
+
+	if (check_free_nickname(this->_args[1]) == false && this->_user->getState() == ONLINE)
+	{
+		err_command("433", this->_user->getNickname(), ERR_NICKNAMEINUSE);
+		return ;
+	}
+
+	// if (this->_user->getState() == ONLINE)
+	// {
+	// 	std::cout << "USER IS ONLINE: WITHIN NICK CHANGE" << std::endl;
+	// 	//send this to all users in channel
+	// 	std::stringstream ss;
+	// 	ss << user_command << " :" << this->_user->getNickname() << " changed his nickname to " << sender_nickname << ".\r\n";		//send this to other users?
+
+	// 	this->_reply_message = ss.str();
+	// 	this->reply_state = true;
+	// 	this->command_state = false;
+	// }
+
+	this->_user->setNickname(this->sender_nickname);
 }
 
-void Command::print_vector(std::vector<std::string> vctr)
+
+/* Loop through existing users and check if nickname is already taken. */
+bool Command::check_free_nickname(const std::string& nickname)
 {
-	std::vector<std::string>::iterator iter;
-	for (iter = vctr.begin(); iter != vctr.end(); iter++)
-		std::cout << *iter << std::endl;
+	std::vector<User*> user_temp = this->_server->getUsers();
+
+	for (std::vector<User*>::iterator iter = user_temp.begin(); iter != user_temp.end(); iter++)
+	{
+		if ((*iter)->getNickname() == nickname)
+			return false;
+	}
+	return true;
 }
 
+void Command::getWelcomeReply(User* user)
+{
+	std::stringstream ss;
+	ss << ":" << HOSTNAME << " 001 " << user->getNickname() << " :Welcome to the 42-Queenz.42.fr network " << user->getNickUserHost() << "\r\n";
 
+	this->_reply_message = ss.str();
+	this->reply_state = true;
+	this->command_state = false;
+}
+
+/* ======================================================================================== */
+/* --------------------------------- REGISTER USERNAME -----------------------------------  */
+void Command::register_username(void)
+{
+	//question Kathi: can two users have the same username? weechat greps username automatically
+	// if (Utils::check_characters(this->_args[1]) < 0)
+	// {
+	// 	err_command(ERR_ERRONEUSNICKNAME);
+	// 	return ;
+	// }
+
+	this->_user->setUsername(this->_args[2]);
+	this->_user->setFullname(this->_args[3]);
+}
+
+/* ======================================================================================== */
+/* ------------------------------ PING / PONG FUNCTIONS  ---------------------------------  */
+void Command::send_pong(void)
+{
+	std::stringstream ss;
+	ss << this->_user->getNickUserHost() << " PONG :" << this->_args[1];
+
+	this->_reply_message = ss.str();
+	this->reply_state = true;
+	this->command_state = false;
+}
+
+/* ======================================================================================== */
+/* --------------------------------------- UTILS  ----------------------------------------  */
 User	*Command::return_user_in_server(const std::string nickname_receiver)
 {
 	std::vector<User*> temp = this->_server->getUsers();
@@ -326,7 +217,7 @@ User	*Command::return_user_in_server(const std::string nickname_receiver)
 }
 
 /*NOTICE behaviour: like PRIVMSG,but:
-if query not opened, 
+if query not opened,
 	print message in server;
 otherwise p
 	rint it in query.
@@ -334,8 +225,8 @@ otherwise p
 
 /* ======================================================================================== */
 /* --------------------------------- PRIVATE MESSAGES COMMAND--------------------------  */
-void Command::sendPrivMsgUser(User* user, std::string msg)		
-{				
+void Command::sendPrivMsgUser(User* user, std::string msg)
+{
     int index_of_first_space;
 
 	index_of_first_space = msg.find_first_of(" ");
@@ -355,7 +246,7 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 	std::cout << "-----------TEST---------0\n";
 	if (nick_receiver.substr(0, 1).compare("#") == 0)
 	{
-		sendChannelMsg(text, nick_receiver.substr(1, nick_receiver.length() -1));		
+		sendChannelMsg(text, nick_receiver.substr(1, nick_receiver.length() -1));
 		return ;
 	}
 	std::cout << "-----------TEST---------2\n";
@@ -379,7 +270,7 @@ std::string Command::return_string_all_users_in_channel(const std::string channe
 {//353
 	std::stringstream ss;
 
-	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++){	
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++){
 		if (((*it).first).compare(channel_name) == 0)
 			ss << ((*it).second->getNickname()) << " ";
 	}
@@ -396,7 +287,7 @@ bool Command::new_channel_to_create(const std::string channel_name)
 {
 	bool new_channel_to_create = true;
 
-	// for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)		
+	// for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 	// 	if (((*it).first).compare(channel_name) == 0)
 	// 		new_channel_to_create = false ;
 
@@ -422,7 +313,7 @@ bool Command::joinInputFormatCheck(std::string command, std::string channel_name
 	if (command.compare("JOIN") != 0 || prefix_channel.compare("#") !=0)
 		return true;
 
-	//test channel_name errors	
+	//test channel_name errors
 	if (channel_name.find(" ") != (unsigned long) -1 || channel_name.find(":") != (unsigned long) -1 || channel_name.find(",") != (unsigned long) -1)
 		return true;
 
@@ -438,7 +329,7 @@ bool Command::handleDoubleUserError(std::string channel_name)
 	if (_server->_channel_users.size() == 0)
 		return false;
 
-	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)	 		
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 		if (((*it).first).compare(channel_name) == 0 && (((*it).second->getNickname()).compare(_user->getNickname()) == 0))
 			return true;
 
@@ -460,7 +351,7 @@ void Command::sendJoin(User* user, const std::string msg)
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string channel_name = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);
 	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
-	
+
 	if (channel_name.length() > 50)
     	    channel_name.resize(50);
 
@@ -482,11 +373,11 @@ void Command::sendJoin(User* user, const std::string msg)
 	this->reply_state = true;
 	this->command_state = true;
 	std::stringstream ss;
-	
+
 	ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
 	std::string a = ss.str();
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	{	 		
+	{
 		if (((*it).first).compare(channel_name) == 0)
 		{
 			int fd = (*it).second->getFd();
@@ -497,7 +388,7 @@ void Command::sendJoin(User* user, const std::string msg)
 	}
 
 	this->reply_state = false;
-	
+
 	ss << ":" << HOSTNAME << " 332 " << user->getNickname() << " #" << channel_name << " :A timey wimey channel" << "\r\n";
 	this->_command_message = ss.str();
 	ss << ":" << HOSTNAME << " 353 " << user->getNickname() << " = #" << channel_name << " :@" << return_string_all_users_in_channel(channel_name) << "\r\n";//
@@ -518,10 +409,10 @@ void Command::sendJoin(User* user, const std::string msg)
 bool Command::valid_channel(std::string channel_name)
 {
 	bool valid_channel = false;
-	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)		
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 	{
 		if (((*it).first) == (channel_name))
-		{	
+		{
 			valid_channel = true;
 			break ;
 		}
@@ -540,17 +431,17 @@ void Command::sendChannelMsg(std::string text, std::string channel_name)
 	ss << _user->getNickUserHost() << " PRIVMSG #" << channel_name << " " << text << "\r\n";
 	std::string a = ss.str();
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	{	 		
+	{
 		if (((*it).first).compare(channel_name) == 0 && ((*it).second->getNickname().compare(_user->getNickname()) != 0))
 		{
-			
+
            	// this->_command_message = ss.str();
 			//this->receiver_fd = (*it).second->getFd();
 			int fd = (*it).second->getFd();
 			std::cout << "FD: " << fd << " MESSAGE: " << a << "----------\n";
 			if (send(fd, a.c_str(), a.length(), 0) < 0)
 				Log::printStringCol(CRITICAL, "ERROR: SENDING MESSAGE TO CHANNEL FAIELD.");
-		}	
+		}
 	}
 	this->command_state = false;
 	this->reply_state = false;
@@ -561,7 +452,7 @@ void Command::sendChannelMsg(std::string text, std::string channel_name)
 /* ======================================================================================== */
 /* --------------------------------- PART / LEAVE CHANNEL --------------------------  */
 void Command::sendPart(std::string msg)
-{	
+{
 	int index_of_first_space;
 
 	index_of_first_space = msg.find_first_of(" ");
@@ -574,20 +465,20 @@ void Command::sendPart(std::string msg)
 	std::string text = temp.substr(index_of_first_space + 1, temp.length() - index_of_first_space);
 	std::string channel_name = temp.substr(0, temp.length() - text.length() - 1);
 
-	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)		
+	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)
 	 	return ;	//print error and exit
-	
+
 	std::stringstream ss;
 	ss << _user->getNickUserHost() << " PART #" << channel_name << " " << text << "\r\n";
 	std::string a = ss.str();
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	{	 		
+	{
 		if (((*it).first).compare(channel_name) == 0 )
 		{
 			int fd = (*it).second->getFd();
 			if (send(fd, a.c_str(), a.length(), 0) < 0)
-				Log::printStringCol(CRITICAL, "ERROR: LEAVING CHANNEL MESSAGE TO CHANNEL FAIELD.");
-		}	
+				Log::printStringCol(CRITICAL, "ERROR: LEAVING CHANNEL MESSAGE TO CHANNEL FAILED.");
+		}
 	}
 	this->command_state = false;
 	this->reply_state = false;
@@ -600,7 +491,7 @@ bool Command::find_user_in_channel(std::string channel_name, std::string nicknam
 	if (_server->_channel_users.size() == 0)
 		return false;
 
-	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)	 		
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 		if (((*it).first).compare(channel_name) == 0 && (((*it).second->getNickname()).compare(nickname) == 0))
 			return true;
 
@@ -611,7 +502,7 @@ bool Command::find_user_in_channel(std::string channel_name, std::string nicknam
 //valid channel and return _channel are same, just one returns bool and other channel
 Channel *Command::return_channel(std::string channel_name)
 {
-		for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)	 		
+		for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
 			if ((*it)->getName().compare(channel_name) == 0)
 				return (*it);
 		return NULL;
@@ -633,7 +524,7 @@ void Command::setMode(std::string mode, std::string channel_name, std::string ni
 
 
 
-	
+
 }
 
 //command prefix channel param[2] nickname
@@ -674,8 +565,8 @@ void Command::sendMode(std::string msg){
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
 	channel_name = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);//chnage and test
-	
-	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)		
+
+	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)
 		return ;	//print error and exit
 	std::cout << "--------------TEST-------------2\n";
 
@@ -694,8 +585,8 @@ void Command::sendMode(std::string msg){
 	// user_op = false;
 		std::cout << "--------------TEST-------------4\n";
 
-		
-	
+
+
 
 
 	//check if user is op
@@ -723,29 +614,37 @@ void Command::sendQuit(User* user)
 	//Log::printStringCol(CRITICAL, message);
 }
 
+/* ======================================================================================== */
+/* -------------------------------- HELPER FUNCTIONS  ------------------------------------  */
+std::string Command::put_reply_cmd(User* user, std::string err_num, std::string cmd, std::string code)
+{
+	std::stringstream ss;
+	ss << err_num << " " << user->getNickname() << cmd << " :" << code;
+	return ss.str();
+}
 
+std::string Command::put_reply(User* user, std::string err_num, std::string code)
+{
+	std::stringstream ss;
+	ss << err_num << " " << user->getNickname() << " :" << code;
+	return ss.str();
+}
 
+/* In case of an error does not send command to destination, but replies back to user with error string. */
+void Command::err_command(std::string err_num, std::string cmd, std::string code)
+{
+	if (cmd.length() == 0)
+		this->_reply_message = put_reply(this->_user, err_num, code);
+	else
+		this->_reply_message = put_reply_cmd(this->_user, err_num, cmd, code);
 
+	this->command_state = false;
+	this->reply_state = true;
+}
 
-
-
-	// for reply for loop in join, if needed op 
-	// for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)	
-	// {
-	// 	if (((*it).first).compare(channel_name) == 0)
-	// 	{
-	// 		for(std::vector<User*>::iterator it2 = _server->_channels._channel_operators.begin(); it2 != _server->_channels._channel_operators.end(); it2++)
-	// 		{
-	// 			//fai da nantra part
-	// 			if ((*it2)->getNickname().compare(_user->getNickname() == 0)
-	// 			{
-	// 				ss << ((*it2)->getNicknameOP()) << " ";
-	// 				user_op = true;
-	// 				break ;
-	// 			}
-	// 		}
-	// 		if (user_op == false)
-	// 			ss << ((*it).second->getNickname()) << " ";
-	// 		user_op = false;
-	// 	}
-	// }
+void Command::print_vector(std::vector<std::string> vctr)
+{
+	std::vector<std::string>::iterator iter;
+	for (iter = vctr.begin(); iter != vctr.end(); iter++)
+		std::cout << *iter << std::endl;
+}

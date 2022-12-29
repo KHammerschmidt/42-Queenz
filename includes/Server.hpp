@@ -17,22 +17,18 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 
+#include "Log.hpp"
 #include "User.hpp"
 #include "Channel.hpp"
-#include "Log.hpp"
 
 #define HOSTNAME "42-Queenz.fr.42"
-#define BUFFER_SIZE 510
 
 class User;
 class Channel;
 
-//static Server pointer
-// gucken ob server initialisiert ist, ansonsten neue Instanz vom Constructor
 
 class Server
 {
-
 	private:
 		uint16_t						_port;
 		int								_sockfd;
@@ -43,38 +39,28 @@ class Server
 
 		std::vector<pollfd> 			_pollfds;
 
-		int			authentified;
-		
+		//RUS-> ich habe _channels vector und  _channel_users map implementiert, die muessen hier deleted werde.
+		std::map<int, User*>				_users;
 
-
-
-		// time_t							_last_ping;
+	public:
+		std::vector<Channel*>				_channels; 			//2) vector all channels
+		std::multimap<std::string, User*> 	_channel_users;		//3) mappair channel/user, with multimap can use key channel multiple times
+		std::vector<std::string>			_channels_by_name;	//->cancel, not needed
 
 	public:
 		std::vector<pollfd>::iterator 	pfds_iterator;
 		std::map<int, User*>::iterator 	user_iterator;
 		std::map<std::string, Channel*>	channel_iterator;
 
-	//RUS-> ich habe _channels vector und  _channel_users map implementiert, die muessen hier deleted werde.
-
-		std::map<int, User*>			_users;
-
-		std::vector<User*> getUsers() const; //1) vector all users
-		std::vector<Channel*>	_channels; //2) vector all channels
-		std::multimap<std::string, User*> 	_channel_users;//3) mappair channel/user, with multimap can use key channel multiple times
-		std::vector<std::string>			_channels_by_name;//->cancel, not needed 
-
 	private:
-		void setNewSocket(void);
-		void sendPing();
-
 		void connectNewUser();
+		void disconnectUser(int fd);
 		void serverError(int code);
-
-		void disconnectUser(User* user);
-		void deleteUser(User* user);
+		void deleteUser(int fd);
 		void deleteChannel(Channel* channel);
-		void printUser();
+
+		void setNewSocket(void);
+		void setPort(std::string port_str);
 
 	public:
 		Server(char** argv);
@@ -82,83 +68,18 @@ class Server
 
 		void run();
 
-		sockaddr_in	getAddr() const { return this->_serv_address; }
+		int 		getServerFd(void);
 		int 		getPort() const;
 		int 		getTimeout() const;
 		bool 		getServerStatus() const;
-		std::string getPassword() const;
 		User* 		getUser(int fd);
-		std::string getNickUserHost() const;
+		std::string getPassword() const;
+		sockaddr_in	getAddr() const;
 
-		void setPort(std::string port_str);
+		//RUSLAN
+		std::vector<User*> getUsers() const;
+
 		void setServerStatus(bool status);
-		void setFullname(std::string fullname);
-
-		void setAuth(int num);
-		int getAuth() const;
-		int getServerFd(void);
-
 };
 
 #endif
-
-
-
-
-/* NOT IMPLEMENTED YET | needed?
-
---> USER
-	// tba User* getUser(const std::string name) const;	//nickname or username?
-	// tba void deleteUser();
-
---> CHANNEL
-	// tba bool isChannel(std::string const& name);
-	// tba Channel& getChannel(std::string name) const;
-	// tba void deleteChannel(Channel channel);
-	// tba Channel* createChannel(const std::string& name, const std::string& password, const User* user);
-	// tba std::vector<Channel *> getChannels() const;
- */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	// other useful functions?
-	// void onClientDisconnect(int fd);
-	// void onClientConnect();
-	// void onClientMessage(int fd);
-
-	// std::string readMessage(int fd);
-	// Config &getConfig();
-	// std::string getUpTime();
-
-	// void displayUsers();
-	// void displayChannels();
