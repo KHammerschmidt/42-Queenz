@@ -36,7 +36,10 @@ void        Channel::deleteChannel()
 void		Channel::addUser(User *user){//, Server *server){
 
     if (_channel_members.size() == 0)
-        _channel_creator.push_back(user); //put in creator map
+    {
+        user->setNicknameOP();
+        _channel_operators.push_back(user); //put in creator map
+    }
     else
         _channel_members.push_back(user); //add in member map
 
@@ -75,7 +78,7 @@ bool    Channel::returnPrivilegesStatus(std::string user_nickname)
     }
 
     //just creator can make operators or also operators?
-    for (std::vector<User*>::iterator it = this->_channel_creator.begin(); it != this->_channel_creator.end(); it++)
+    for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
     {
         if ((*it)->getNickname() == user_nickname)
             return true;

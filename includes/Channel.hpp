@@ -31,9 +31,7 @@ private:
 
 	std::string mode;
 
-	std::vector<User*> _channel_members; 	//list of members in channel-> key[i]
-	std::vector<User*> _channel_operators; // channel operators can perform-> key[j]
-	std::vector<User*> _channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator -> key[k]
+	//std::vector<User*> _channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator -> key[k]
 
 public:
 	Channel();
@@ -48,6 +46,13 @@ public:
 	std::map<int, User*>  getChannelMembers();
 	std::map<int, User*>  getChannelOperators();
 	std::map<int, User*>  getChannelCreator();
+
+
+	//make private +getter
+	std::vector<User*> _channel_members; 	//list of members in channel-> key[i]
+	std::vector<User*> _channel_operators; // channel operators can perform-> key[j]
+
+
 
 	// void 		setTopic(const std::string topic);
 	// std::string getTopic() const;

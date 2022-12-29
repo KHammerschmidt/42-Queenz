@@ -33,6 +33,10 @@ std::string User::getPassword() const { return this->_password; }
 std::string User::getUserChannelStatus() { return this->_userStatusInChannel; }
 
 
+void 		User::setNicknameOP(){this->_nickOP = "@" + this->_nickname;}
+std::string User::getNicknameOP(){return this->_nickOP;}
+
+
 bool User::isRegistered() const
 {
 	if (!this->_nickname.length() || !this->_username.length())

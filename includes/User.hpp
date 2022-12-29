@@ -41,6 +41,7 @@ class User
 		std::string 			_nickname;
 		std::string				_fullname;
 		std::string				_nick_user_host;
+		std::string				_nickOP;
 		std::string				_password;
 		bool 					authentified;
 
@@ -108,6 +109,9 @@ class User
 		int getAuth() const;
 		void authenticate_user(void);
 
+
+	void 		setNicknameOP();
+	std::string getNicknameOP();
 
 };
 

@@ -33,8 +33,8 @@ Command::Command(User* user, Server* server, std::string message)
 		sendJoin(_user, query);
 	else if (this->user_command == "PART")
 		sendPart(query);
-	// else if (this->user_command == "MODE")
-	// 	sendPart(query);
+	else if (this->user_command == "MODE")
+		sendMode(query);
 	else if (this->user_command == "QUIT")
 		sendQuit(_user);
 	else
@@ -396,9 +396,21 @@ bool Command::new_channel_to_create(const std::string channel_name)
 {
 	bool new_channel_to_create = true;
 
-	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)		
-		if (((*it).first).compare(channel_name) == 0)
-			new_channel_to_create = false ;
+	// for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)		
+	// 	if (((*it).first).compare(channel_name) == 0)
+	// 		new_channel_to_create = false ;
+
+	// if (new_channel_to_create == false)
+	// {
+		for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
+		{
+			if (((*it)->getName()).compare(channel_name) == 0)
+			{
+				new_channel_to_create = false;
+				(*it)->addUser(_user);
+			}
+		}
+	// }
 
 	return new_channel_to_create;
 }
@@ -459,10 +471,10 @@ void Command::sendJoin(User* user, const std::string msg)
 		return ;
 
 	_server->_channel_users.insert(std::pair<std::string, User*> (channel_name, user));
-
 	if (new_channel_to_create(channel_name) == true)
 	{
 		Channel* new_channel = new Channel(channel_name);
+		new_channel->addUser(user);
 		_server->_channels.push_back(new_channel);
 		//_user->setNickname(_user->getNickname().insert(0, "@")); where put @ for ops?
 	}
@@ -488,7 +500,7 @@ void Command::sendJoin(User* user, const std::string msg)
 	
 	ss << ":" << HOSTNAME << " 332 " << user->getNickname() << " #" << channel_name << " :A timey wimey channel" << "\r\n";
 	this->_command_message = ss.str();
-	ss << ":" << HOSTNAME << " 353 " << user->getNickname() << " = #" << channel_name << " :" << return_string_all_users_in_channel(channel_name) << "\r\n";//
+	ss << ":" << HOSTNAME << " 353 " << user->getNickname() << " = #" << channel_name << " :@" << return_string_all_users_in_channel(channel_name) << "\r\n";//
 	this->_command_message = ss.str();
 	ss << ":" << HOSTNAME << " 366 " << user->getNickname() << " #" << channel_name << " End of NAMES list" << "\r\n";
 	this->_command_message = ss.str();
@@ -624,22 +636,48 @@ void Command::setMode(std::string mode, std::string channel_name, std::string ni
 	
 }
 
+//command prefix channel param[2] nickname
+
  //MODE #channel [PARAM] [+/-o nickname (OP) /  +b/-b nickname (BAN)]
 //command channelname	  mode nickname
 void Command::sendMode(std::string msg){
 	int index_of_first_space;
 	std::string mode;
 	std::string nickname;
+	std::string channel_name = "12";
+
+
+	std::cout << "--------------TEST-------------1\n";
+		// test user is op
+	bool user_op = false;
+	for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
+	{
+		if ((*it)->getName().compare(channel_name) == 0)
+		{
+			for(std::vector<User*>::iterator it2 = (*it)->_channel_operators.begin(); it2 != (*it)->_channel_operators.end(); it2++)
+			{
+				if ((*it2)->getNickname().compare(_user->getNickname()) == 0)
+				{
+					user_op = true;
+					break;
+				}
+			}
+		}
+	}
+	if (user_op == false)
+	{std::cout << "User is not an Operator\n";	return;}
+	std::cout << "--------------TEST-------------2\n";
 
 	index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
 		return ; //print error and exit
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
-	std::string channel_name = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);//chnage and test
+	channel_name = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);//chnage and test
 	
 	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)		
-	 	return ;	//print error and exit
+		return ;	//print error and exit
+	std::cout << "--------------TEST-------------2\n";
 
 	index_of_first_space = channel_name.find_first_of(" ");
 	mode = channel_name.substr(index_of_first_space + 1, channel_name.length() - index_of_first_space);
@@ -647,6 +685,20 @@ void Command::sendMode(std::string msg){
 	nickname = mode.substr(index_of_first_space + 1, mode.length() - index_of_first_space);
 	if (find_user_in_channel(channel_name, nickname) == false)
 		return; //error
+	std::cout << "--------------TEST-------------3\n";
+
+
+
+	// if (user_op == false)
+	// 	ss << ((*it).second->getNickname()) << " ";
+	// user_op = false;
+		std::cout << "--------------TEST-------------4\n";
+
+		
+	
+
+
+	//check if user is op
 
 	if (mode.substr(0,2).compare("+o") == 0 || text.substr(0,2).compare("-o") == 0)
 		setMode(mode, channel_name, nickname); //OP
@@ -674,30 +726,26 @@ void Command::sendQuit(User* user)
 
 
 
-/*
-Second possibility
-	this->reply_state = true;
-	this->command_state = false;
-	std::stringstream ss;
-	//int len;
 
-	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	{	 		
-		if (((*it).first).compare(channel_name) == 0)
-		{
-			ss.str(std::string());
-			ss.clear();
-			ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
-			this->_reply_message = ss.str().substr(1, ss.str().length() - 1);
 
-			//this->receiver_fd = (*it).second->getFd();
-			//std::cout << "FD: " << this->receiver_fd << " MESSAGE: " << this->_command_message << "----------\n";
-			user->write();
-			//send((*it).second->getFd(), this->_command_message.c_str(), this->_command_message.length(), 0);
 
-		}
-	}
-	this->reply_state = false;
-	this->command_state = true;
-
-*/
+	// for reply for loop in join, if needed op 
+	// for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)	
+	// {
+	// 	if (((*it).first).compare(channel_name) == 0)
+	// 	{
+	// 		for(std::vector<User*>::iterator it2 = _server->_channels._channel_operators.begin(); it2 != _server->_channels._channel_operators.end(); it2++)
+	// 		{
+	// 			//fai da nantra part
+	// 			if ((*it2)->getNickname().compare(_user->getNickname() == 0)
+	// 			{
+	// 				ss << ((*it2)->getNicknameOP()) << " ";
+	// 				user_op = true;
+	// 				break ;
+	// 			}
+	// 		}
+	// 		if (user_op == false)
+	// 			ss << ((*it).second->getNickname()) << " ";
+	// 		user_op = false;
+	// 	}
+	// }
