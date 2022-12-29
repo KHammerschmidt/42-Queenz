@@ -113,7 +113,7 @@ void Command::register_cap(void)
 /* Register the user's nickname */
 void Command::register_nickname(void)
 {
-	if (this->_user->_first_nick==false)
+	if (this->_user->_first_nick == false)
 	{
 		this->sender_nickname = this->_args[1];
 		this->_user->_first_nick = true;
@@ -140,15 +140,20 @@ void Command::register_nickname(void)
 	// {
 	// 	std::cout << "USER IS ONLINE: WITHIN NICK CHANGE" << std::endl;
 	// 	//send this to all users in channel
-	// 	std::stringstream ss;
-	// 	ss << user_command << " :" << this->_user->getNickname() << " changed his nickname to " << sender_nickname << ".\r\n";		//send this to other users?
-
-	// 	this->_reply_message = ss.str();
-	// 	this->reply_state = true;
-	// 	this->command_state = false;
 	// }
 
+	std::stringstream ss;
+	std::string old_nick = this->_user->getNickname();
 	this->_user->setNickname(this->sender_nickname);
+
+	if (old_nick.length() == 0)
+		ss << ":" << "*" << " NICK " << this->_user->getNickname() << " changed his nickname to " << sender_nickname << ".\r\n";			//send this to other users?
+	else
+		ss << ":" << old_nick << " NICK " << this->_user->getNickname() << " changed his nickname to " << sender_nickname << ".\r\n";		//send this to other users?
+
+	this->_reply_message = ss.str();
+	this->reply_state = true;
+	this->command_state = false;
 }
 
 

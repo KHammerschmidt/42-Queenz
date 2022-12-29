@@ -48,7 +48,7 @@ void Server::run()
 {
 	while (this->getServerStatus() == true)
 	{
-		Log::printStringCol(REGULAR, SERV_LISTENING);
+		// Log::printStringCol(REGULAR, SERV_LISTENING);
 
 		if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)
 			serverError(2);
