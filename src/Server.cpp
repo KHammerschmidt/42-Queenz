@@ -3,7 +3,7 @@
 /* ======================================================================================== */
 /* ----------------------------- CONSTRUCTOR/DESTRUCTOR ----------------------------------  */
 Server::Server(char** argv)
-	: _serv_address(), _users(), _channels(), _channels_by_name()
+	: _serv_address(), _users(), _channels()		//, _channels_by_name()
 {
 	setPort(argv[1]);
 	this->_password = argv[2];
@@ -16,10 +16,22 @@ Server::Server(char** argv)
 	this->_pollfds.push_back(server_fd);
 }
 
+
 Server::~Server()
 {
-	// for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
-	// 	deleteUser((*iter).second);
+	for (user_iterator = _users.begin(); user_iterator != _users.end(); user_iterator++)
+		std::cout << (*user_iterator).first << "  " << (*user_iterator).second->getNickname() << std::endl;
+
+	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
+	{
+		Log::printStringCol(WARNING, "DISCONNECTING AND DELETING USER IN DESTRUCTOR");
+		disconnectUser((*iter).second->getFd(), false);
+		delete ((*iter).second);
+	}
+
+	this->_users.clear();
+
+
 
 	// for (std::map<std::string, User*>::iterator iter = this->_channel_users.begin(); iter != this->_channel_users.end(); iter++)
 	// 	deleteUser((*iter).second);
@@ -31,12 +43,14 @@ Server::~Server()
 	// for (std::map<std::string, Channel*>::iterator iter = this->_channels.begin(); iter != _channels.end(); iter++)
 	// 	deleteChannel((*iter).second);
 
-	this->_users.clear();
 	this->_channel_users.clear();
 	this->_channels.clear();
-	this->_channels_by_name.clear();
 	this->_channel_users.clear();
 	delete this;
+
+
+	// this->_channels_by_name.clear();
+
 }
 
 /* ======================================================================================== */
@@ -48,22 +62,25 @@ void Server::run()
 {
 	while (this->getServerStatus() == true)
 	{
-		// Log::printStringCol(REGULAR, SERV_LISTENING);
+		Log::printStringCol(REGULAR, SERV_LISTENING);
+		std::cout << RED << BOLD << "POLLFD SIZE: " << _pollfds.size() << std::endl;
 
 		if (poll(_pollfds.begin().base(), _pollfds.size(), this->_timeout) < 0)
 			serverError(2);
-		for (pfds_iterator = this->_pollfds.begin(); pfds_iterator != this->_pollfds.end(); pfds_iterator++)
+		for (pfds_iterator = this->_pollfds.begin(); pfds_iterator < this->_pollfds.end(); pfds_iterator++)
 		{
+			Log::printStringCol(WARNING, "WARNING: IN POLL FOR LOOP");
+
 			if (pfds_iterator->revents == 0)
 				continue;
 
 			//POLLHUP will signal that the connection was closed from both sides (server & client)
-			if ((pfds_iterator->revents & POLLHUP) == POLLHUP)
-			{
-				disconnectUser(pfds_iterator->fd);
-				deleteUser(pfds_iterator->fd);
-				break ;
-			}
+			// if ((pfds_iterator->revents & POLLHUP) == POLLHUP)
+			// {
+			// 	std::cout << "DISCONNECT USER AFTER POLLHUP" << std::endl;
+			// 	disconnectUser(pfds_iterator->fd, false);
+			// 	break ;
+			// }
 
 			if ((pfds_iterator->revents & POLLIN) == POLLIN)
 			{
@@ -73,12 +90,10 @@ void Server::run()
 					break ;
 				}
 
-				this->_users[pfds_iterator->fd]->onUser();		//how to disconnect User??
-				// if (this->_users[pfds_iterator->fd]->onUser() < 0)
-				// {
-				// 	disconnectUser(pfds_iterator->fd);
-				// 	break ;
-				// }
+				this->_users[pfds_iterator->fd]->onUser();
+
+				if (this->_users[pfds_iterator->fd]->getState() == DELETE)
+					disconnectUser(pfds_iterator->fd, false);
 			}
 		}
 	}
@@ -95,7 +110,7 @@ void Server::connectNewUser()
 
 	new_fd = accept(this->_sockfd,(sockaddr *) &s_address, &(s_size));
 	if (new_fd < 0)
-		serverError(3);
+		return ;
 	else
 		Log::printStringCol(LOG, NEW_CONNECTION);
 
@@ -104,13 +119,6 @@ void Server::connectNewUser()
 
 	User* new_user = new User(new_fd, s_address, this);
 
-	// if (new_user->getState() != 0)				//this means != CONNECTED
-	// {
-	// 	// Log::printStringCol(REGULAR, ERR_USER_REGISTRY);
-	// 	deleteUser(new_user);
-	// 	return ;
-	// }
-
 	this->_users.insert(std::make_pair(new_fd, new_user));
 
 	std::cout << "New User on port: new_fd: " << new_fd << " | inet_ntoa: " << inet_ntoa(s_address.sin_addr);
@@ -118,27 +126,53 @@ void Server::connectNewUser()
 }
 
 /* Makes user leave all channels and erases the user and its file descriptor from server. */
-void Server::disconnectUser(int fd)
+void Server::disconnectUser(int fd, bool state)
 {
 	Log::printStringCol(LOG, "LOG: DISCONNECTING USER");
+
 	try
 	{
-		// user->leaveChannel(); --> function that makes the user leave all channels
-		_users.erase(fd);
+		User* tmp_user = this->_users.at(fd);
 
-		for (pfds_iterator = _pollfds.begin(); pfds_iterator != _pollfds.end(); pfds_iterator++)
+		//user->leaveChannel(); --> function that makes the user leave all channels
+		//erase user from all channels he joined (1-select channel to be searched, 2-check if user is a member in channel, 3-deleteUser with channel object)
+		for(channel_iterator = _channels.begin(); channel_iterator != _channels.end(); channel_iterator++)
 		{
-			if (pfds_iterator->fd == fd)
+			Channel* tmp_channel = *channel_iterator;
+			std::cout << tmp_channel->getName() << std::endl;
+			for (std::vector<User*>::iterator iter = tmp_channel->_channel_members.begin(); iter != tmp_channel->_channel_members.end(); iter++)
 			{
-				this->_pollfds.erase(pfds_iterator);
+				std::cout << " I AM HERE" << std::endl;
+				if ((*iter)->getNickname() == tmp_user->getNickname())
+				{
+					std::cout << "CHANNEL: " << tmp_channel->getName() << " will be deleted" << std::endl;
+					tmp_channel->deleteUser(tmp_user);
+				}
+			}
+		}
+
+		std::vector<pollfd>::iterator iter;
+		for (iter = _pollfds.begin(); iter != _pollfds.end(); iter++)
+		{
+			if (iter->fd == fd)
+			{
+				this->_pollfds.erase(iter);
 				close(fd);
 				break ;
 			}
+		}
+
+		//delete allocated user memory and delete from this->_users map
+		if (state == false)
+		{
+			delete this->_users.at(fd);
+			this->_users.erase(fd);
 		}
 	}
 	catch(const std::out_of_range& e) 	{
 	}
 }
+
 
 /* ======================================================================================== */
 /* -------------------------------------- GETTERS ----------------------------------------  */

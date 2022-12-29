@@ -35,6 +35,7 @@ struct Log
 {
 	static void printStringCol(int state, std::string msg);
 	static void printStringNoNewline(std::string msg);
+	static void printTrace(std::string msg);
 
 	template <typename T>
 	static void print_vector(std::vector<T> vctr);
