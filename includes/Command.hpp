@@ -109,6 +109,9 @@ public:
 		void sendPart(std::string msg);
 		void sendMode(std::string msg);
 		void setMode(std::string mode, std::string channel_name, std::string nickname);
+		void sendTopic(std::string msg);
+		void sendKick(std::string msg);
+
 
 
 

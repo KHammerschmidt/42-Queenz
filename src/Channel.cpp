@@ -113,7 +113,7 @@ std::cout << "--------------FOUND XXX1-------------6\n";
 		std::cout << "#NICK: " << (*it2)->getNickname() << "\n";
 	}
 
-    user_op->getNickname();//just for compile
+    user_op->getNickname();//just for compile, can cancel it
 
 
     // if ( mode == "+o" && returnPrivilegesStatus(nickname_user_op) == true)

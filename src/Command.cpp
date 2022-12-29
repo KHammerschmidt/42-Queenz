@@ -35,6 +35,10 @@ Command::Command(User* user, Server* server, std::string message)
 		sendPart(query);
 	else if (this->user_command == "MODE")
 		sendMode(query);
+	else if (this->user_command == "TOPIC")
+		sendTopic(query);
+	else if (this->user_command == "KICK")
+		sendKick(query);
 	else if (this->user_command == "QUIT")
 		sendQuit(_user);
 	else
@@ -658,9 +662,9 @@ void Command::setMode(std::string mode, std::string channel_name, std::string ni
 	//privilege schon getestet in function davor->	//return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_server(nickname), _user->getNickname(), mode);
 	std::cout << "--------------TEST-------------6\n";}
 	else if (mode == "+b")
-		return_channel(channel_name)->deleteUser(return_user_in_server(nickname));
-	// else if (mode == "-b")
-	// 	return_channel(channel_name)->addUser(return_user_in_server(nickname));
+		return_channel(channel_name)->deleteUser(return_user_in_multimap(channel_name, nickname));
+	else if (mode == "-b")
+		return_channel(channel_name)->addUser(return_user_in_server(nickname));
 
 
 
@@ -748,8 +752,168 @@ void Command::sendMode(std::string msg){
 
 }
 
+/*  TOPIC #test :another topic*/
+void Command::sendTopic(std::string msg)
+{
+	int index_of_first_space;
+	std::string mode;
+	std::string topic;
+	std::stringstream ss;
 
-//	/kick  nickname [reason] (KICK)
+	std::cout << "--------------TEST-------------1\n";
+	// test user is op
+	
+
+	index_of_first_space = msg.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+
+	std::string command = msg.substr(0, index_of_first_space);
+	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
+	std::string temp = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);//chnage and test
+	index_of_first_space = temp.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+
+	std::string channel_name = temp.substr(0, temp.length() - (temp.length() - index_of_first_space));
+	topic = temp.substr(index_of_first_space + 2, temp.length() - (channel_name).length() - 1); /*mode + nick*/	
+	index_of_first_space = temp.find_first_of(" ");
+	std::cout << " topic:" << topic << "\ncommand: "  << command << "\n-----prefix: " << prefix_channel << "\n--------channel_name: " << channel_name << "\n--------topic: " << topic << "\n--------------TEST-------------n\n";
+
+
+	//check if user this is an operator -> can just check getNickOP==true
+	bool user_op = false;
+	for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
+	{
+
+		if ((*it)->getName().compare(channel_name) == 0)
+		{
+			// for(std::vector<User*>::iterator it2 = (*it)->_channel_operators.begin(); it2 != (*it)->_channel_operators.end(); it2++)
+			// 	std::cout << (*it2)->getNickname();
+			for(std::vector<User*>::iterator it2 = (*it)->_channel_operators.begin(); it2 != (*it)->_channel_operators.end(); it2++)
+			{
+				if ((*it2)->getNickname().compare(_user->getNickname()) == 0)
+				{
+					user_op = true;
+					break;
+				}
+			}
+			if (user_op == false)
+			{
+				std::cout << "User is not an Operator\n";	
+				return;
+			}
+			break;
+		}
+	}
+
+	ss << ":" << HOSTNAME << " 332 " << _user->getNickname() << " #" << channel_name << " " << topic << "\r\n";
+	std::string a = ss.str();
+
+	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	{	 		
+		if (((*it).first).compare(channel_name) == 0)
+		{
+				int fd = (*it).second->getFd();
+				if (send(fd, a.c_str(), a.length(), 0) < 0)
+					Log::printStringCol(CRITICAL, "ERROR: SENDING TOPIC TO CHANNEL FAIELD.");
+		}
+	}
+	
+
+
+}
+
+
+
+
+//	/kick #channel  nickname [reason] (KICK)
+void Command::sendKick(std::string msg)
+{
+	int index_of_first_space;
+	std::string mode;
+	std::string nickname;
+	std::stringstream ss;
+
+
+	std::cout << "--------------TEST-------------1\n";
+	// test user is op
+	
+
+	index_of_first_space = msg.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+	std::string command = msg.substr(0, index_of_first_space);
+	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
+	std::string temp = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);//chnage and test
+	index_of_first_space = temp.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+	std::string channel_name = temp.substr(0, temp.length() - (temp.length() - index_of_first_space));
+	temp = temp.substr(index_of_first_space + 1, temp.length() - (channel_name).length() - 1); /*mode + nick*/	
+	index_of_first_space = temp.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+	nickname = temp.substr(0, index_of_first_space);
+	std::string text = temp.substr(index_of_first_space + 1, temp.length() - mode.length() - 1);//chnage and test
+	std::cout << "command: " << command << "\n-----prefix: " << prefix_channel << "\n--------channel_name: " << channel_name << "\n--------mode: " << mode << "\n------nickname: " << nickname << "\n--------------TEST-------------n\n";
+
+
+	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)		
+		return ;	//print error and exit
+
+	//check nickname is in channel
+	if (find_user_in_channel(channel_name, nickname) == false)
+		return; //error
+
+
+
+
+
+	//check if user this is an operator -> can just check getNickOP==true
+	bool user_op = false;
+	for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
+	{
+
+		if ((*it)->getName().compare(channel_name) == 0)
+		{
+			// for(std::vector<User*>::iterator it2 = (*it)->_channel_operators.begin(); it2 != (*it)->_channel_operators.end(); it2++)
+			// 	std::cout << (*it2)->getNickname();
+			for(std::vector<User*>::iterator it2 = (*it)->_channel_operators.begin(); it2 != (*it)->_channel_operators.end(); it2++)
+			{
+				if ((*it2)->getNickname().compare(_user->getNickname()) == 0)
+				{
+					user_op = true;
+					break;
+				}
+			}
+			if (user_op == false)
+			{
+				std::cout << "User is not an Operator\n";	
+				return;
+			}
+			break;
+		}
+	}
+
+	ss << _user->getNickUserHost() << " KICK #" << channel_name << " " << nickname << " " << text << "\r\n";
+	std::string a = ss.str();
+
+	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	{	 		
+		if (((*it).first).compare(channel_name) == 0)
+		{
+				int fd = (*it).second->getFd();
+				if (send(fd, a.c_str(), a.length(), 0) < 0)
+					Log::printStringCol(CRITICAL, "ERROR: SENDING TOPIC TO CHANNEL FAIELD.");
+		}
+	}
+	
+
+
+}
+
+
 
 /* ======================================================================================== */
 /* --------------------------------- QUIT COMMAND -----------------------------------  */
