@@ -35,13 +35,12 @@ void        Channel::deleteChannel()
 
 void		Channel::addUser(User *user){//, Server *server){
 
-    if (_channel_members.size() == 0)
+    if (_channel_operators.size() == 0)
     {
         user->setNicknameOP();
         _channel_operators.push_back(user); //put in creator map
     }
-    else
-        _channel_members.push_back(user); //add in member map
+     _channel_members.push_back(user); //add in member map
 
 }
 
@@ -62,9 +61,9 @@ void		Channel::deleteUser(User *user){
         if ((*it)->getNickname() == user->getNickname())
             _channel_members.erase(it);
     }
-
     // if (this->_channel.members.size() == 0)
         // delete *this;
+
 }
 
 
@@ -86,19 +85,48 @@ bool    Channel::returnPrivilegesStatus(std::string user_nickname)
     return false;
 }
 
-//by mode="-o" => both users are OP (user_not_op is the one should be processed)
-void    Channel::giveTakeOpPrivileges( User *user_not_op, std::string nickname_user_op, std::string mode){
-
-    if ( mode == "+o" && returnPrivilegesStatus(nickname_user_op) == true)
-        _channel_operators.push_back(user_not_op);
-    else if (mode == "-o" && returnPrivilegesStatus(user_not_op->getNickname()) == true
-                            && returnPrivilegesStatus(nickname_user_op) == true)
+//user_op: user that typed the command
+void    Channel::giveTakeOpPrivileges( User *user_not_op,User *user_op, std::string mode){
+    if ( mode == "+o")
     {
+        for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
+        {
+            if ((*it)->getNickname() == user_not_op->getNickname())
+            {
+                std::cout << "User " << user_not_op->getNickname() << " is already is already an Operator!\n";
+                return ;
+            }
+        }  	
+        this->_channel_operators.push_back(user_not_op);
 
-        	for (std::vector<User*>::iterator it = _channel_operators.begin(); it != _channel_operators.end(); it++)
-        		if ((*it)->getNickname().compare(user_not_op->getNickname()) == 0)
-                    _channel_operators.erase(it);
     }
+    else if (mode == "-o")
+    {   
+         for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
+        {
+            if ((*it)->getNickname() == user_not_op->getNickname())
+                _channel_operators.erase(it);
+        }  	
+    }
+
+	for(std::vector<User*>::iterator it2 = _channel_operators.begin(); it2 != _channel_operators.end(); it2++)
+	{
+		std::cout << "#NICK: " << (*it2)->getNickname() << "\n";
+	}
+
+    user_op->getNickname();//just for compile, can cancel it
+
+
+    // if ( mode == "+o" && returnPrivilegesStatus(nickname_user_op) == true)
+    //     _channel_operators.push_back(user_not_op);
+    // else if (mode == "-o" && returnPrivilegesStatus(user_not_op->getNickname()) == true
+    //                         && returnPrivilegesStatus(nickname_user_op) == true)
+    // {
+        	
+    //     	for (std::vector<User*>::iterator it = _channel_operators.begin(); it != _channel_operators.end(); it++)
+    //     		if ((*it)->getNickname().compare(user_not_op->getNickname()) == 0) 
+    //                 _channel_operators.erase(it);
+    // }
     //implement before in  command before command executed: check is is op looping over Channel::returnPrivilegesStatus; if true, set @before Nickname
 }
 

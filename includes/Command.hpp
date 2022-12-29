@@ -71,6 +71,7 @@ public:
 		std::string return_string_all_users_in_channel(const std::string channel_name);//, Server *server, User *user);
 		bool find_user_in_channel(std::string channel_name, std::string nickname);
 		Channel *return_channel(std::string channel_name);
+		User *return_user_in_multimap(std::string channel_name, std::string nickname);
 
 		void sendPrivMsgUser(User* user, std::string msg);
 
@@ -80,6 +81,11 @@ public:
 		void sendPart(std::string msg);
 		void sendMode(std::string msg);
 		void setMode(std::string mode, std::string channel_name, std::string nickname);
+		void sendTopic(std::string msg);
+		void sendKick(std::string msg);
+		void sendInvite(std::string msg);
+
+
 
 
 
