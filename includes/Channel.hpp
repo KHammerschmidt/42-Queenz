@@ -87,7 +87,7 @@ public:
 
 
 	void giveTakeOpPrivileges(User *user_not_op, User *user_op, std::string mode);
-	bool returnPrivilegesStatus(std::string user_nickname);
+	//bool returnPrivilegesStatus(std::string user_nickname);
 
 	//void giveCreatPrivileges(const User& name);
 	// //channel creator becomes channel operator (except for +channels)

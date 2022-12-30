@@ -8,10 +8,10 @@ User::User(int fd, sockaddr_in u_address, Server* server)
 		_port(ntohs(server->getAddr().sin_port)),
 		_user_address(u_address),
 		_fd(fd), _state(CONNECTED),
-		_username(), _nickname(), _fullname(), _nick_user_host(),
+		_username(), _nickname(), _fullname(), _nick_user_host(), _nickOP(""),
 		_password(),
 		_buffer(), _dataToSend(),
-		command_function(), _first_nick(false) {}
+		command_function(), _first_nick(false) {};
 
 /* ======================================================================================== */
 /* --------------------------------------- GETTER ----------------------------------------  */
@@ -29,7 +29,7 @@ std::string User::getNicknameOP() const { return this->_nickOP; }
 /* --------------------------------------- SETTER ----------------------------------------  */
 void User::setPassword(std::string pw) { this->_password = pw; }
 void User::setState(int new_state) { this->_state = new_state; }
-void User::setNicknameOP(){this->_nickOP = "@" + this->_nickname;}
+void User::setNicknameOP(std::string nickOP){this->_nickOP = nickOP;}
 void User::setFullname(std::string fullname) { this->_fullname = fullname; }
 void User::setUsername(const std::string& username) { this->_username = username; }
 void User::setUserChannelStatus(const std::string &status) {this->_userStatusInChannel = status;}

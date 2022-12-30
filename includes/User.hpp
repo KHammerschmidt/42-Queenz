@@ -75,7 +75,7 @@ class User
 		std::string getUserChannelStatus() const;
 
 	  	void setNickUserHost();
-		void setNicknameOP();
+		void setNicknameOP(std::string nickOP);
 		void setState(int new_state);
 		void setPassword(std::string pw);
 		void setLastPing(time_t last_ping);

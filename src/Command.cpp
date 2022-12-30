@@ -313,13 +313,11 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 	std::string nick_receiver = command_arg.substr(0, index_of_first_space);
    	std::string text = command_arg.substr(index_of_first_space + 1, command_arg.length() - index_of_first_space);
 
-	std::cout << "-----------TEST---------0\n";
 	if (nick_receiver.substr(0, 1).compare("#") == 0)
 	{
 		sendChannelMsg(text, nick_receiver.substr(1, nick_receiver.length() -1));
 		return ;
 	}
-	std::cout << "-----------TEST---------2\n";
 
 	if (return_user_in_server(nick_receiver) == NULL)
 		return ;
@@ -447,8 +445,8 @@ void Command::sendJoin(User* user, const std::string msg)
 	ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
 	std::string a = ss.str();
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	{
-		if (((*it).first).compare(channel_name) == 0)
+	{	
+		if (((*it).first).compare(channel_name) == 0 && (*it).second->getNickname().compare(_user->getNickname()) != 0)
 		{
 			int fd = (*it).second->getFd();
 			//std::cout << "FD: " << fd << " MESSAGE: " << a << "----------\n";
@@ -562,8 +560,8 @@ void Command::sendPart(std::string msg)
 		}
 	}
 	//delete channel members/operators from channel
-	for(std::vector<Channel*>::iterator it= _server->_channels.begin(); it != _server->_channels.end(); it++)
-	{
+	for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
+	{	 		
 		if ((*it)->getName().compare(channel_name) == 0 )
 			(*it)->deleteUser(_user);
 	}
@@ -605,27 +603,52 @@ User *Command::return_user_in_multimap(std::string channel_name, std::string nic
 	return NULL;
 }
 
+std::string Command::return_string_all_users_OP_in_channel(const std::string channel_name)
+{//353
+	std::stringstream ss;
+
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++){
+		if (((*it).first).compare(channel_name) == 0)
+		{
+			if ((*it).second->getNicknameOP().substr(0,1).compare("@") == 0)
+				ss << ((*it).second->getNicknameOP()) << " ";
+			else
+				ss << ((*it).second->getNickname()) << " ";
+			std::cout << "NICK OP: "<< (*it).second->getNicknameOP() << "\n";
+		}
+	}
+
+	std::string s = ss.str();
+	if (s.empty())
+		return (NULL);
+	s.erase(s.length() -1);
+	return (s);
+}
+
+
 //continue MODE
 //? how to update @ in channel? maybe change Nick
 void Command::setMode(std::string mode, std::string channel_name, std::string nickname){
 
-	// mode = " ";
-	// channel_name = " ";
-	// nickname = " ";
-	std::cout << "--------------TEST-------------3\n";
-
-	if (mode == "+o" || mode == "-o")
-	{	return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_multimap(channel_name, nickname), return_user_in_multimap(channel_name, _user->getNickname()), mode);						//change userop OBJ, usernotop STRING
+	if (mode == "+o" || mode == "-o")			
+		return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_multimap(channel_name, nickname), return_user_in_multimap(channel_name, _user->getNickname()), mode);						//change userop OBJ, usernotop STRING
+    
 	//privilege schon getestet in function davor->	//return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_server(nickname), _user->getNickname(), mode);
-	std::cout << "--------------TEST-------------6\n";}
-	else if (mode == "+b")
-		return_channel(channel_name)->deleteUser(return_user_in_multimap(channel_name, nickname));
-	else if (mode == "-b")
-		return_channel(channel_name)->addUser(return_user_in_server(nickname));
+	
+	std::stringstream ss;
+	ss << ":" << HOSTNAME << " 353 " << _user->getNickname() << " = #" << channel_name << " :" << return_string_all_users_OP_in_channel(channel_name) << "\r\n";//
+	ss << ":" << HOSTNAME << " 366 " << _user->getNickname() << " #" << channel_name << " End of NAMES list" << "\r\n";
 
-
-
-
+	std::string a = ss.str();
+	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	{
+		if (((*it).first).compare(channel_name) == 0 )
+		{
+			int fd = (*it).second->getFd();
+			if (send(fd, a.c_str(), a.length(), 0) < 0)
+				Log::printStringCol(CRITICAL, "ERROR: LEAVING CHANNEL MESSAGE TO CHANNEL FAILED.");
+		}
+	}
 }
 
 //command prefix channel param[2] nickname
@@ -638,7 +661,6 @@ void Command::sendMode(std::string msg){
 	std::string nickname;
 
 
-	std::cout << "--------------TEST-------------1\n";
 	// test user is op
 
 
@@ -696,7 +718,6 @@ void Command::sendMode(std::string msg){
 	}
 
 
-	std::cout << "--------------TEST-------------2\n";
 
 
 	//check if mode is legit
@@ -717,7 +738,6 @@ void Command::sendTopic(std::string msg)
 	std::string topic;
 	std::stringstream ss;
 
-	std::cout << "--------------TEST-------------1\n";
 	// test user is op
 
 
@@ -794,7 +814,6 @@ void Command::sendKick(std::string msg)
 	std::stringstream ss;
 
 
-	std::cout << "--------------TEST-------------1\n";
 	// test user is op
 
 
@@ -855,17 +874,25 @@ void Command::sendKick(std::string msg)
 	ss << _user->getNickUserHost() << " KICK #" << channel_name << " " << nickname << " " << text << "\r\n";
 	std::string a = ss.str();
 
-	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	{
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	{	 		
 		if (((*it).first).compare(channel_name) == 0)
 		{
 				int fd = (*it).second->getFd();
 				if (send(fd, a.c_str(), a.length(), 0) < 0)
-					Log::printStringCol(CRITICAL, "ERROR: SENDING TOPIC TO CHANNEL FAIELD.");
+					Log::printStringCol(CRITICAL, "ERROR: KICKING USER FROM CHANNEL FAIELD.");
+
 		}
 	}
-
-
+	/*CANCEL USER FROM MULTIMAP*/
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	{	 		
+		if (((*it).first).compare(channel_name) == 0 && (*it).second->getNickname().compare(nickname) == 0)
+		{
+			_server->_channel_users.erase(it);
+			break;
+		}
+	}
 
 }
 
@@ -965,16 +992,40 @@ void Command::sendInvite(std::string msg)
 /* --------------------------------- QUIT COMMAND -----------------------------------  */
 void Command::sendQuit(User* user)
 {
-	//makes the user disconnect from the server
-	user->setState(DELETE);
+	std::string channel_name;
+	std::stringstream ss;
+	for (size_t i=0; i < _server->_channel_users.size(); i++)
+	{
+		for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+		{	 		
+			if (((*it).second->getNickname()).compare(_user->getNickname()) == 0)
+			{
+				channel_name = (*it).first;
+				ss << _user->getNickUserHost() << " PART #" << channel_name << " ciao!" << "\r\n";
+				 std::string a = ss.str();
+				for(std::multimap<std::string, User*>::iterator it2 = _server->_channel_users.begin(); it2 != _server->_channel_users.end(); it2++)
+				{
+					if ((*it2).first.compare(channel_name) == 0)
+					{
+						int fd = (*it2).second->getFd();
+						if (send(fd, a.c_str(), a.length(), 0) < 0)
+							Log::printStringCol(CRITICAL, "ERROR: QUIT FAIELD.");
+					}
+				}
+				_server->_channel_users.erase(it);
+				break ;
+			}
+		}
+	}
 
-	//reply msg to channel members?
+	for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
+	{	 		
+		if ((*it)->getName().compare(channel_name) == 0 )
+			(*it)->deleteUser(_user);
+	}
 
+ 	user->setState(DELETE);
 
-	// user->getNickname();
-	//close the socket but let the fd still on listening modus
-	//https://stackoverflow.com/questions/27798419/closing-client-socket-and-keeping-server-socket-active
-	//Log::printStringCol(CRITICAL, message);
 }
 
 /* ======================================================================================== */
