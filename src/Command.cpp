@@ -34,6 +34,8 @@ Command::Command(User* user, Server* server, std::string message)
 	}
 	else
 	{
+		if (query.find("\r") != std::string::npos)
+			query = query.substr(0, query.length() - 1);
 		if (this->user_command == "NICK")
 			register_nickname();
 		else if (this->user_command == "PING")
@@ -42,12 +44,12 @@ Command::Command(User* user, Server* server, std::string message)
 			sendPrivMsgUser(_user, query);
 		else if (this->user_command == "JOIN")
 			sendJoin(_user, query);
+		else if (this->user_command == "TOPIC")
+			sendTopic(query);
 		else if (this->user_command == "PART")
 			sendPart(query);
 		else if (this->user_command == "MODE")
 			sendMode(query);
-		else if (this->user_command == "TOPIC")
-			sendTopic(query);
 		else if (this->user_command == "INVITE")
 			sendInvite(query);
 		else if (this->user_command == "KICK")
@@ -422,23 +424,31 @@ void Command::sendJoin(User* user, const std::string msg)
 {
 	/*create function format msg, bis the resize part*/
 	int index_of_first_space;
+
 	index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
 		return ;
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string channel_name = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);
+	// if (channel_name.find("\r") != std::string::npos)
+	// 	channel_name = channel_name.substr(0, channel_name.length() - 1);
+
+
 	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
 
 	if (channel_name.length() > 50)
     	    channel_name.resize(50);
 
+	std::cout << "CHANNEL_NAME: " << channel_name.find("\r") << "\n";
 	if (joinInputFormatCheck(command, channel_name, prefix_channel) == true)
 		return ;
 
 	if (handleDoubleUserError(channel_name) == true)
 		return ;
 
-	_server->_channel_users.insert(std::pair<std::string, User*> (channel_name, user));
+
+	//_server->_channel_users.insert(std::pair<std::string, User*> (channel_name, user));
+	_server->_channel_users.insert(std::make_pair(channel_name, user));
 	if (new_channel_to_create(channel_name) == true)
 	{
 		Channel* new_channel = new Channel(channel_name);
@@ -465,6 +475,7 @@ void Command::sendJoin(User* user, const std::string msg)
 	}
 
 	this->reply_state = false;
+
 
 	ss << ":" << HOSTNAME << " 332 " << user->getNickname() << " #" << channel_name << " :A timey wimey channel" << "\r\n";
 	this->_command_message = ss.str();
@@ -672,6 +683,8 @@ void Command::sendMode(std::string msg){
 
 	// test user is op
 
+	 if (msg.find("\r") != std::string::npos)
+	 	std::cout << "@@@@@@@@@@@@@@@@@@@\n";
 
 	index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
@@ -689,6 +702,7 @@ void Command::sendMode(std::string msg){
 		return ; //print error and exit
 	mode = temp.substr(0, index_of_first_space);
 	nickname = temp.substr(index_of_first_space + 1, temp.length() - mode.length() - 1);//chnage and test
+	std::cout << "NICKNAME: " << nickname << "LENGHT: " << nickname.length() << "\n";
 	//std::cout << "command: " << command << "\n-----prefix: " << prefix_channel << "\n--------channel_name: " << channel_name << "\n--------mode: " << mode << "\n------nickname: " << nickname << "\n--------------TEST-------------n\n";
 
 
@@ -810,8 +824,6 @@ void Command::sendTopic(std::string msg)
 
 
 }
-
-
 
 
 //	/kick #channel  nickname [reason] (KICK)
