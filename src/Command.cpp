@@ -15,34 +15,36 @@ Command::Command(User* user, Server* server, std::string message)
 	if (!parse_command(message))
 		return ;
 
-	if (this->user_command == "PASS")
-		register_pass();
-	else if (this->user_command == "CAP")
-		register_cap();
-	else if (this->user_command == "NICK")
-		register_nickname();
-	else if (this->user_command == "USER")
-		register_username();
-	else if (this->user_command == "PING")
-		send_pong();
-	else if (this->user_command == "PRIVMSG" || this->user_command == "NOTICE")
-		sendPrivMsgUser(_user, query);
-	else if (this->user_command == "JOIN")
-		sendJoin(_user, query);
-	else if (this->user_command == "PART")
-		sendPart(query);
-	else if (this->user_command == "MODE")
-		sendMode(query);
-	else if (this->user_command == "TOPIC")
-		sendTopic(query);
-	else if (this->user_command == "INVITE")
-		sendInvite(query);
-	else if (this->user_command == "KICK")
-		sendKick(query);
-	else if (this->user_command == "QUIT")
-		sendQuit(_user);
+	if (this->_user->isRegistered() == false)
+		authenticate_new_user();
 	else
-		err_command("421", message, ERR_UNKNOWNCOMMAND);
+	{
+		if (this->user_command == "NICK")
+			register_nickname();
+		else if (this->user_command == "PING")
+			send_pong();
+		else if (this->user_command == "PRIVMSG" || this->user_command == "NOTICE")
+			sendPrivMsgUser(_user, query);
+		else if (this->user_command == "JOIN")
+			sendJoin(_user, query);
+		else if (this->user_command == "PART")
+			sendPart(query);
+		else if (this->user_command == "MODE")
+			sendMode(query);
+		else if (this->user_command == "TOPIC")
+			sendTopic(query);
+		else if (this->user_command == "INVITE")
+			sendInvite(query);
+		else if (this->user_command == "KICK")
+			sendKick(query);
+		else if (this->user_command == "QUIT")
+		{
+			// std::cout << " I AM HERE IN QUIT" << std::endl;
+			sendQuit(_user);
+		}
+		else
+			err_command("421", message, ERR_UNKNOWNCOMMAND);
+	}
 
 	if (this->_user->isRegistered() == true && this->_user->getState() != ONLINE)
 	{
@@ -58,7 +60,7 @@ Command::Command(User* user, Server* server, std::string message)
 /* Parse incoming string and extract command & nickname sender. */
 bool Command::parse_command(std::string message)
 {
-	if (message.find(" ") == std::string::npos)
+	if (message.find(" ") == std::string::npos && msg_quit(message) == false)
 	{
 		this->_reply_message = put_reply_cmd(this->_user, "461", message, ERR_NEEDMOREPARAMS);
 		this->reply_state = true;
@@ -78,35 +80,57 @@ bool Command::parse_command(std::string message)
 		user_command[i] = std::toupper(user_command[i]);
 
 	this->_args.erase(this->_args.begin());
-	this->sender_nickname = this->_args[0];
-	this->_args.erase(this->_args.begin());
 
 	return true;
+}
+
+/* Checks if single command is quit. */
+bool Command::msg_quit(std::string message)
+{
+	if (message.find("QUIT") && message.find("quit"))
+		return true;
+	return false;
+}
+
+
+/* ======================================================================================== */
+/* ------------------------------ AUTHENTICATE NEW USER ----------------------------------- */
+void Command::authenticate_new_user(void)
+{
+	if (this->user_command == "PASS")
+		register_pass();
+	else if (this->user_command == "CAP" )
+		register_cap();
+	else if (this->user_command == "NICK")
+		register_nickname();
+	else if (this->user_command == "USER")
+		register_username();
 }
 
 /* ======================================================================================== */
 /* --------------------------------- REGISTER PASSWORD -----------------------------------  */
 void Command::register_pass(void)
 {
-	if (this->_user->getPassword().length() != 0)
+	std::string new_pw;
+
+	if (this->_args[0].find("\r") != std::string::npos)
+		new_pw = this->_args[0].substr(0, this->_args[0].length() - 1);
+	else
+		new_pw = this->_args[0].substr(0, this->_args[0].length());
+
+	if (this->_user->getPassword() == new_pw)
 	{
 		err_command("462", user_command, ERR_ALREADYREGISTERED);
 		return ;
 	}
 
-	if (this->_args[0].length() == 0)
-	{
-		err_command("461", user_command, ERR_NEEDMOREPARAMS);
-		return ;
-	}
-
-	if (this->_server->getPassword().compare(this->_args[1]))
+	if (this->_server->getPassword() != new_pw)
 	{
 		err_command("464", user_command, ERR_PASSWDMISMATCH);
 		return ;
 	}
 
-	this->_user->setPassword(this->_args[1]);
+	this->_user->setPassword(new_pw);
 }
 
 void Command::register_cap(void)
@@ -119,37 +143,50 @@ void Command::register_cap(void)
 /* Register the user's nickname */
 void Command::register_nickname(void)
 {
+	// std::cout << " HERE IN REGISTER NICKNAME" << std::endl;
 	if (this->_user->_first_nick == false)
 	{
-		this->sender_nickname = this->_args[1];
+		this->sender_nickname = this->_args[0];
 		this->_user->_first_nick = true;
 	}
 	else
 	{
 		int index_of_first_space = query.find_first_of(" ");
-		this->sender_nickname = query.substr(index_of_first_space + 1, query.length() - index_of_first_space);	//anstatt msg query
+		this->sender_nickname = query.substr(index_of_first_space + 1, query.length() - index_of_first_space);
 	}
 
-	if (Utils::check_characters(this->_args[1]) < 0)
+	if (this->_user->getPassword() != this->_server->getPassword())
+	{
+		err_command("464", user_command, "You must register first a password.\r\n");
+		this->_user->setState(DELETE);
+		return ;
+	}
+
+	if (this->_user->getNickname() == this->_args[0].substr(0, this->_args[0].length()))
+		return ;
+
+	if (Utils::check_characters(this->_args[0]) < 0)
 	{
 		err_command("432", this->_user->getNickname(), ERR_ERRONEUSNICKNAME);
 		return ;
 	}
 
-	if (check_free_nickname(this->_args[1]) == false)
+	if (check_free_nickname(this->_args[0]) == false)
 	{
 		err_command("433", this->_user->getNickname(), ERR_NICKNAMEINUSE);
 		return ;
 	}
 
 	std::stringstream ss;
-	std::string old_nick = this->_user->getNickname();
-	this->_user->setNickname(this->sender_nickname);
+	std::string old_nick = "*";
+	std::string new_nick = this->_args[0].substr(0, this->_args[0].length());
 
-	if (old_nick.length() == 0)
-		ss << ":" << "*" << " NICK " << _user->getNickname() << " changed his nickname to " << sender_nickname << ".\r\n";
-	else
-		ss << ":" << old_nick << " NICK " << _user->getNickname() << " changed his nickname to " << sender_nickname << ".\r\n";
+	if (this->_user->getNickname().length() != 0)
+		old_nick = this->_user->getNickname();
+
+	ss << ":" << old_nick << " " << user_command << " " << new_nick << "\r\n";
+
+	this->_user->setNickname(new_nick);
 
 	this->_reply_message = ss.str();
 	this->reply_state = true;
@@ -173,9 +210,9 @@ void Command::send_replies_to_channel(void)
 			{
 				int fd = (*iter).second->getFd();
 				if (send(fd, _reply_message.c_str(), _reply_message.length(), 0) < 0)
-					Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAILED.");
+					Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAILED hihihi.");
 				else
-					Log::printStringCol(LOG, "LOG: SENDING REPLY SUCCESSFUL.");
+					Log::printStringCol(LOG, "LOG: SENDING REPLY SUCCESSFUL hihii.");
 			}
 		}
 	}
@@ -208,15 +245,19 @@ void Command::getWelcomeReply(User* user)
 /* --------------------------------- REGISTER USERNAME -----------------------------------  */
 void Command::register_username(void)
 {
-	//question Kathi: can two users have the same username? weechat greps username automatically
-	// if (Utils::check_characters(this->_args[1]) < 0)
-	// {
-	// 	err_command(ERR_ERRONEUSNICKNAME);
-	// 	return ;
-	// }
+	if (this->_user->getPassword() != this->_server->getPassword())
+	{
+		err_command("464", user_command, "You must register first a password.\r\n");
+		return ;
+	}
 
-	this->_user->setUsername(this->_args[2]);
-	this->_user->setFullname(this->_args[3]);
+	if (Utils::check_characters(this->_args[1]) < 0)
+	{
+		err_command("432", this->_user->getNickname(), ERR_ERRONEUSUSERNAME);
+		return ;
+	}
+
+	this->_user->setUsername(this->_args[0].substr(0, this->_args[0].length()));
 }
 
 /* ======================================================================================== */
@@ -513,16 +554,16 @@ void Command::sendPart(std::string msg)
 	this->reply_state = false;
 	//delete channel/user from multimap
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	{	 		
+	{
 		if ((*it).first.compare(channel_name) == 0  && (*it).second->getNickname().compare(_user->getNickname()) == 0 )
 		{
 			_server->_channel_users.erase(it);
 			break ;
-		}	
+		}
 	}
 	//delete channel members/operators from channel
 	for(std::vector<Channel*>::iterator it= _server->_channels.begin(); it != _server->_channels.end(); it++)
-	{	 		
+	{
 		if ((*it)->getName().compare(channel_name) == 0 )
 			(*it)->deleteUser(_user);
 	}
@@ -557,7 +598,7 @@ Channel *Command::return_channel(std::string channel_name)
 User *Command::return_user_in_multimap(std::string channel_name, std::string nickname)
 {
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	{	 		
+	{
 		if (((*it).first).compare(channel_name) == 0 && (*it).second->getNickname().compare(nickname) == 0)
 			return (it)->second;
 	}
@@ -573,7 +614,7 @@ void Command::setMode(std::string mode, std::string channel_name, std::string ni
 	// nickname = " ";
 	std::cout << "--------------TEST-------------3\n";
 
-	if (mode == "+o" || mode == "-o")			
+	if (mode == "+o" || mode == "-o")
 	{	return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_multimap(channel_name, nickname), return_user_in_multimap(channel_name, _user->getNickname()), mode);						//change userop OBJ, usernotop STRING
 	//privilege schon getestet in function davor->	//return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_server(nickname), _user->getNickname(), mode);
 	std::cout << "--------------TEST-------------6\n";}
@@ -599,7 +640,7 @@ void Command::sendMode(std::string msg){
 
 	std::cout << "--------------TEST-------------1\n";
 	// test user is op
-	
+
 
 	index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
@@ -611,7 +652,7 @@ void Command::sendMode(std::string msg){
 	if (index_of_first_space == -1)
 		return ; //print error and exit
 	std::string channel_name = temp.substr(0, temp.length() - (temp.length() - index_of_first_space));
-	temp = temp.substr(index_of_first_space + 1, temp.length() - (channel_name).length() - 1); /*mode + nick*/	
+	temp = temp.substr(index_of_first_space + 1, temp.length() - (channel_name).length() - 1); /*mode + nick*/
 	index_of_first_space = temp.find_first_of(" ");
 	if (index_of_first_space == -1)
 		return ; //print error and exit
@@ -620,7 +661,7 @@ void Command::sendMode(std::string msg){
 	//std::cout << "command: " << command << "\n-----prefix: " << prefix_channel << "\n--------channel_name: " << channel_name << "\n--------mode: " << mode << "\n------nickname: " << nickname << "\n--------------TEST-------------n\n";
 
 
-	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)		
+	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)
 		return ;	//print error and exit
 
 	//check nickname is in channel
@@ -647,13 +688,13 @@ void Command::sendMode(std::string msg){
 			}
 			if (user_op == false)
 			{
-				std::cout << "User is not an Operator\n";	
+				std::cout << "User is not an Operator\n";
 				return;
 			}
 			break;
 		}
 	}
-	
+
 
 	std::cout << "--------------TEST-------------2\n";
 
@@ -678,7 +719,7 @@ void Command::sendTopic(std::string msg)
 
 	std::cout << "--------------TEST-------------1\n";
 	// test user is op
-	
+
 
 	index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
@@ -693,7 +734,7 @@ void Command::sendTopic(std::string msg)
 		return ; //print error and exit
 
 	std::string channel_name = temp.substr(0, temp.length() - (temp.length() - index_of_first_space));
-	topic = temp.substr(index_of_first_space + 2, temp.length() - (channel_name).length() - 1); /*mode + nick*/	
+	topic = temp.substr(index_of_first_space + 2, temp.length() - (channel_name).length() - 1); /*mode + nick*/
 	index_of_first_space = temp.find_first_of(" ");
 	std::cout << " topic:" << topic << "\ncommand: "  << command << "\n-----prefix: " << prefix_channel << "\n--------channel_name: " << channel_name << "\n--------topic: " << topic << "\n--------------TEST-------------n\n";
 
@@ -717,7 +758,7 @@ void Command::sendTopic(std::string msg)
 			}
 			if (user_op == false)
 			{
-				std::cout << "User is not an Operator\n";	
+				std::cout << "User is not an Operator\n";
 				return;
 			}
 			break;
@@ -728,7 +769,7 @@ void Command::sendTopic(std::string msg)
 	std::string a = ss.str();
 
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	{	 		
+	{
 		if (((*it).first).compare(channel_name) == 0)
 		{
 				int fd = (*it).second->getFd();
@@ -736,7 +777,7 @@ void Command::sendTopic(std::string msg)
 					Log::printStringCol(CRITICAL, "ERROR: SENDING TOPIC TO CHANNEL FAIELD.");
 		}
 	}
-	
+
 
 
 }
@@ -755,7 +796,7 @@ void Command::sendKick(std::string msg)
 
 	std::cout << "--------------TEST-------------1\n";
 	// test user is op
-	
+
 
 	index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
@@ -767,7 +808,7 @@ void Command::sendKick(std::string msg)
 	if (index_of_first_space == -1)
 		return ; //print error and exit
 	std::string channel_name = temp.substr(0, temp.length() - (temp.length() - index_of_first_space));
-	temp = temp.substr(index_of_first_space + 1, temp.length() - (channel_name).length() - 1); /*mode + nick*/	
+	temp = temp.substr(index_of_first_space + 1, temp.length() - (channel_name).length() - 1); /*mode + nick*/
 	index_of_first_space = temp.find_first_of(" ");
 	if (index_of_first_space == -1)
 		return ; //print error and exit
@@ -776,7 +817,7 @@ void Command::sendKick(std::string msg)
 	std::cout << "command: " << command << "\n-----prefix: " << prefix_channel << "\n--------channel_name: " << channel_name << "\n--------mode: " << mode << "\n------nickname: " << nickname << "\n--------------TEST-------------n\n";
 
 
-	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)		
+	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)
 
 		return ;	//print error and exit
 
@@ -804,7 +845,7 @@ void Command::sendKick(std::string msg)
 			}
 			if (user_op == false)
 			{
-				std::cout << "User is not an Operator\n";	
+				std::cout << "User is not an Operator\n";
 				return;
 			}
 			break;
@@ -815,7 +856,7 @@ void Command::sendKick(std::string msg)
 	std::string a = ss.str();
 
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	{	 		
+	{
 		if (((*it).first).compare(channel_name) == 0)
 		{
 				int fd = (*it).second->getFd();
@@ -823,7 +864,7 @@ void Command::sendKick(std::string msg)
 					Log::printStringCol(CRITICAL, "ERROR: SENDING TOPIC TO CHANNEL FAIELD.");
 		}
 	}
-	
+
 
 
 }
@@ -840,7 +881,7 @@ void Command::sendInvite(std::string msg)
 
 	std::cout << "--------------TEST-------------1\n";
 	// test user is op
-	
+
 
 	index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
@@ -848,23 +889,23 @@ void Command::sendInvite(std::string msg)
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string temp = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);//chnage and test
 	index_of_first_space = temp.find_first_of(" ");
-	
-	
-	
+
+
+
 	if (index_of_first_space == -1)
 		return ; //print error and exit
 	nickname = temp.substr(0, temp.length() - (temp.length() - index_of_first_space));
 	index_of_first_space = temp.find_first_of(" ");
 	if (index_of_first_space == -1)
 		return ; //print error and exit
-	temp = temp.substr(index_of_first_space + 1, temp.length() - (nickname).length() - 1); /*mode + nick*/	
+	temp = temp.substr(index_of_first_space + 1, temp.length() - (nickname).length() - 1); /*mode + nick*/
 	std::string prefix_channel = temp.substr(0, 1);
 	std::string channel_name = temp.substr(1, index_of_first_space);
-	
+
 	std::cout << "command: " << command << "\n-----nickname: " << nickname << "\n--------channel_name: " << channel_name <<  "\n--------------TEST-------------n\n";
 
 
-	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)		
+	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)
 		return ;	//print error and exit
 
 	//check nickname is in channel
@@ -894,7 +935,7 @@ void Command::sendInvite(std::string msg)
 			}
 			if (user_op == false)
 			{
-				std::cout << "User is not an Operator\n";	
+				std::cout << "User is not an Operator\n";
 				return;
 			}
 			break;
@@ -906,7 +947,7 @@ void Command::sendInvite(std::string msg)
 	std::string a = ss.str();
 
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	{	 		
+	{
 		if (((*it).first).compare(channel_name) == 0 && ((*it).second->getNickname().compare(nickname) || (*it).second->getNickname().compare(_user->getNickname())) )
 		{
 				int fd = (*it).second->getFd();
@@ -914,7 +955,7 @@ void Command::sendInvite(std::string msg)
 					Log::printStringCol(CRITICAL, "ERROR: SENDING INVITE TO CHANNEL FAIELD.");
 		}
 	}
-	
+
 
 
 }
@@ -963,11 +1004,3 @@ void Command::err_command(std::string err_num, std::string cmd, std::string code
 	this->command_state = false;
 	this->reply_state = true;
 }
-
-void Command::print_vector(std::vector<std::string> vctr)
-{
-	std::vector<std::string>::iterator iter;
-	for (iter = vctr.begin(); iter != vctr.end(); iter++)
-		std::cout << *iter << std::endl;
-}
-
