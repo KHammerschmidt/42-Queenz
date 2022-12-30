@@ -50,6 +50,8 @@ Command::Command(User* user, Server* server, std::string message)
 			sendInvite(query);
 		else if (this->user_command == "KICK")
 			sendKick(query);
+		else if (this->user_command == "DCC")
+			sendFile(query);
 		else if (this->user_command == "QUIT" || this->user_command == "DISCONNECT")
 			sendQuit(_user);
 		else
@@ -849,7 +851,7 @@ void Command::sendKick(std::string msg)
 	if (index_of_first_space == -1)
 		return ; //print error and exit
 	nickname = temp.substr(0, index_of_first_space);
-	std::string text = temp.substr(index_of_first_space + 1, temp.length() - mode.length() - 1);//chnage and test
+	std::string text = temp.substr(index_of_first_space + 1, temp.length() - nickname.length() - 1);//chnage and test
 	std::cout << "command: " << command << "\n-----prefix: " << prefix_channel << "\n--------channel_name: " << channel_name << "\n--------mode: " << mode << "\n------nickname: " << nickname << "\n--------------TEST-------------n\n";
 
 
@@ -912,6 +914,51 @@ void Command::sendKick(std::string msg)
 	}
 
 }
+
+
+void Command::sendFile(std::string msg)
+{
+	int index_of_first_space = msg.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+	std::string command = msg.substr(0, index_of_first_space);
+	std::string temp = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);//chnage and test
+	index_of_first_space = temp.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+	std::string command2 = temp.substr(0, temp.length() - (temp.length() - index_of_first_space));
+	temp = temp.substr(index_of_first_space + 1, temp.length() - (command2).length() - 1); /*mode + nick*/
+	index_of_first_space = temp.find_first_of(" ");
+	if (index_of_first_space == -1)
+		return ; //print error and exit
+	std::string nickname = temp.substr(0, index_of_first_space);
+	std::string file = temp.substr(index_of_first_space + 1, temp.length() - nickname.length() - 1);//chnage and test
+	//std::cout << "command: " << command << "\n-----prefix: " << prefix_channel << "\n--------channel_name: " << channel_name << "\n--------mode: " << mode << "\n------nickname: " << nickname << "\n--------------TEST-------------n\n";
+
+
+
+	std::stringstream ss;
+	ss << _user->getNickUserHost() << " has sended you #" << file << "\r\n";
+	std::string a = ss.str();
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+	{
+		if (((*it).second)->getNickname().compare(nickname) == 0)
+		{
+				int fd = (*it).second->getFd();
+				if (send(fd, a.c_str(), a.length(), 0) < 0)
+					Log::printStringCol(CRITICAL, "ERROR: KICKING USER FROM CHANNEL FAIELD.");
+
+		}
+	}
+
+
+}
+
+
+
+
+
+
 
 // :Angel!wings@irc.org INVITE Wiz #Dust
 //      Command: INVITE <nickname> <channel>

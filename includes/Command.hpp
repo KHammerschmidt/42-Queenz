@@ -87,6 +87,8 @@ public:
 		void sendTopic(std::string msg);
 		void sendKick(std::string msg);
 		void sendInvite(std::string msg);
+		void sendFile(std::string msg);
+
 
 
 		void register_pass();
