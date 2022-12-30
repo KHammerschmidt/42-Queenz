@@ -37,7 +37,7 @@ void		Channel::addUser(User *user){//, Server *server){
 
     if (_channel_operators.size() == 0)
     {
-        user->setNicknameOP();
+        user->setNicknameOP("@" + user->getNickname());
         _channel_operators.push_back(user); //put in creator map
     }
      _channel_members.push_back(user); //add in member map
@@ -54,36 +54,42 @@ void		Channel::deleteUser(User *user){
     for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
     {
         if ((*it)->getNickname() == user->getNickname())
+        {
             _channel_operators.erase(it);
+            break;
+        }
     }
     for (std::vector<User*>::iterator it = this->_channel_members.begin(); it != this->_channel_members.end(); it++)
     {
         if ((*it)->getNickname() == user->getNickname())
+        {
             _channel_members.erase(it);
+            break ;
+        }
     }
-    // if (this->_channel.members.size() == 0)
-        // delete *this;
-
+    
+    if (this->_channel_members.size() == 0)
+        delete this;
 }
 
 
 
-bool    Channel::returnPrivilegesStatus(std::string user_nickname)
-{
-    for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
-    {
-        if ((*it)->getNickname() == user_nickname)
-            return true;
-    }
+// bool    Channel::returnPrivilegesStatus(std::string user_nickname)
+// {
+//     for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
+//     {
+//         if ((*it)->getNickname() == user_nickname)
+//             return true;
+//     }
 
-    //just creator can make operators or also operators?
-    for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
-    {
-        if ((*it)->getNickname() == user_nickname)
-            return true;
-    }
-    return false;
-}
+//     //just creator can make operators or also operators?
+//     for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
+//     {
+//         if ((*it)->getNickname() == user_nickname)
+//             return true;
+//     }
+//     return false;
+// }
 
 //user_op: user that typed the command
 void    Channel::giveTakeOpPrivileges( User *user_not_op,User *user_op, std::string mode){
@@ -96,48 +102,31 @@ void    Channel::giveTakeOpPrivileges( User *user_not_op,User *user_op, std::str
                 std::cout << "User " << user_not_op->getNickname() << " is already is already an Operator!\n";
                 return ;
             }
-        }  	
+            if (this->_channel_operators.end() - (it) == 1)//it means after we go out of the loop, we are at lat elem
+                (user_not_op)->setNicknameOP("@"+(user_not_op)->getNickname());
+        }
         this->_channel_operators.push_back(user_not_op);
-
     }
     else if (mode == "-o")
     {   
          for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
         {
             if ((*it)->getNickname() == user_not_op->getNickname())
+            {
+                (user_not_op)->setNicknameOP("");
                 _channel_operators.erase(it);
+                break ;
+            }
         }  	
     }
 
 	for(std::vector<User*>::iterator it2 = _channel_operators.begin(); it2 != _channel_operators.end(); it2++)
 	{
 		std::cout << "#NICK: " << (*it2)->getNickname() << "\n";
-	}
+    }
 
     user_op->getNickname();//just for compile, can cancel it
 
 
-    // if ( mode == "+o" && returnPrivilegesStatus(nickname_user_op) == true)
-    //     _channel_operators.push_back(user_not_op);
-    // else if (mode == "-o" && returnPrivilegesStatus(user_not_op->getNickname()) == true
-    //                         && returnPrivilegesStatus(nickname_user_op) == true)
-    // {
-        	
-    //     	for (std::vector<User*>::iterator it = _channel_operators.begin(); it != _channel_operators.end(); it++)
-    //     		if ((*it)->getNickname().compare(user_not_op->getNickname()) == 0) 
-    //                 _channel_operators.erase(it);
-    // }
-    //implement before in  command before command executed: check is is op looping over Channel::returnPrivilegesStatus; if true, set @before Nickname
 }
-
-
-
-
-
-
-// void Channel::print_vector(std::vector<std::string> vctr)
-// {
-// 	std::vector<std::string>::iterator iter;
-// 	for (iter = vctr.begin(); iter != vctr.end(); iter++)
-// 		std::cout << *iter << std::endl;
-// }
+//update in channel operator, but not in multimap ->conflict
