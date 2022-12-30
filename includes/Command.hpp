@@ -17,6 +17,7 @@
 #define ERR_NEEDMOREPARAMS		"Not enough parameters\r\n"
 
 #define ERR_ERRONEUSNICKNAME 	"Erroneus nickname\r\n"
+#define ERR_ERRONEUSUSERNAME 	"Erroneus username\r\n"
 #define ERR_NICKNAMEINUSE 		"Nickname is already in use\r\n"
 
 #define ERR_PASSWDMISMATCH 		"Password incorrect\r\n"
@@ -88,18 +89,15 @@ public:
 		void sendInvite(std::string msg);
 
 
-
-
-
-		// ------------ KATHI
 		void register_pass();
 		void register_cap();
 		void register_nickname();
 		void register_username();
-
 		void send_pong();
 
+		void authenticate_new_user();
 		bool parse_command(std::string message);
+		bool msg_quit(std::string message);
 		bool check_free_nickname(const std::string& nickname);
 		void err_command(std::string err_num, std::string cmd, std::string code);
 
@@ -108,8 +106,6 @@ public:
 		std::string put_reply(User* user, std::string err_num, std::string code);
 		std::string put_reply_cmd(User* user, std::string err_num, std::string cmd, std::string code);
 
-
-		void print_vector(std::vector<std::string> vctr);
 };
 
 #endif

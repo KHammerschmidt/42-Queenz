@@ -85,6 +85,7 @@ class User
 		void setUserChannelStatus(const std::string &status);
 
 		bool isRegistered() const;
+		void authenticate_new_user(std::string msg);
 
 		void leave() {};
 
