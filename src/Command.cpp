@@ -16,7 +16,22 @@ Command::Command(User* user, Server* server, std::string message)
 		return ;
 
 	if (this->_user->isRegistered() == false)
-		authenticate_new_user();
+	{
+		if (this->user_command == "PASS")
+			register_pass();
+		else if (this->user_command == "CAP" )
+			register_cap();
+		else if (this->user_command == "NICK")
+			register_nickname();
+		else if (this->user_command == "USER")
+			register_username();
+		else
+		{
+			err_command("464", user_command, "You must register first with a password.\r\n");
+			// this->_user->setState(DELETE);
+			// err_command("421", message, ERR_UNKNOWNCOMMAND);
+		}
+	}
 	else
 	{
 		if (this->user_command == "NICK")
@@ -38,10 +53,7 @@ Command::Command(User* user, Server* server, std::string message)
 		else if (this->user_command == "KICK")
 			sendKick(query);
 		else if (this->user_command == "QUIT")
-		{
-			// std::cout << " I AM HERE IN QUIT" << std::endl;
 			sendQuit(_user);
-		}
 		else
 			err_command("421", message, ERR_UNKNOWNCOMMAND);
 	}
@@ -87,24 +99,10 @@ bool Command::parse_command(std::string message)
 /* Checks if single command is quit. */
 bool Command::msg_quit(std::string message)
 {
-	if (message.find("QUIT") && message.find("quit"))
+	if (message == "QUIT" || message == "quit")
 		return true;
+
 	return false;
-}
-
-
-/* ======================================================================================== */
-/* ------------------------------ AUTHENTICATE NEW USER ----------------------------------- */
-void Command::authenticate_new_user(void)
-{
-	if (this->user_command == "PASS")
-		register_pass();
-	else if (this->user_command == "CAP" )
-		register_cap();
-	else if (this->user_command == "NICK")
-		register_nickname();
-	else if (this->user_command == "USER")
-		register_username();
 }
 
 /* ======================================================================================== */
@@ -143,7 +141,6 @@ void Command::register_cap(void)
 /* Register the user's nickname */
 void Command::register_nickname(void)
 {
-	// std::cout << " HERE IN REGISTER NICKNAME" << std::endl;
 	if (this->_user->_first_nick == false)
 	{
 		this->sender_nickname = this->_args[0];
@@ -157,21 +154,26 @@ void Command::register_nickname(void)
 
 	if (this->_user->getPassword() != this->_server->getPassword())
 	{
-		err_command("464", user_command, "You must register first a password.\r\n");
-		this->_user->setState(DELETE);
+		err_command("464", user_command, "You must register first with a password.\r\n");
 		return ;
 	}
 
-	if (this->_user->getNickname() == this->_args[0].substr(0, this->_args[0].length()))
+	std::string new_nick;
+	if (this->_args[0].find("\r") != std::string::npos)
+		new_nick = this->_args[0].substr(0, this->_args[0].length() - 1);
+	else
+		new_nick = this->_args[0].substr(0, this->_args[0].length());
+
+	if (this->_user->getNickname() == new_nick)
 		return ;
 
-	if (Utils::check_characters(this->_args[0]) < 0)
+	if (Utils::check_characters(new_nick) < 0)
 	{
 		err_command("432", this->_user->getNickname(), ERR_ERRONEUSNICKNAME);
 		return ;
 	}
 
-	if (check_free_nickname(this->_args[0]) == false)
+	if (check_free_nickname(new_nick) == false)
 	{
 		err_command("433", this->_user->getNickname(), ERR_NICKNAMEINUSE);
 		return ;
@@ -179,7 +181,6 @@ void Command::register_nickname(void)
 
 	std::stringstream ss;
 	std::string old_nick = "*";
-	std::string new_nick = this->_args[0].substr(0, this->_args[0].length());
 
 	if (this->_user->getNickname().length() != 0)
 		old_nick = this->_user->getNickname();
@@ -247,7 +248,7 @@ void Command::register_username(void)
 {
 	if (this->_user->getPassword() != this->_server->getPassword())
 	{
-		err_command("464", user_command, "You must register first a password.\r\n");
+		err_command("464", user_command, "You must register first with a password.\r\n");
 		return ;
 	}
 
@@ -257,7 +258,13 @@ void Command::register_username(void)
 		return ;
 	}
 
-	this->_user->setUsername(this->_args[0].substr(0, this->_args[0].length()));
+	std::string new_username;
+	if (this->_args[0].find("\r") != std::string::npos)
+		new_username = this->_args[0].substr(0, this->_args[0].length() - 1);
+	else
+		new_username = this->_args[0].substr(0, this->_args[0].length());
+
+	this->_user->setUsername(new_username);
 }
 
 /* ======================================================================================== */
@@ -298,18 +305,20 @@ otherwise p
 void Command::sendPrivMsgUser(User* user, std::string msg)
 {
     int index_of_first_space;
-
 	index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
 		return ;
+
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string command_arg = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
+
 	if (command.compare("PRIVMSG") != 0 && command.compare("NOTICE") != 0)
 		return ;//print error
 
 	index_of_first_space = command_arg.find_first_of(" ");
 	if (index_of_first_space == -1)
 		return ;
+
 	std::string nick_receiver = command_arg.substr(0, index_of_first_space);
    	std::string text = command_arg.substr(index_of_first_space + 1, command_arg.length() - index_of_first_space);
 
@@ -326,6 +335,7 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 	this->command_state = true;
 	ss << user->getNickUserHost() << " " << command << " " << nick_receiver << " " << text << "\r\n";
 	this->_command_message = ss.str();
+
 	this->receiver_fd = return_user_in_server(nick_receiver)->getFd();
 
 	Log::printStringCol(CRITICAL, msg);
@@ -412,7 +422,6 @@ void Command::sendJoin(User* user, const std::string msg)
 {
 	/*create function format msg, bis the resize part*/
 	int index_of_first_space;
-
 	index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
 		return ;
@@ -445,7 +454,7 @@ void Command::sendJoin(User* user, const std::string msg)
 	ss << user->getNickUserHost() << " " << command << " #" << channel_name << "\r\n";
 	std::string a = ss.str();
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	{	
+	{
 		if (((*it).first).compare(channel_name) == 0 && (*it).second->getNickname().compare(_user->getNickname()) != 0)
 		{
 			int fd = (*it).second->getFd();
@@ -561,7 +570,7 @@ void Command::sendPart(std::string msg)
 	}
 	//delete channel members/operators from channel
 	for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
-	{	 		
+	{
 		if ((*it)->getName().compare(channel_name) == 0 )
 			(*it)->deleteUser(_user);
 	}
@@ -630,11 +639,11 @@ std::string Command::return_string_all_users_OP_in_channel(const std::string cha
 //? how to update @ in channel? maybe change Nick
 void Command::setMode(std::string mode, std::string channel_name, std::string nickname){
 
-	if (mode == "+o" || mode == "-o")			
+	if (mode == "+o" || mode == "-o")
 		return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_multimap(channel_name, nickname), return_user_in_multimap(channel_name, _user->getNickname()), mode);						//change userop OBJ, usernotop STRING
-    
+
 	//privilege schon getestet in function davor->	//return_channel(channel_name)->giveTakeOpPrivileges(return_user_in_server(nickname), _user->getNickname(), mode);
-	
+
 	std::stringstream ss;
 	ss << ":" << HOSTNAME << " 353 " << _user->getNickname() << " = #" << channel_name << " :" << return_string_all_users_OP_in_channel(channel_name) << "\r\n";//
 	ss << ":" << HOSTNAME << " 366 " << _user->getNickname() << " #" << channel_name << " End of NAMES list" << "\r\n";
@@ -875,7 +884,7 @@ void Command::sendKick(std::string msg)
 	std::string a = ss.str();
 
 	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	{	 		
+	{
 		if (((*it).first).compare(channel_name) == 0)
 		{
 				int fd = (*it).second->getFd();
@@ -886,7 +895,7 @@ void Command::sendKick(std::string msg)
 	}
 	/*CANCEL USER FROM MULTIMAP*/
 	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-	{	 		
+	{
 		if (((*it).first).compare(channel_name) == 0 && (*it).second->getNickname().compare(nickname) == 0)
 		{
 			_server->_channel_users.erase(it);
@@ -997,7 +1006,7 @@ void Command::sendQuit(User* user)
 	for (size_t i=0; i < _server->_channel_users.size(); i++)
 	{
 		for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
-		{	 		
+		{
 			if (((*it).second->getNickname()).compare(_user->getNickname()) == 0)
 			{
 				channel_name = (*it).first;
@@ -1009,7 +1018,7 @@ void Command::sendQuit(User* user)
 					{
 						int fd = (*it2).second->getFd();
 						if (send(fd, a.c_str(), a.length(), 0) < 0)
-							Log::printStringCol(CRITICAL, "ERROR: QUIT FAIELD.");
+							Log::printStringCol(CRITICAL, "ERROR: QUIT FAILED.");
 					}
 				}
 				_server->_channel_users.erase(it);
@@ -1019,7 +1028,7 @@ void Command::sendQuit(User* user)
 	}
 
 	for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
-	{	 		
+	{
 		if ((*it)->getName().compare(channel_name) == 0 )
 			(*it)->deleteUser(_user);
 	}
@@ -1033,7 +1042,7 @@ void Command::sendQuit(User* user)
 std::string Command::put_reply_cmd(User* user, std::string err_num, std::string cmd, std::string code)
 {
 	std::stringstream ss;
-	ss << err_num << " " << user->getNickname() << cmd << " :" << code;
+	ss << err_num << " " << user->getNickname() << " " << cmd << " :" << code;
 	return ss.str();
 }
 
