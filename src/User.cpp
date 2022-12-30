@@ -98,7 +98,6 @@ bool User::receive(void)
 	recv_buffer[size] = 0;
 	this->_buffer.append(recv_buffer);
 
-	Log::printStringCol(CRITICAL, this->_buffer);
 	return true;
 }
 

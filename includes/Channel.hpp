@@ -22,8 +22,8 @@ private:
 
 	/*User status*/
 	int	_user_status; //c->creator, o->operator, u->normal user
-	
-	
+
+
 	// std::string _mode;
 	// std::map<int, std::string> user_mode;
 	// std::vector<User *> invited;
@@ -49,8 +49,9 @@ public:
 
 
 	//make private +getter
-	std::vector<User*> _channel_members; 	//list of members in channel-> key[i]
-	std::vector<User*> _channel_operators; // channel operators can perform-> key[j]
+	public:
+		std::vector<User*> _channel_members; 	//list of members in channel-> key[i]
+		std::vector<User*> _channel_operators; // channel operators can perform-> key[j]
 
 
 
