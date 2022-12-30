@@ -129,9 +129,9 @@ void Server::disconnectUser(int fd, bool state)
 
 	try
 	{
-		//1 _channel_users
-		//User* tmp_user = this->_users.at(fd);
-		//erase user from all channels he joined (1-select channel to be searched, 2-check if user is a member in channel, 3-deleteUser with channel object)
+		// // 1 _channel_users
+		// User* tmp_user1 = this->_users.at(fd);
+		// // erase user from all channels he joined (1-select channel to be searched, 2-check if user is a member in channel, 3-deleteUser with channel object)
 		// std::cout << "channel name: " << _channels[0]->getName() << std::endl;
 
 		// for(channel_iterator = _channels.begin(); channel_iterator != _channels.end(); channel_iterator++)
@@ -142,18 +142,18 @@ void Server::disconnectUser(int fd, bool state)
 		// 	for (std::vector<User*>::iterator iter = tmp_channel->_channel_members.begin(); iter != tmp_channel->_channel_members.end(); iter++)
 		// 	{
 		// 		std::cout << " I AM HERE 2" << std::endl;
-		// 		if ((*iter)->getNickname() == tmp_user->getNickname())
+		// 		if ((*iter)->getNickname() == tmp_user1->getNickname())
 		// 		{
 		// 			std::cout << "CHANNEL: " << tmp_channel->getName() << " will be deleted" << std::endl;
-		// 			tmp_channel->deleteUser(tmp_user);
+		// 			tmp_channel->deleteUser(tmp_user1);
 		// 		}
 		// 	}
 		// }
 
-		
+
 		User* tmp_user = this->_users.at(fd);
 		for(std::multimap<std::string, User*>::iterator it = _channel_users.begin(); it != _channel_users.end(); it++)
-		{	 		
+		{
 			if (((*it).second->getNickname()).compare(tmp_user->getNickname()) == 0)
 			{
 				_channel_users.erase(it);

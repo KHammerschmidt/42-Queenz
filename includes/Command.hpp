@@ -95,7 +95,6 @@ public:
 		void register_username();
 		void send_pong();
 
-		void authenticate_new_user();
 		bool parse_command(std::string message);
 		bool msg_quit(std::string message);
 		bool check_free_nickname(const std::string& nickname);
