@@ -26,13 +26,9 @@ Command::Command(User* user, Server* server, std::string message)
 		else if (this->user_command == "USER")
 			register_username();
 		else
-		{
 			err_command("464", user_command, "You must register first with a password.\r\n");
-			// this->_user->setState(DELETE);
-			// err_command("421", message, ERR_UNKNOWNCOMMAND);
-		}
 	}
-	else
+	else if (this->_user->isRegistered() == true)
 	{
 		if (this->user_command == "NICK")
 			register_nickname();
@@ -52,7 +48,7 @@ Command::Command(User* user, Server* server, std::string message)
 			sendInvite(query);
 		else if (this->user_command == "KICK")
 			sendKick(query);
-		else if (this->user_command == "QUIT")
+		else if (this->user_command == "QUIT" || this->user_command == "DISCONNECT")
 			sendQuit(_user);
 		else
 			err_command("421", message, ERR_UNKNOWNCOMMAND);
@@ -99,7 +95,7 @@ bool Command::parse_command(std::string message)
 /* Checks if single command is quit. */
 bool Command::msg_quit(std::string message)
 {
-	if (message == "QUIT" || message == "quit")
+	if (message == "QUIT" || message == "quit" || message == "DISCONNECT" || message == "disconnect")
 		return true;
 
 	return false;
@@ -1010,7 +1006,8 @@ void Command::sendQuit(User* user)
 			if (((*it).second->getNickname()).compare(_user->getNickname()) == 0)
 			{
 				channel_name = (*it).first;
-				ss << _user->getNickUserHost() << " PART #" << channel_name << " ciao!" << "\r\n";
+				// ss << _user->getNickUserHost() << " PART # " << channel_name << " ciao!" << "\r\n";
+				ss << _user->getNickUserHost() << "Quit: " << " ciao!" << "\r\n";
 				 std::string a = ss.str();
 				for(std::multimap<std::string, User*>::iterator it2 = _server->_channel_users.begin(); it2 != _server->_channel_users.end(); it2++)
 				{
@@ -1021,17 +1018,15 @@ void Command::sendQuit(User* user)
 							Log::printStringCol(CRITICAL, "ERROR: QUIT FAILED.");
 					}
 				}
-				_server->_channel_users.erase(it);
-				break ;
 			}
 		}
 	}
 
-	for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
-	{
-		if ((*it)->getName().compare(channel_name) == 0 )
-			(*it)->deleteUser(_user);
-	}
+	// for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
+	// {
+	// 	if ((*it)->getName().compare(channel_name) == 0 )
+	// 		(*it)->deleteUser(_user);
+	// }
 
  	user->setState(DELETE);
 
