@@ -97,14 +97,16 @@ bool User::receive(void)
 
 	recv_buffer[size] = 0;
 	this->_buffer.append(recv_buffer);
+
+	Log::printStringCol(CRITICAL, this->_buffer);
 	return true;
 }
 
-/* Splits messages when separated by END_MSG ("\r\n"). */
+/* Splits messages when separated by END_MSG ("\n"). */
 void User::split(void)
 {
 	size_t pos;
-	std::string delimiter("\r\n");
+	std::string delimiter("\n");
 
 	while ((pos = this->_buffer.find(delimiter)) != std::string::npos)
 	{
@@ -112,8 +114,6 @@ void User::split(void)
 		this->_buffer.erase(0, pos + delimiter.length());
 		this->_dataToSend.push_back(tmp);
 	}
-	if (this->_buffer.length() != 0)
-		this->_dataToSend.push_back(this->_buffer);
 }
 
 /* Create a Command object for every valid input string and push it into the vector. */
@@ -162,9 +162,8 @@ void User::clearCommandFunction(void)
 /* ----------------------------------- OTHER CHECKS --------------------------------------  */
 bool User::isRegistered() const
 {
-	if (this->_nickname.length() != 0 && this->_username.length() != 0 && this->_password.length() != 0 &&
-		this->_password == this->_server->getPassword())
-			return true;
+	if (this->_nickname.length() != 0 && this->_username.length() != 0 && this->_password == this->_server->getPassword())
+		return true;
 
 	return false;
 }

@@ -25,7 +25,7 @@ int Utils::check_characters(std::string str)
 {
 	for (size_t i = 0; i < str.length(); i++)
 	{
-		if (!isalpha(str.c_str()[i]) && !isdigit(str.c_str()[i]))
+		if (isalpha(str.c_str()[i] != 0) && isdigit(str.c_str()[i] != 0))
 			return -1;
 	}
 
