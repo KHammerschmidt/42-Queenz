@@ -463,7 +463,7 @@ void Command::sendJoin(User* user, const std::string msg)
 	std::cout <<  "------------------------------------------------------------------\n";
 	std::cout <<  "------------------------------------------------------------------\n";
 	std::cout <<  "------------------------------------------------------------------\n";
-}//implement @ for OPERATORS USERS
+}
 
 
 bool Command::valid_channel(std::string channel_name)
