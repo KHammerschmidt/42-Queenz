@@ -73,8 +73,6 @@ void Server::run()
 				if (this->_users[pfds_iterator->fd]->getState() == DELETE)
 					disconnectUser(pfds_iterator->fd, false);
 			}
-
-			system("leaks ircserv");
 		}
 	}
 }
