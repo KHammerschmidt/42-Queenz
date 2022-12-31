@@ -37,7 +37,7 @@ Server::~Server()
 	this->_channel_users.clear();
 	this->_channels.clear();
 	this->_channel_users.clear();
-	
+
 	delete this;
 
 }
@@ -73,8 +73,6 @@ void Server::run()
 				if (this->_users[pfds_iterator->fd]->getState() == DELETE)
 					disconnectUser(pfds_iterator->fd, false);
 			}
-
-			system("leaks ircserv");
 		}
 	}
 }
@@ -113,7 +111,6 @@ void Server::disconnectUser(int fd, bool state)
 	try
 	{
 		User* tmp_user = this->_users.at(fd);
-		std::vector<Channel*> channel_to_delete;
 
 		for (channel_iterator = _channels.begin(); channel_iterator != _channels.end(); channel_iterator++)
 		{
@@ -142,22 +139,13 @@ void Server::disconnectUser(int fd, bool state)
 					}
 				}
 			}
-
-			if (tmp_channel->_channel_members.size() == 0)
-				channel_to_delete.push_back(tmp_channel);
-
 		}
 
-		for (size_t i = 0; i < channel_to_delete.size(); i++)
+		std::vector<Channel*>::iterator it;
+		for (it = _channels.begin(); it != _channels.end(); it++)
 		{
-			for (channel_iterator = this->_channels.begin(); channel_iterator != _channels.end(); channel_iterator++)
-			{
-				if ((*channel_iterator)->getName() == channel_to_delete[i]->getName())
-				{
-					this->_channels.erase(channel_iterator);
-					break;
-				}
-			}
+			if ((*it)->_channel_members.size() == 0)
+				delete *it;
 		}
 
 		for(std::multimap<std::string, User*>::iterator it = _channel_users.begin(); it != _channel_users.end(); it++)

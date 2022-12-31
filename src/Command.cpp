@@ -549,7 +549,7 @@ void Command::sendPart(std::string msg)
 	}
 	for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
 	{
-		if ((*it)->getName().compare(channel_name) == 0 )
+		if ((*it)->getName() == channel_name)
 			(*it)->deleteUser(_user);
 	}
 }
