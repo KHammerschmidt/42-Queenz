@@ -28,8 +28,8 @@ int main(int argc, char** argv)
 	while (!running)
 		server->run();
 
-	std::cout << " EVERYTHING IS CLOSED" << std::endl;
 	system("leaks ircserv");
-	std::cout << " After leaks" << std::endl;
+	std::cout << " EVERYTHING IS CLOSED" << std::endl;
+
 	return 0;
 }
