@@ -1,8 +1,6 @@
 #include "../includes/Channel.hpp"
-#include "../includes/User.hpp"
 
-
-Channel::Channel() {};    
+Channel::Channel() {};
 Channel::Channel(std::string channel_name) {setName(channel_name); }
 Channel::~Channel() {}
 
@@ -11,21 +9,15 @@ void		Channel::setUserStatus(int status) {this->_user_status = status;}
 std::string Channel::getName() const {return this->_name;}
 int         Channel::getUserStatus() {return this->_user_status;}
 
-
-
-
-
 void		Channel::addUser(User *user){
     if (_channel_operators.size() == 0)
     {
         user->setNicknameOP("@" + user->getNickname());
         _channel_operators.push_back(user);
     }
-     _channel_members.push_back(user); 
+     _channel_members.push_back(user);
 
 }
-
-
 
 void		Channel::deleteUser(User *user)
 {
@@ -37,6 +29,7 @@ void		Channel::deleteUser(User *user)
             break;
         }
     }
+
     for (std::vector<User*>::iterator it = this->_channel_members.begin(); it != this->_channel_members.end(); it++)
     {
         if ((*it)->getNickname() == user->getNickname())

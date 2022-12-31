@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include "User.hpp"
 
 class User;
 class Server;
@@ -17,7 +18,7 @@ private:
 	std::string	_topic;
 
 
-	int	_user_status; 
+	int	_user_status;
 
 	std::string mode;
 
@@ -37,8 +38,8 @@ public:
 
 
 	public:
-		std::vector<User*> _channel_members; 	
-		std::vector<User*> _channel_operators; 
+		std::vector<User*> _channel_members;
+		std::vector<User*> _channel_operators;
 
 
 	void		addUser(User *user);
