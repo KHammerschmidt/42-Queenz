@@ -1,6 +1,6 @@
 #include "../includes/Channel.hpp"
 
-Channel::Channel() {};
+// Channel::Channel() {};
 Channel::Channel(std::string channel_name) {setName(channel_name); }
 Channel::~Channel() {}
 
