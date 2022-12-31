@@ -13,7 +13,7 @@ Command::Command(User* user, Server* server, std::string message)
 	: _user(user), _server(server), query(message), command_state(false), reply_state(false), user_command(""), channels_replies()
 {
 	Log::printTrace(query);
-	
+
 	if (!parse_command(message))
 		return ;
 
@@ -538,6 +538,7 @@ void Command::sendPart(std::string msg)
 	}
 	this->command_state = false;
 	this->reply_state = false;
+
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 	{
 		if ((*it).first.compare(channel_name) == 0  && (*it).second->getNickname().compare(_user->getNickname()) == 0 )
@@ -551,7 +552,6 @@ void Command::sendPart(std::string msg)
 		if ((*it)->getName().compare(channel_name) == 0 )
 			(*it)->deleteUser(_user);
 	}
-
 }
 
 bool Command::find_user_in_channel(std::string channel_name, std::string nickname)

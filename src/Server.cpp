@@ -37,7 +37,7 @@ Server::~Server()
 	this->_channel_users.clear();
 	this->_channels.clear();
 	this->_channel_users.clear();
-
+	
 	delete this;
 
 }
@@ -73,6 +73,8 @@ void Server::run()
 				if (this->_users[pfds_iterator->fd]->getState() == DELETE)
 					disconnectUser(pfds_iterator->fd, false);
 			}
+
+			system("leaks ircserv");
 		}
 	}
 }
