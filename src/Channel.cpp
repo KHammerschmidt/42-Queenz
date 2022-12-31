@@ -1,57 +1,33 @@
 #include "../includes/Channel.hpp"
 #include "../includes/User.hpp"
 
-// to create a channel -> in USER: if (user parse tipes #join) -> Channel:createChannel (with static method); if doesnt work, delete createChannel and in User do new Channel()
 
-Channel::Channel() {};    //Kathi: I don't think a default constructor makes sense for Channels
-Channel::Channel(std::string channel_name) {setName(channel_name); }//i = 0; j = 0; k = 0;}
+Channel::Channel() {};    
+Channel::Channel(std::string channel_name) {setName(channel_name); }
 Channel::~Channel() {}
 
 void        Channel::setName(const std::string channel_name){this->_name = channel_name;}
 void		Channel::setUserStatus(int status) {this->_user_status = status;}
 std::string Channel::getName() const {return this->_name;}
 int         Channel::getUserStatus() {return this->_user_status;}
-// std::map<int, User*>  Channel::getChannelMembers(){return this->_channel_members;}
-// std::map<int, User*>  Channel::getChannelOperators(){return this->_channel_operators;}
-// std::map<int, User*>  Channel::getChannelCreator(){return this->_channel_creator;}
 
 
 
-void        Channel::deleteChannel()
-{
-   // if (_channel_members.size() == 0)
-    //    delete this; //suicide
-}
 
 
-// void        Channel::setTopic(const std::string topic){this->_topic = topic;}
-// std::string Channel::getTopic() const{return this->_topic;}
-
-// void Channel::changeTopic(const std::string newTopic) {
-//     setTopic(newTopic);
-//     std::cout << "The topic of the channel was updatet!" << std::endl;
-// }
-
-
-void		Channel::addUser(User *user){//, Server *server){
-
+void		Channel::addUser(User *user){
     if (_channel_operators.size() == 0)
     {
         user->setNicknameOP("@" + user->getNickname());
         std::cout << " PUSH BACK OP ADD USER" << std::endl;
-        _channel_operators.push_back(user); //put in creator map
+        _channel_operators.push_back(user);
     }
-     _channel_members.push_back(user); //add in member map
+     _channel_members.push_back(user); 
 
 }
 
 
 void		Channel::deleteUser(User *user){
-    //make var server and delete also from struct in server
-    //  for (std::multimap<std::string, User*>::iterator it = server->_channel_users.begin(); it != _channel_members.end(); i++t)
-    //     if (*it->second->getNickname() == user->getNickname())
-    //         _channel_members.erase(it);
-
     std::cout << " HERE IN DELETE USER" << std::endl;
     std::cout << this->_channel_operators.size() << ": size channel operators" << std::endl;
     for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
@@ -75,27 +51,8 @@ void		Channel::deleteUser(User *user){
     }
 }
 
-
-
-// bool    Channel::returnPrivilegesStatus(std::string user_nickname)
-// {
-//     for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
-//     {
-//         if ((*it)->getNickname() == user_nickname)
-//             return true;
-//     }
-
-//     //just creator can make operators or also operators?
-//     for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
-//     {
-//         if ((*it)->getNickname() == user_nickname)
-//             return true;
-//     }
-//     return false;
-// }
-
 //user_op: user that typed the command
-void    Channel::giveTakeOpPrivileges( User *user_not_op,User *user_op, std::string mode){
+void    Channel::giveTakeOpPrivileges( User *user_not_op, User *user_op, std::string mode){
     if ( mode == "+o")
     {
         for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
@@ -128,8 +85,7 @@ void    Channel::giveTakeOpPrivileges( User *user_not_op,User *user_op, std::str
 		std::cout << "#NICK: " << (*it2)->getNickname() << "\n";
     }
 
-    user_op->getNickname();//just for compile, can cancel it
+    user_op->getNickname();
 
 
 }
-//update in channel operator, but not in multimap ->conflict

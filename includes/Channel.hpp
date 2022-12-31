@@ -9,9 +9,6 @@
 class User;
 class Server;
 
- //enum channels_operators {channel_creator = 1, channel_operator = 2, channel_member = 3};
-
-
 class Channel
 {
 
@@ -20,18 +17,9 @@ private:
 	std::string	_topic;
 
 
-	/*User status*/
-	int	_user_status; //c->creator, o->operator, u->normal user
-
-
-	// std::string _mode;
-	// std::map<int, std::string> user_mode;
-	// std::vector<User *> invited;
-
+	int	_user_status; 
 
 	std::string mode;
-
-	//std::vector<User*> _channel_creator; 	//saves the one creator of the channel (first person who enters it), creator is also automatically an operator -> key[k]
 
 public:
 	Channel();
@@ -48,64 +36,15 @@ public:
 	std::map<int, User*>  getChannelCreator();
 
 
-	//make private +getter
 	public:
-		std::vector<User*> _channel_members; 	//list of members in channel-> key[i]
-		std::vector<User*> _channel_operators; // channel operators can perform-> key[j]
+		std::vector<User*> _channel_members; 	
+		std::vector<User*> _channel_operators; 
 
 
-
-	// void 		setTopic(const std::string topic);
-	// std::string getTopic() const;
-	// void 		changeTopic(const std::string newTopic);
-
-	void		addUser(User *user);//, Server *server);
+	void		addUser(User *user);
 	void		deleteUser(User *user);
 
-	void		deleteChannel();
-	//void setMode(const std::string mode, const User &user1, const User &user2);
-	//void print_vector(std::vector<std::string> vctr);
-
-
-
-	//void setMode(const std::string mode, User *user_op,  User *user_not_op);
-	//std::string getMode() const;
-	//void changeMode(const std::string mode);
-	//lists all available modes and returns the valid one or an error
-	//void selectNewMode();
-
-
-	// // INVITE  - Invite a client to an invite-only channel (mode +i)
-	// void invite();
-	// // KICK    - Eject a client from the channel
-	// void kick();
-	// // MODE    - Change the channel's mode, as well as members' privileges
-	// void mode();
-	// // PRIVMSG - Sending messages to the channel (mode +n, +m, +v)
-	// void privmsg();
-	// // TOPIC   - Change the channel topic in a mode +t channel
-	// void topic();
-
-
 	void giveTakeOpPrivileges(User *user_not_op, User *user_op, std::string mode);
-	//bool returnPrivilegesStatus(std::string user_nickname);
-
-	//void giveCreatPrivileges(const User& name);
-	// //channel creator becomes channel operator (except for +channels)
-
-
-	// // mode function: take nickname as param and affect privileges given to user;
-	// // maybe implement 1 or 2? need to execute 5 functions for channel operators
-	// void executeMode(); 	// function should call respective functions to execute them entioned modes
-	//     O - give "channel creator" status;
-	//     o - give/take channel operator privilege;
-	//     k - set/remove the channel key (password);
-	//     l - set/remove the user limit to channel;
-	// I deleted all the modes that are not relevant for us (e.g. channel flags and modes)
-
-
-
-	// BITTE UPDATE OB ICH ETWAS VON DEN CHANNELS VERGESSEN HABE :)
 };
 
 #endif
