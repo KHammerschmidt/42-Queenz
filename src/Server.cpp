@@ -19,8 +19,6 @@ Server::Server(char** argv)
 
 Server::~Server()
 {
-	for (user_iterator = _users.begin(); user_iterator != _users.end(); user_iterator++)
-		std::cout << (*user_iterator).first << "  " << (*user_iterator).second->getNickname() << std::endl;
 
 	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
 	{
@@ -31,25 +29,20 @@ Server::~Server()
 
 	this->_users.clear();
 
+	for (std::map<std::string, User*>::iterator iter = this->_channel_users.begin(); iter != this->_channel_users.end(); iter++)
+		delete ((*iter).second);
+
+	for (std::vector<Channel*>::iterator iter = this->_channels.begin(); iter != this->_channels.end(); iter++)
+		delete (*iter);
 
 
-	// for (std::map<std::string, User*>::iterator iter = this->_channel_users.begin(); iter != this->_channel_users.end(); iter++)
-	// 	deleteUser((*iter).second);
-
-	// for (std::vector<Channel*>::iterator iter = this->_channels.begin(); iter != this->_channels.end(); iter++)
-	// 	deleteChannel(*iter);
-
-
-	// for (std::map<std::string, Channel*>::iterator iter = this->_channels.begin(); iter != _channels.end(); iter++)
-	// 	deleteChannel((*iter).second);
+	for (std::vector<Channel*>::iterator iter = this->_channels.begin(); iter != _channels.end(); iter++)
+		delete *iter;
 
 	this->_channel_users.clear();
 	this->_channels.clear();
 	this->_channel_users.clear();
 	delete this;
-
-
-	// this->_channels_by_name.clear();
 
 }
 
@@ -70,14 +63,6 @@ void Server::run()
 		{
 			if (pfds_iterator->revents == 0)
 				continue;
-
-			//POLLHUP will signal that the connection was closed from both sides (server & client)
-			// if ((pfds_iterator->revents & POLLHUP) == POLLHUP)
-			// {
-			// 	std::cout << "DISCONNECT USER AFTER POLLHUP" << std::endl;
-			// 	disconnectUser(pfds_iterator->fd, false);
-			// 	break ;
-			// }
 
 			if ((pfds_iterator->revents & POLLIN) == POLLIN)
 			{
@@ -129,7 +114,6 @@ void Server::disconnectUser(int fd, bool state)
 
 	try
 	{
-		// 1 get user to be disconnected
 		User* tmp_user = this->_users.at(fd);
 		std::vector<Channel*> channel_to_delete;
 
@@ -138,31 +122,39 @@ void Server::disconnectUser(int fd, bool state)
 			Channel* tmp_channel = *channel_iterator;
 			std::cout << "CURRENT CHANNEL NAME: " << (*channel_iterator)->getName() << std::endl;
 
-			std::cout << "---CHANNEL OPERATOR SIZE: " << tmp_channel->_channel_operators.size() << std::endl;
+			std::cout << "---BEFORE CHANNEL OPERATOR SIZE: " << tmp_channel->_channel_operators.size() << std::endl;
 			if (tmp_channel->_channel_operators.size() > 0)
 			{
 				for (std::vector<User*>::iterator it_a = tmp_channel->_channel_operators.begin(); it_a != tmp_channel->_channel_operators.end(); it_a++)
 				{
+					std::cout << "COMPARING NAMES OF USER & CHANNEL OPERATOR" << std::endl;
+					std::cout << (*it_a)->getNickname() << "|" << tmp_user->getNickname() << std::endl;
 					if ((*it_a)->getNickname() == tmp_user->getNickname())
 					{
+						std::cout << "CHANNEL OPERATOR DELETE " << std::endl;
 						tmp_channel->_channel_operators.erase(it_a);
 						break ;
 					}
 				}
 			}
+			std::cout << "---AFTER CHANNEL OPERATOR SIZE: " << tmp_channel->_channel_operators.size() << std::endl;
 
-			std::cout << "---CHANNEL MEMBER SIZE: " << tmp_channel->_channel_members.size() << std::endl;
+			std::cout << "---BEFORE CHANNEL MEMBER SIZE: " << tmp_channel->_channel_members.size() << std::endl;
 			if (tmp_channel->_channel_members.size() > 0)
 			{
 				for (std::vector<User*>::iterator it_a = tmp_channel->_channel_members.begin(); it_a != tmp_channel->_channel_members.end(); it_a++)
 				{
+					std::cout << "COMPARING NAMES OF USER & CHANNEL MEMBER" << std::endl;
+					std::cout << (*it_a)->getNickname() << "|" << tmp_user->getNickname() << std::endl;
 					if ((*it_a)->getNickname() == tmp_user->getNickname())
 					{
+						std::cout << "CHANNEL MEMBER DELETE " << std::endl;
 						tmp_channel->_channel_members.erase(it_a);
 						break ;
 					}
 				}
 			}
+			std::cout << "---AFTER CHANNEL MEMBER SIZE: " << tmp_channel->_channel_members.size() << std::endl;
 
 
 			if (tmp_channel->_channel_members.size() == 0)
@@ -183,15 +175,16 @@ void Server::disconnectUser(int fd, bool state)
 			}
 		}
 
-		//delete out of multimap
-		// std::cout << "CHANNEL USERS DELETE" << std::endl;
-		// for(std::multimap<std::string, User*>::iterator it = _channel_users.begin(); it != _channel_users.end(); it++)
-		// {
-		// 	if (((*it).second->getNickname()).compare(tmp_user->getNickname()) == 0)
-		// 	{
-		// 		_channel_users.erase(it);
-		// 	}
-		// }
+
+		for(std::multimap<std::string, User*>::iterator it = _channel_users.begin(); it != _channel_users.end(); it++)
+		{
+			if (((*it).second->getNickname()) == tmp_user->getNickname())
+			{
+				std::cout << "DELETING USER OUT OF MULTIMAP" << std::endl;
+				_channel_users.erase(it);
+				break ;
+			}
+		}
 
 
 		std::vector<pollfd>::iterator iter;

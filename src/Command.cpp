@@ -56,7 +56,7 @@ Command::Command(User* user, Server* server, std::string message)
 			err_command("421", message, ERR_UNKNOWNCOMMAND);
 	}
 
-	if (this->_user->isRegistered() == true && this->_user->getState() != ONLINE)
+	if (this->_user->isRegistered() == true && this->_user->getState() != ONLINE && this->_user->getState() != DELETE)
 	{
 		getWelcomeReply(this->_user);
 		this->_user->setState(ONLINE);
@@ -1010,38 +1010,36 @@ void Command::sendInvite(std::string msg)
 void Command::sendQuit(User* user)
 {
 	std::string channel_name;
+	std::string reason;
+
+	if (this->_args[0].length() != 0)
+		reason = this->_args[0];
+	else
+		reason = "";
 	std::stringstream ss;
-	for (size_t i=0; i < _server->_channel_users.size(); i++)
+
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 	{
-		for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
+		if (((*it).second->getNickname()) == _user->getNickname())
 		{
-			if (((*it).second->getNickname()).compare(_user->getNickname()) == 0)
+			channel_name = (*it).first;
+			ss << _user->getNickUserHost() << " QUIT :" << reason << "\r\n";
+
+			std::string a = ss.str();
+			for(std::multimap<std::string, User*>::iterator it2 = _server->_channel_users.begin(); it2 != _server->_channel_users.end(); it2++)
 			{
-				channel_name = (*it).first;
-				// ss << _user->getNickUserHost() << " PART # " << channel_name << " ciao!" << "\r\n";
-				ss << _user->getNickUserHost() << "Quit: " << " ciao!" << "\r\n";
-				 std::string a = ss.str();
-				for(std::multimap<std::string, User*>::iterator it2 = _server->_channel_users.begin(); it2 != _server->_channel_users.end(); it2++)
+				if ((*it2).first == channel_name && (*it2).second->getNickname() != _user->getNickname())
 				{
-					if ((*it2).first.compare(channel_name) == 0)
-					{
-						int fd = (*it2).second->getFd();
-						if (send(fd, a.c_str(), a.length(), 0) < 0)
-							Log::printStringCol(CRITICAL, "ERROR: QUIT FAILED.");
-					}
+					int fd = (*it2).second->getFd();
+					if (send(fd, a.c_str(), a.length(), 0) < 0)
+						Log::printStringCol(CRITICAL, "ERROR: QUIT FAILED.");
+					else
+						Log::printStringCol(LOG, "LOG: SENDING QUIT SUCCESSFUL");
 				}
 			}
 		}
 	}
-
-	// for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
-	// {
-	// 	if ((*it)->getName().compare(channel_name) == 0 )
-	// 		(*it)->deleteUser(_user);
-	// }
-
  	user->setState(DELETE);
-
 }
 
 /* ======================================================================================== */
