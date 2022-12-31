@@ -48,19 +48,6 @@ void	User::setNickUserHost() {
 	this->_nick_user_host.append(HOSTNAME);
 }
 
-// kathi version
-// void	User::setNickUserHost()
-// {
-// 	std::stringstream ss;
-
-// 	if (this->_username.length() == 0)
-// 		ss << ":" << this->getNickname() << "!" << this->getNickname() << "@" << HOSTNAME;
-// 	else
-// 		ss << ":" << this->getNickname() << "!" << this->getUsername() << "@" << HOSTNAME;
-
-// 	this->_nick_user_host = ss.str();
-// }
-
 /* ======================================================================================== */
 /* -------------------------------------- MAIN LOOP --------------------------------------  */
 /* Function gets called when there is data to receive for the user. */
@@ -84,7 +71,6 @@ bool User::receive(void)
 	memset(&recv_buffer, 0, sizeof(BUFFER_SIZE + 1));
 
 	size_t size = recv(this->_fd, &recv_buffer, BUFFER_SIZE, 0);
-	Log::printTrace(recv_buffer);
 	if (size < 0)
 		return false;
 	else if (size == 0)

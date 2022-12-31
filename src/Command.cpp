@@ -12,6 +12,8 @@ int Command::getReceiverFd(void) const { return this->receiver_fd; }
 Command::Command(User* user, Server* server, std::string message)
 	: _user(user), _server(server), query(message), command_state(false), reply_state(false), user_command(""), channels_replies()
 {
+	Log::printTrace(query);
+	
 	if (!parse_command(message))
 		return ;
 
@@ -215,25 +217,6 @@ void Command::send_replies_to_channel(void)
 			}
 		}
 	}
-
-	// std::vector<Channel*>::iterator it;
-	// for (it = _server->_channels.begin(); it != _server->_channels.end(); it++)
-	// {
-	// 	Channel* tmp_channel = *it;
-	// 	std::cout << tmp_channel->getName() << std::endl;
-
-	// 	for(std::multimap<std::string, User*>::iterator iter =_server->_channel_users.begin(); iter != _server->_channel_users.end(); iter++)
-	// 	{
-	// 		if (((*iter).first).compare(tmp_channel->getName()) == 0)
-	// 		{
-	// 			int fd = (*iter).second->getFd();
-	// 			if (send(fd, _reply_message.c_str(), _reply_message.length(), 0) < 0)
-	// 				Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAILED hihihi.");
-	// 			else
-	// 				Log::printStringCol(LOG, "LOG: SENDING REPLY SUCCESSFUL hihii.");
-	// 		}
-	// 	}
-	//}
 }
 
 /* Loop through existing users and check if nickname is already taken. */
@@ -356,7 +339,7 @@ void Command::sendPrivMsgUser(User* user, std::string msg)
 /* --------------------------------- UTILITY--------- -----------------------------------  */
 //create a string with all nicknames of users of this channel
 std::string Command::return_string_all_users_in_channel(const std::string channel_name)
-{//353
+{
 	std::stringstream ss;
 
 	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++){
@@ -393,7 +376,6 @@ bool Command::joinInputFormatCheck(std::string command, std::string channel_name
 	if (command.compare("JOIN") != 0 || prefix_channel.compare("#") !=0)
 		return true;
 
-	//test channel_name errors
 	if (channel_name.find(" ") != (unsigned long) -1 || channel_name.find(":") != (unsigned long) -1 || channel_name.find(",") != (unsigned long) -1)
 		return true;
 
@@ -460,7 +442,6 @@ void Command::sendJoin(User* user, const std::string msg)
 		if (((*it).first).compare(channel_name) == 0 && (*it).second->getNickname().compare(_user->getNickname()) != 0)
 		{
 			int fd = (*it).second->getFd();
-			//std::cout << "FD: " << fd << " MESSAGE: " << a << "----------\n";
 			if (send(fd, a.c_str(), a.length(), 0) < 0)
 				Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAIELD.");
 		}
@@ -503,8 +484,7 @@ bool Command::valid_channel(std::string channel_name)
 void Command::sendChannelMsg(std::string text, std::string channel_name)
 {
 	if (valid_channel(channel_name) == false)
-		return ; //print error channel not exist //bug, if channel already opened by connecting to server, first user cannot write msg to server since channel is not known by every new connection from server side
-
+		return ;
 
 	std::stringstream ss;
 	ss << _user->getNickUserHost() << " PRIVMSG #" << channel_name << " " << text << "\r\n";
@@ -513,9 +493,6 @@ void Command::sendChannelMsg(std::string text, std::string channel_name)
 	{
 		if (((*it).first).compare(channel_name) == 0 && ((*it).second->getNickname().compare(_user->getNickname()) != 0))
 		{
-
-           	// this->_command_message = ss.str();
-			//this->receiver_fd = (*it).second->getFd();
 			int fd = (*it).second->getFd();
 			std::cout << "FD: " << fd << " MESSAGE: " << a << "----------\n";
 			if (send(fd, a.c_str(), a.length(), 0) < 0)
@@ -536,7 +513,7 @@ void Command::sendPart(std::string msg)
 
 	index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
-		return ; //print error and exit
+		return ;
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
 	std::string temp = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);
@@ -545,7 +522,7 @@ void Command::sendPart(std::string msg)
 	std::string channel_name = temp.substr(0, temp.length() - text.length() - 1);
 
 	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)
-	 	return ;	//print error and exit
+	 	return ;
 
 	std::stringstream ss;
 	ss << _user->getNickUserHost() << " PART #" << channel_name << " " << text << "\r\n";
@@ -561,7 +538,6 @@ void Command::sendPart(std::string msg)
 	}
 	this->command_state = false;
 	this->reply_state = false;
-	//delete channel/user from multimap
 	for(std::multimap<std::string, User*>::iterator it=_server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 	{
 		if ((*it).first.compare(channel_name) == 0  && (*it).second->getNickname().compare(_user->getNickname()) == 0 )
@@ -570,7 +546,6 @@ void Command::sendPart(std::string msg)
 			break ;
 		}
 	}
-	//delete channel members/operators from channel
 	for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
 	{
 		if ((*it)->getName().compare(channel_name) == 0 )
@@ -666,7 +641,7 @@ void Command::sendMode(std::string msg){
 
 	index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
-		return ; 
+		return ;
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
 	std::string temp = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);
@@ -680,17 +655,14 @@ void Command::sendMode(std::string msg){
 		return ;
 	mode = temp.substr(0, index_of_first_space);
 	nickname = temp.substr(index_of_first_space + 1, temp.length() - mode.length() - 1);
-	//std::cout << "command: " << command << "\n-----prefix: " << prefix_channel << "\n--------channel_name: " << channel_name << "\n--------mode: " << mode << "\n------nickname: " << nickname << "\n--------------TEST-------------n\n";
 
 
 	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)
 		return ;
 
-	//check nickname is in channel
 	if (find_user_in_channel(channel_name, nickname) == false)
-		return; 
+		return;
 
-	//check if user this is an operator
 	bool user_op = false;
 	for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
 	{
@@ -713,11 +685,10 @@ void Command::sendMode(std::string msg){
 		}
 	}
 
-	//check if mode is legit
 	if (mode.substr(0,2).compare("+o") == 0 || mode.substr(0,2).compare("-o") == 0)
-		setMode(mode, channel_name, nickname); //OP
+		setMode(mode, channel_name, nickname);
 	else
-		return ; //error
+		return ;
 
 }
 
@@ -729,8 +700,6 @@ void Command::sendTopic(std::string msg)
 	std::string topic;
 	std::stringstream ss;
 
-	// test user is op
-
 	index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
 		return ;
@@ -738,22 +707,20 @@ void Command::sendTopic(std::string msg)
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
 
-  std::string temp = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);//chnage and test
+  std::string temp = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);
 	index_of_first_space = temp.find_first_of(" ");
 	if (index_of_first_space == -1)
 		return ;
 
 	std::string channel_name = temp.substr(0, temp.length() - (temp.length() - index_of_first_space));
-	topic = temp.substr(index_of_first_space + 2, temp.length() - (channel_name).length() - 1); /*mode + nick*/
+	topic = temp.substr(index_of_first_space + 2, temp.length() - (channel_name).length() - 1);
 	index_of_first_space = temp.find_first_of(" ");
 	std::cout << " topic:" << topic << "\ncommand: "  << command << "\n-----prefix: " << prefix_channel << "\n--------channel_name: " << channel_name << "\n--------topic: " << topic << "\n--------------TEST-------------n\n";
 
 
-	//check if user this is an operator -> can just check getNickOP==true
 	bool user_op = false;
 	for(std::vector<Channel*>::iterator it = _server->_channels.begin(); it != _server->_channels.end(); it++)
 	{
-
 		if ((*it)->getName().compare(channel_name) == 0)
 		{
 			for(std::vector<User*>::iterator it2 = (*it)->_channel_operators.begin(); it2 != (*it)->_channel_operators.end(); it2++)
@@ -798,27 +765,27 @@ void Command::sendKick(std::string msg)
 
 	index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
-		return ; //print error and exit
+		return ;
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string prefix_channel = msg.substr(index_of_first_space + 1, 1);
-	std::string temp = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);//chnage and test
+	std::string temp = msg.substr(index_of_first_space + 2, msg.length() - index_of_first_space);
 	index_of_first_space = temp.find_first_of(" ");
 	if (index_of_first_space == -1)
-		return ; //print error and exit
+		return ;
 	std::string channel_name = temp.substr(0, temp.length() - (temp.length() - index_of_first_space));
-	temp = temp.substr(index_of_first_space + 1, temp.length() - (channel_name).length() - 1); /*mode + nick*/
+	temp = temp.substr(index_of_first_space + 1, temp.length() - (channel_name).length() - 1);
 	index_of_first_space = temp.find_first_of(" ");
 	if (index_of_first_space == -1)
-		return ; //print error and exit
+		return ;
 	nickname = temp.substr(0, index_of_first_space);
-	std::string text = temp.substr(index_of_first_space + 1, temp.length() - nickname.length() - 1);//chnage and test
+	std::string text = temp.substr(index_of_first_space + 1, temp.length() - nickname.length() - 1);
 	std::cout << "command: " << command << "\n-----prefix: " << prefix_channel << "\n--------channel_name: " << channel_name << "\n--------mode: " << mode << "\n------nickname: " << nickname << "\n--------------TEST-------------n\n";
 
 
 	if (prefix_channel.compare("#") !=0 || valid_channel(channel_name) == false)
-		return;	
+		return;
 
-	//check nickname is in channel
+
 	if (find_user_in_channel(channel_name, nickname) == false)
 		return;
 
@@ -878,17 +845,17 @@ void Command::sendFile(std::string msg)
 	if (index_of_first_space == -1)
 		return ;
 	std::string command = msg.substr(0, index_of_first_space);
-	std::string temp = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);//chnage and test
+	std::string temp = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
 	index_of_first_space = temp.find_first_of(" ");
 	if (index_of_first_space == -1)
 		return ;
 	std::string command2 = temp.substr(0, temp.length() - (temp.length() - index_of_first_space));
-	temp = temp.substr(index_of_first_space + 1, temp.length() - (command2).length() - 1); /*mode + nick*/
+	temp = temp.substr(index_of_first_space + 1, temp.length() - (command2).length() - 1);
 	index_of_first_space = temp.find_first_of(" ");
 	if (index_of_first_space == -1)
 		return ;
 	std::string nickname = temp.substr(0, index_of_first_space);
-	std::string file = temp.substr(index_of_first_space + 1, temp.length() - nickname.length() - 1);//chnage and test
+	std::string file = temp.substr(index_of_first_space + 1, temp.length() - nickname.length() - 1);
 
 
 
