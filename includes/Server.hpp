@@ -39,14 +39,11 @@ class Server
 
 		std::vector<pollfd> 			_pollfds;
 
-		//RUS-> ich habe _channels vector und  _channel_users map implementiert, die muessen hier deleted werde.
 		std::map<int, User*>				_users;
 
 	public:
-		std::vector<Channel*>				_channels; 			//2) vector all channels
-		std::multimap<std::string, User*> 	_channel_users;		//3) mappair channel/user, with multimap can use key channel multiple times
-
-		// std::vector<std::string>			_channels_by_name;	//->cancel, not needed
+		std::vector<Channel*>				_channels;
+		std::multimap<std::string, User*> 	_channel_users;
 
 	public:
 		std::vector<pollfd>::iterator 	pfds_iterator;
@@ -77,7 +74,6 @@ class Server
 		std::string getPassword() const;
 		sockaddr_in	getAddr() const;
 
-		//RUSLAN
 		std::vector<User*> getUsers() const;
 
 		void setServerStatus(bool status);

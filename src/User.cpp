@@ -8,7 +8,7 @@ User::User(int fd, sockaddr_in u_address, Server* server)
 		_port(ntohs(server->getAddr().sin_port)),
 		_user_address(u_address),
 		_fd(fd), _state(CONNECTED),
-		_username(), _nickname(), _fullname(), _nick_user_host(), _nickOP(""),
+		_username(), _nickname(), _nick_user_host(), _nickOP(""),
 		_password(),
 		_buffer(), _dataToSend(),
 		command_function(), _first_nick(false) {};
@@ -18,7 +18,6 @@ User::User(int fd, sockaddr_in u_address, Server* server)
 int User::getFd() const{ return this->_fd; }
 int User::getState() const { return this->_state; }
 std::string	User::getNickUserHost() const{ return this->_nick_user_host; }
-std::string	User::getFullname() const { return this->_fullname; }
 std::string	User::getUsername() const { return this->_username; }
 std::string User::getNickname() const { return this->_nickname; }
 std::string User::getPassword() const { return this->_password; }
@@ -30,7 +29,6 @@ std::string User::getNicknameOP() const { return this->_nickOP; }
 void User::setPassword(std::string pw) { this->_password = pw; }
 void User::setState(int new_state) { this->_state = new_state; }
 void User::setNicknameOP(std::string nickOP){this->_nickOP = nickOP;}
-void User::setFullname(std::string fullname) { this->_fullname = fullname; }
 void User::setUsername(const std::string& username) { this->_username = username; }
 void User::setUserChannelStatus(const std::string &status) {this->_userStatusInChannel = status;}
 
