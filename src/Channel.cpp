@@ -19,7 +19,6 @@ void		Channel::addUser(User *user){
     if (_channel_operators.size() == 0)
     {
         user->setNicknameOP("@" + user->getNickname());
-        std::cout << " PUSH BACK OP ADD USER" << std::endl;
         _channel_operators.push_back(user);
     }
      _channel_members.push_back(user); 
@@ -27,15 +26,13 @@ void		Channel::addUser(User *user){
 }
 
 
-void		Channel::deleteUser(User *user){
-    std::cout << " HERE IN DELETE USER" << std::endl;
-    std::cout << this->_channel_operators.size() << ": size channel operators" << std::endl;
+
+void		Channel::deleteUser(User *user)
+{
     for (std::vector<User*>::iterator it = this->_channel_operators.begin(); it != this->_channel_operators.end(); it++)
     {
-        std::cout << "usernickname: " << user->getNickname() << "|" << (*it)->getNickname() << std::endl;
         if ((*it)->getNickname() == user->getNickname())
         {
-            std::cout << " HERE IN DELETE USER" << std::endl;
             _channel_operators.erase(it);
             break;
         }
@@ -44,7 +41,6 @@ void		Channel::deleteUser(User *user){
     {
         if ((*it)->getNickname() == user->getNickname())
         {
-            std::cout << " HERE IN DELETE USER" << std::endl;
             _channel_members.erase(it);
             break ;
         }

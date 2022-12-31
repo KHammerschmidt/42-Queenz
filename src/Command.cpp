@@ -477,7 +477,6 @@ void Command::sendJoin(User* user, const std::string msg)
 	this->_command_message = ss.str();
 
 	this->receiver_fd = user->getFd();
-	std::cout << "COMMAND MESSAGE: " << this->_command_message;
 	Log::printStringCol(CRITICAL, msg);
 
 	std::cout <<  "------------------------------------------------------------------\n";

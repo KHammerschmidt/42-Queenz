@@ -37,7 +37,6 @@ class User
 		/* user identifier vars */
 		std::string 			_username;
 		std::string 			_nickname;
-		std::string				_fullname;
 		std::string				_nick_user_host;
 		std::string				_nickOP;
 		std::string				_password;
@@ -51,7 +50,7 @@ class User
 		std::string				_userStatusInChannel;
 
 	public:
-		bool					_first_nick;			//make private and getter
+		bool					_first_nick;
 
 		User(int fd, sockaddr_in u_address, Server* server);
 		~User();
@@ -69,7 +68,6 @@ class User
 		std::string getNicknameOP() const;
 		std::string getNickname() const;
 		std::string getUsername() const;
-		std::string getFullname() const;
 		std::string getPassword() const;
 		std::string getNickUserHost() const;
 		std::string getUserChannelStatus() const;
@@ -79,15 +77,11 @@ class User
 		void setState(int new_state);
 		void setPassword(std::string pw);
 		void setLastPing(time_t last_ping);
-		void setFullname(std::string fullname);
 		void setNickname(const std::string& nickname);
 		void setUsername(const std::string& username);
 		void setUserChannelStatus(const std::string &status);
 
 		bool isRegistered() const;
-		void authenticate_new_user(std::string msg);
-
-		void leave() {};
 
 };
 
