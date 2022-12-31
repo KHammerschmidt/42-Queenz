@@ -1,5 +1,5 @@
 NAME = ircserv
-CFLAGS = -Wall -Werror -Wextra -std=c++98
+CFLAGS = -Wall -Werror -Wextra -std=c++98 -fsanitize=address
 LDFLAGS =
 CC = c++
 VPATH = src/

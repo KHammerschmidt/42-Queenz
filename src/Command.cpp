@@ -843,7 +843,7 @@ void Command::sendFile(std::string msg)
 {
 	int index_of_first_space = msg.find_first_of(" ");
 	if (index_of_first_space == -1)
-		return ;
+		return ; //print error and exit
 	std::string command = msg.substr(0, index_of_first_space);
 	std::string temp = msg.substr(index_of_first_space + 1, msg.length() - index_of_first_space);
 	index_of_first_space = temp.find_first_of(" ");
