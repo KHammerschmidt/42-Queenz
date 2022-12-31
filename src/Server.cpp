@@ -73,6 +73,8 @@ void Server::run()
 				if (this->_users[pfds_iterator->fd]->getState() == DELETE)
 					disconnectUser(pfds_iterator->fd, false);
 			}
+
+			system("leaks ircserv");
 		}
 	}
 }
@@ -95,8 +97,7 @@ void Server::connectNewUser()
 	pollfd user_pollfd = {new_fd, POLLIN, -1};
 	this->_pollfds.push_back(user_pollfd);
 
-	User* new_user = new User(new_fd, s_address, this);
-
+	User*new_user = new User(new_fd, s_address, this);
 	this->_users.insert(std::make_pair(new_fd, new_user));
 
 	std::cout << "New User on port: new_fd: " << new_fd << " | inet_ntoa: " << inet_ntoa(s_address.sin_addr);
@@ -142,10 +143,14 @@ void Server::disconnectUser(int fd, bool state)
 		}
 
 		std::vector<Channel*>::iterator it;
-		for (it = _channels.begin(); it != _channels.end(); it++)
+		for (it = _channels.begin(); it < _channels.end(); it++)
 		{
 			if ((*it)->_channel_members.size() == 0)
-				delete *it;
+			{
+				delete (*it);
+				_channels.erase(it);
+			}
+			std::cout << (*it)->_channel_members.size() << std::endl;
 		}
 
 		for(std::multimap<std::string, User*>::iterator it = _channel_users.begin(); it != _channel_users.end(); it++)
@@ -156,7 +161,6 @@ void Server::disconnectUser(int fd, bool state)
 				break ;
 			}
 		}
-
 
 		std::vector<pollfd>::iterator iter;
 		for (iter = _pollfds.begin(); iter != _pollfds.end(); iter++)
