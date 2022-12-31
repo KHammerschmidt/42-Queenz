@@ -199,23 +199,43 @@ void Command::register_nickname(void)
 /* Sends a specified string to all members of all channels to which the current user belongs. */
 void Command::send_replies_to_channel(void)
 {
-	std::vector<Channel*>::iterator it;
-	for (it = _server->_channels.begin(); it != _server->_channels.end(); it++)
+	for(std::multimap<std::string, User*>::iterator it = _server->_channel_users.begin(); it != _server->_channel_users.end(); it++)
 	{
-		Channel* tmp_channel = *it;
-
-		for(std::multimap<std::string, User*>::iterator iter =_server->_channel_users.begin(); iter != _server->_channel_users.end(); iter++)
+		if (((*it).second->getNickname()) == _user->getNickname())
 		{
-			if (((*iter).first).compare(tmp_channel->getName()) == 0)
+			std::string channel_name = (*it).first;
+			for(std::multimap<std::string, User*>::iterator it2 = _server->_channel_users.begin(); it2 != _server->_channel_users.end(); it2++)
 			{
-				int fd = (*iter).second->getFd();
-				if (send(fd, _reply_message.c_str(), _reply_message.length(), 0) < 0)
-					Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAILED hihihi.");
-				else
-					Log::printStringCol(LOG, "LOG: SENDING REPLY SUCCESSFUL hihii.");
+				if ((*it2).first == channel_name && (*it2).second->getNickname() != _user->getNickname())
+				{
+					int fd = (*it2).second->getFd();
+					if (send(fd, _reply_message.c_str(), _reply_message.length(), 0) < 0)
+						Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAILED hihihi.");
+					else
+						Log::printStringCol(LOG, "LOG: SENDING REPLY SUCCESSFUL hihii.");
+				}
 			}
 		}
 	}
+
+	// std::vector<Channel*>::iterator it;
+	// for (it = _server->_channels.begin(); it != _server->_channels.end(); it++)
+	// {
+	// 	Channel* tmp_channel = *it;
+	// 	std::cout << tmp_channel->getName() << std::endl;
+
+	// 	for(std::multimap<std::string, User*>::iterator iter =_server->_channel_users.begin(); iter != _server->_channel_users.end(); iter++)
+	// 	{
+	// 		if (((*iter).first).compare(tmp_channel->getName()) == 0)
+	// 		{
+	// 			int fd = (*iter).second->getFd();
+	// 			if (send(fd, _reply_message.c_str(), _reply_message.length(), 0) < 0)
+	// 				Log::printStringCol(CRITICAL, "ERROR: SENDING REPLY TO USER FAILED hihihi.");
+	// 			else
+	// 				Log::printStringCol(LOG, "LOG: SENDING REPLY SUCCESSFUL hihii.");
+	// 		}
+	// 	}
+	//}
 }
 
 /* Loop through existing users and check if nickname is already taken. */
