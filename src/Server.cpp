@@ -3,7 +3,7 @@
 /* ======================================================================================== */
 /* ----------------------------- CONSTRUCTOR/DESTRUCTOR ----------------------------------  */
 Server::Server(char** argv)
-	: _serv_address(), _users(), _channels()		//, _channels_by_name()
+	: _serv_address(), _users(), _channels()
 {
 	setPort(argv[1]);
 	this->_password = argv[2];
@@ -22,7 +22,6 @@ Server::~Server()
 
 	for (std::map<int, User*>::iterator iter = this->_users.begin(); iter != this->_users.end(); iter++)
 	{
-		Log::printStringCol(WARNING, "DISCONNECTING AND DELETING USER IN DESTRUCTOR");
 		disconnectUser((*iter).second->getFd(), false);
 		delete ((*iter).second);
 	}
@@ -32,16 +31,13 @@ Server::~Server()
 	for (std::map<std::string, User*>::iterator iter = this->_channel_users.begin(); iter != this->_channel_users.end(); iter++)
 		delete ((*iter).second);
 
-	for (std::vector<Channel*>::iterator iter = this->_channels.begin(); iter != this->_channels.end(); iter++)
-		delete (*iter);
-
-
 	for (std::vector<Channel*>::iterator iter = this->_channels.begin(); iter != _channels.end(); iter++)
 		delete *iter;
 
 	this->_channel_users.clear();
 	this->_channels.clear();
 	this->_channel_users.clear();
+
 	delete this;
 
 }
@@ -120,42 +116,30 @@ void Server::disconnectUser(int fd, bool state)
 		for (channel_iterator = _channels.begin(); channel_iterator != _channels.end(); channel_iterator++)
 		{
 			Channel* tmp_channel = *channel_iterator;
-			std::cout << "CURRENT CHANNEL NAME: " << (*channel_iterator)->getName() << std::endl;
 
-			std::cout << "---BEFORE CHANNEL OPERATOR SIZE: " << tmp_channel->_channel_operators.size() << std::endl;
 			if (tmp_channel->_channel_operators.size() > 0)
 			{
 				for (std::vector<User*>::iterator it_a = tmp_channel->_channel_operators.begin(); it_a != tmp_channel->_channel_operators.end(); it_a++)
 				{
-					std::cout << "COMPARING NAMES OF USER & CHANNEL OPERATOR" << std::endl;
-					std::cout << (*it_a)->getNickname() << "|" << tmp_user->getNickname() << std::endl;
 					if ((*it_a)->getNickname() == tmp_user->getNickname())
 					{
-						std::cout << "CHANNEL OPERATOR DELETE " << std::endl;
 						tmp_channel->_channel_operators.erase(it_a);
 						break ;
 					}
 				}
 			}
-			std::cout << "---AFTER CHANNEL OPERATOR SIZE: " << tmp_channel->_channel_operators.size() << std::endl;
 
-			std::cout << "---BEFORE CHANNEL MEMBER SIZE: " << tmp_channel->_channel_members.size() << std::endl;
 			if (tmp_channel->_channel_members.size() > 0)
 			{
 				for (std::vector<User*>::iterator it_a = tmp_channel->_channel_members.begin(); it_a != tmp_channel->_channel_members.end(); it_a++)
 				{
-					std::cout << "COMPARING NAMES OF USER & CHANNEL MEMBER" << std::endl;
-					std::cout << (*it_a)->getNickname() << "|" << tmp_user->getNickname() << std::endl;
 					if ((*it_a)->getNickname() == tmp_user->getNickname())
 					{
-						std::cout << "CHANNEL MEMBER DELETE " << std::endl;
 						tmp_channel->_channel_members.erase(it_a);
 						break ;
 					}
 				}
 			}
-			std::cout << "---AFTER CHANNEL MEMBER SIZE: " << tmp_channel->_channel_members.size() << std::endl;
-
 
 			if (tmp_channel->_channel_members.size() == 0)
 				channel_to_delete.push_back(tmp_channel);
@@ -168,19 +152,16 @@ void Server::disconnectUser(int fd, bool state)
 			{
 				if ((*channel_iterator)->getName() == channel_to_delete[i]->getName())
 				{
-					std::cout << "DELETING CHANNEL BECAUSE ITS EMPTY" << std::endl;
 					this->_channels.erase(channel_iterator);
 					break;
 				}
 			}
 		}
 
-
 		for(std::multimap<std::string, User*>::iterator it = _channel_users.begin(); it != _channel_users.end(); it++)
 		{
 			if (((*it).second->getNickname()) == tmp_user->getNickname())
 			{
-				std::cout << "DELETING USER OUT OF MULTIMAP" << std::endl;
 				_channel_users.erase(it);
 				break ;
 			}
@@ -198,7 +179,6 @@ void Server::disconnectUser(int fd, bool state)
 			}
 		}
 
-		//delete allocated user memory and delete from this->_users map
 		if (state == false)
 		{
 			delete this->_users.at(fd);
@@ -209,7 +189,6 @@ void Server::disconnectUser(int fd, bool state)
 	catch(const std::out_of_range& e) 	{
 	}
 }
-
 
 /* ======================================================================================== */
 /* -------------------------------------- GETTERS ----------------------------------------  */
@@ -305,21 +284,4 @@ void Server::serverError(int code)
 
 	close(this->_sockfd);
 	setServerStatus(false);
-}
-
-
-/* ======================================================================================== */
-/* -------------------------- DELETION OF USERS / CHANNEL ---------------------------------  */
-//delete and disconnect
-void Server::deleteUser(int fd)
-{
-	std::cout << "HERE DELETE USER " << std::endl;
-	delete getUser(fd);
-}
-
-//delete in channel class as well & user
-void Server::deleteChannel(Channel* channel)
-{
-	std::cout << "HERE DELETE CHANNEL" << std::endl;
-	delete channel;
 }

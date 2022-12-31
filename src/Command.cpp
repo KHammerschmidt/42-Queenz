@@ -456,7 +456,6 @@ void Command::sendJoin(User* user, const std::string msg)
 	if (channel_name.length() > 50)
     	    channel_name.resize(50);
 
-	std::cout << "CHANNEL_NAME: " << channel_name.find("\r") << "\n";
 	if (joinInputFormatCheck(command, channel_name, prefix_channel) == true)
 		return ;
 
@@ -502,7 +501,6 @@ void Command::sendJoin(User* user, const std::string msg)
 	this->_command_message = ss.str();
 
 	this->receiver_fd = user->getFd();
-	std::cout << "COMMAND MESSAGE: " << this->_command_message;
 	Log::printStringCol(CRITICAL, msg);
 
 	std::cout <<  "------------------------------------------------------------------\n";
