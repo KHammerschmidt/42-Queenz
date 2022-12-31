@@ -37,7 +37,6 @@ void Log::printTrace(std::string msg)
 template <typename T>
 void Log::print_vector(std::vector<T> vctr)
 {
-	std::cout << "PRINTING CONTENT OF VECTOR" << std::endl;
 	typename std::vector<T>::iterator iter;
 	for (iter = vctr.begin(); iter != vctr.end(); iter++)
 		std::cout << *iter << std::endl;
